@@ -459,6 +459,10 @@ loongarch_expand_macro_with_format_map (
   const char *src;
   char *dest;
   char buffer[8192];
+  int old_syntax_flag;
+
+  old_syntax_flag = LARCH_opts.use_community_syntax;
+  LARCH_opts.use_community_syntax = 0;
 
   if (format)
     loongarch_parse_format (format, esc1s, esc2s, bit_fields);
@@ -496,6 +500,9 @@ loongarch_expand_macro_with_format_map (
       *dest++ = *src++;
 
   *dest = '\0';
+
+  LARCH_opts.use_community_syntax = old_syntax_flag;
+
   return strdup (buffer);
 }
 

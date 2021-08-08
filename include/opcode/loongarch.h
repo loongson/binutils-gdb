@@ -37,10 +37,15 @@ extern "C"
 #define LARCH_INSN_OPC(insn) ((insn & 0xf0000000) >> 28)
     const char *const name;
 
-    /* 
+    /* The instruction name as given by the
+     * https://github.com/loongson-community/loongarch-opcodes repo.
+     * NULL if the name is identical to the manual version.  */
+    const char *const community_name;
+
+    /*
      ACTUAL PARAMETER:
 
-  // BNF with regular expression. 
+  // BNF with regular expression.
 args : token* end
 
   // just few char separate 'iden'
@@ -63,7 +68,7 @@ That 'sr' means the instruction may need relocate. '10:16' means bit field of in
 In a 'format', every 'escape's can be replaced to 'iden' or 'regname' acrroding to its meaning.
 We fill all information needed by disassembing and assembing to 'format'.
 
-  // BNF with regular expression. 
+  // BNF with regular expression.
 format : escape (literal+ escape)* literal* end
 | (literal+ escape)* literal* end
 
@@ -80,8 +85,8 @@ escape : esc_ch bit_field '<' '<' dec2
 | esc_ch bit_field
 | esc_ch    // for MACRO. non-macro format must indicate 'bit_field'
 
-  // '|' means to concatenate nonadjacent bit fields 
-  // For example, "10:16|0:4" means 
+  // '|' means to concatenate nonadjacent bit fields
+  // For example, "10:16|0:4" means
   // "16 bits starting from the 10th bit concatenating with 4 bits starting from the 0th bit".
   // This is to say "[25..10]||[3..0]" (little endian).
 b_field : dec2 ':' dec2
@@ -102,11 +107,16 @@ dec2 : [1-9][0-9]?
 */
     const char *const format;
 
+    /* The same as above, but adhering to the format and ordering as specified
+     * by the https://github.com/loongson-community/loongarch-opcodes repo.
+     * NULL if the two syntaxes have the same format. */
+    const char *const community_format;
+
     /*
 MACRO: Indicate how a macro instruction expand for assembling.
 The main is to replace the '%num'(means the 'num'th 'escape' in 'format') in 'macro' string to get the real instruction.
 
-Maybe need 
+Maybe need
 */
     const char *const macro;
     const int *include;
@@ -131,6 +141,7 @@ Maybe need
 
     /* for GAS to create hash table. */
     struct htab *name_hash_entry;
+    struct htab *community_name_hash_entry;
   };
 
   extern int is_unsigned (const char *);
@@ -206,6 +217,8 @@ Maybe need
 
     int abi_is_lp32;
     int abi_is_lp64;
+
+    int use_community_syntax;
   } LARCH_opts;
 
   extern size_t loongarch_insn_length (insn_t insn);

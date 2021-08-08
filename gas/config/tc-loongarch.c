@@ -108,6 +108,8 @@ enum options
   OPTION_LA_GLOBAL_WITH_PCREL,
   OPTION_LA_GLOBAL_WITH_ABS,
 
+  OPTION_SYNTAX,
+
   OPTION_END_OF_ENUM,
 };
 
@@ -120,6 +122,8 @@ struct option md_longopts[] =
   { "mla-local-with-abs", no_argument, NULL, OPTION_LA_LOCAL_WITH_ABS },
   { "mla-global-with-pcrel", no_argument, NULL, OPTION_LA_GLOBAL_WITH_PCREL },
   { "mla-global-with-abs", no_argument, NULL, OPTION_LA_GLOBAL_WITH_ABS },
+
+  { "msyntax", required_argument, NULL, OPTION_SYNTAX },
 
   { NULL, no_argument, NULL, 0 }
 };
@@ -154,6 +158,14 @@ md_parse_option (int c, const char *arg)
       break;
     case OPTION_LA_GLOBAL_WITH_ABS:
       LARCH_opts.la_global_with_abs = 1;
+      break;
+    case OPTION_SYNTAX:
+      if (strcasecmp (arg, "vendor") == 0)
+	LARCH_opts.use_community_syntax = 0;
+      else if (strcasecmp (arg, "community") == 0)
+	LARCH_opts.use_community_syntax = 1;
+      else
+	as_fatal (_("invalid -msyntax= option: `%s'"), arg);
       break;
     case OPTION_IGNORE:
       break;
@@ -338,7 +350,13 @@ s_dtprel (int bytes)
   demand_empty_rest_of_line ();
 }
 
-static const pseudo_typeS loongarch_pseudo_table[] = 
+static void
+s_community_syntax (int enabled)
+{
+	LARCH_opts.use_community_syntax = enabled;
+}
+
+static const pseudo_typeS loongarch_pseudo_table[] =
 {
   { "align", s_loongarch_align, -4 },
   { "dword", cons, 8 },
@@ -346,6 +364,8 @@ static const pseudo_typeS loongarch_pseudo_table[] =
   { "half", cons, 2 },
   { "dtprelword", s_dtprel, 4 },
   { "dtpreldword", s_dtprel, 8 },
+  { "community_syntax", s_community_syntax, 1 },
+  { "vendor_syntax", s_community_syntax, 0 },
   { NULL, NULL, 0 },
 };
 
@@ -620,8 +640,22 @@ get_loongarch_opcode (struct loongarch_cl_insn *insn)
             str_hash_insert (ase->name_hash_entry, it->name, (void *) it, 0);
         }
 
+      if (LARCH_opts.use_community_syntax && !ase->community_name_hash_entry)
+        {
+          ase->community_name_hash_entry = str_htab_create ();
+          for (it = ase->opcodes; it->name; it++)
+            if (it->community_name)
+              str_hash_insert (ase->community_name_hash_entry,
+                               it->community_name, (void *) it, 0);
+        }
+
       if ((it = str_hash_find (ase->name_hash_entry, insn->name)) == NULL)
-        continue;
+        {
+          if (!LARCH_opts.use_community_syntax)
+            continue;
+          if ((it = str_hash_find (ase->community_name_hash_entry, insn->name)) == NULL)
+            continue;
+        }
 
       do
         {
@@ -631,7 +665,8 @@ get_loongarch_opcode (struct loongarch_cl_insn *insn)
           insn->arg_num = 0;
           insn->reloc_num = 0;
           insn->insn_bin = loongarch_foreach_args (
-            it->format, insn->arg_strs,
+            (LARCH_opts.use_community_syntax && it->community_format) ? it->community_format : it->format,
+            insn->arg_strs,
             loongarch_args_parser_can_match_arg_helper, insn);
           if (insn->all_match && !(it->include && !*it->include) &&
               !(it->exclude && *it->exclude))
@@ -641,7 +676,7 @@ get_loongarch_opcode (struct loongarch_cl_insn *insn)
             }
           it++;
         }
-      while (it->name && strcasecmp (it->name, insn->name) == 0);
+      while (it->name && strcasecmp (LARCH_opts.use_community_syntax ? it->community_name : it->name, insn->name) == 0);
     }
 }
 
@@ -672,7 +707,19 @@ check_this_insn_before_appending (struct loongarch_cl_insn *ip)
             (ip->insn_bin & 0xff800000) == 0x00800000))
     {
       /* for bstr(ins|pick).[wd] */
-      if (ip->args[2] < ip->args[3])
+      int msb, lsb;
+      if (LARCH_opts.use_community_syntax)
+        {
+          lsb = ip->args[2];
+          msb = ip->args[3];
+        }
+      else
+        {
+          msb = ip->args[2];
+          lsb = ip->args[3];
+        }
+
+      if (msb < lsb)
         as_fatal (_ ("bstr(ins|pick).[wd] require msbd >= lsbd"));
     }
   else if (ip->insn->mask != 0 && (ip->insn_bin & 0xfe0003c0) == 0x04000000 &&
