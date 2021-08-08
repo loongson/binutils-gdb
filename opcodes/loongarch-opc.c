@@ -759,6 +759,7 @@ static struct loongarch_opcode loongarch_jmp_opcodes[] =
   { 0, 0, "bltu", "r,r,la", "bleu %2,%1,%%pcrel(%3)", 0, 0, 0 },
   { 0, 0, "bgeu", "r,r,la", "bgtu %2,%1,%%pcrel(%3)", 0, 0, 0 },
   { 0, 0, "jr", "r", "jirl $r0,%1,0", 0, 0, 0 },
+  { 0, 0, "ret", "", "jirl $r0,$r1,0", 0, 0, 0 },
 
   { 0 } /* Terminate the list.  */
 };
