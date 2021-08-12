@@ -49,7 +49,7 @@
 #define ARCH_ip2k
 #define ARCH_iq2000
 #define ARCH_lm32
-#define ARCH_loongarch
+#define ARCH_LoongArch
 #define ARCH_m32c
 #define ARCH_m32r
 #define ARCH_m68hc11
@@ -553,7 +553,7 @@ disassembler (enum bfd_architecture a,
       disassemble = print_insn_tilepro;
       break;
 #endif
-#ifdef ARCH_loongarch
+#ifdef ARCH_LoongArch
     case bfd_arch_loongarch:
       disassemble = print_insn_loongarch;
       break;
@@ -597,7 +597,7 @@ disassembler_usage (FILE *stream ATTRIBUTE_UNUSED)
 #ifdef ARCH_wasm32
   print_wasm32_disassembler_options (stream);
 #endif
-#ifdef ARCH_loongarch
+#ifdef ARCH_LoongArch
   print_loongarch_disassembler_options (stream);
 #endif
 
