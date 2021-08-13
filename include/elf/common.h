@@ -687,6 +687,16 @@
 #define NT_ARC_V2	0x600		/* ARC HS accumulator/extra registers.  */
 					/*   note name must be "LINUX".  */
 #define NT_RISCV_CSR    0x900		/* RISC-V Control and Status Registers */
+					/*   note name must be "LINUX".  */
+#define NT_LARCH_CPUCFG 0xa00		/* LoongArch CPU config registers */
+					/*   note name must be "LINUX".  */
+#define NT_LARCH_CSR    0xa01		/* LoongArch control state registers */
+					/*   note name must be "LINUX".  */
+#define NT_LARCH_LSX    0xa02		/* LoongArch Loongson SIMD Extension registers */
+					/*   note name must be "LINUX".  */
+#define NT_LARCH_LASX   0xa03		/* LoongArch Loongson Advanced SIMD Extension registers */
+					/*   note name must be "LINUX".  */
+#define NT_LARCH_LBT    0xa04		/* LoongArch Loongson Binary Translation registers */
 					/*   note name must be "CORE".  */
 #define NT_SIGINFO	0x53494749	/* Fields of siginfo_t.  */
 #define NT_FILE		0x46494c45	/* Description of mapped files.  */
