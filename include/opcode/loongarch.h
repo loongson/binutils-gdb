@@ -190,7 +190,6 @@ Maybe need
 
   extern struct loongarch_ASEs_option
   {
-    int ase_test;
     int ase_fix;
     int ase_float;
     int ase_128vec;
