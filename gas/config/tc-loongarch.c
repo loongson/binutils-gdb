@@ -256,18 +256,18 @@ md_begin ()
   for (ase = loongarch_ASEs; ase->enabled; ase++)
     for (it = ase->opcodes; it->name; it++)
       {
-        if (loongarch_check_format (it->format) != 0)
-          as_fatal (_ ("insn name: %s\tformat: %s\tsyntax error"),
-    		it->name, it->format);
-        if (it->mask == 0 && it->macro == 0)
-          as_fatal (_ ("insn name: %s\nformat: %s\nwe want macro but "
-    		   "macro is NULL"),
-    		it->name, it->format);
-        if (it->macro
+	if (loongarch_check_format (it->format) != 0)
+	  as_fatal (_ ("insn name: %s\tformat: %s\tsyntax error"),
+		it->name, it->format);
+	if (it->mask == 0 && it->macro == 0)
+	  as_fatal (_ ("insn name: %s\nformat: %s\nwe want macro but "
+		  "macro is NULL"),
+		it->name, it->format);
+	if (it->macro
      && loongarch_check_macro (it->format, it->macro) != 0)
-          as_fatal (
-    	_ ("insn name: %s\nformat: %s\nmacro: %s\tsyntax error"),
-    	it->name, it->format, it->macro);
+	  as_fatal (
+	_ ("insn name: %s\nformat: %s\nmacro: %s\tsyntax error"),
+	it->name, it->format, it->macro);
       }
 
   /* FIXME: expressionS use 'offsetT' as constant,
