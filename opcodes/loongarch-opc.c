@@ -23,7 +23,6 @@
 
 struct loongarch_ASEs_option LARCH_opts =
 {
-  .ase_test = 0,
   .ase_fix = 0,
   .ase_float = 0,
   .ase_128vec = 0,

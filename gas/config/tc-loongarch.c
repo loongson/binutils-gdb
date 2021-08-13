@@ -176,7 +176,6 @@ loongarch_after_parse_args ()
 {
   size_t i;
 
-  LARCH_opts.ase_test = 1;
   LARCH_opts.ase_fix = 1;
   LARCH_opts.ase_float = 1;
   LARCH_opts.ase_128vec = 1;
@@ -252,27 +251,24 @@ loongarch_target_format ()
 void
 md_begin ()
 {
-  if (LARCH_opts.ase_test)
-    {
-      const struct loongarch_opcode *it;
-      struct loongarch_ase *ase;
-      for (ase = loongarch_ASEs; ase->enabled; ase++)
-	for (it = ase->opcodes; it->name; it++)
-	  {
-	    if (loongarch_check_format (it->format) != 0)
-	      as_fatal (_ ("insn name: %s\tformat: %s\tsyntax error"),
-			it->name, it->format);
-	    if (it->mask == 0 && it->macro == 0)
-	      as_fatal (_ ("insn name: %s\nformat: %s\nwe want macro but "
-			   "macro is NULL"),
-			it->name, it->format);
-	    if (it->macro
-	 && loongarch_check_macro (it->format, it->macro) != 0)
-	      as_fatal (
-		_ ("insn name: %s\nformat: %s\nmacro: %s\tsyntax error"),
-		it->name, it->format, it->macro);
-	  }
-    }
+  const struct loongarch_opcode *it;
+  struct loongarch_ase *ase;
+  for (ase = loongarch_ASEs; ase->enabled; ase++)
+    for (it = ase->opcodes; it->name; it++)
+      {
+        if (loongarch_check_format (it->format) != 0)
+          as_fatal (_ ("insn name: %s\tformat: %s\tsyntax error"),
+    		it->name, it->format);
+        if (it->mask == 0 && it->macro == 0)
+          as_fatal (_ ("insn name: %s\nformat: %s\nwe want macro but "
+    		   "macro is NULL"),
+    		it->name, it->format);
+        if (it->macro
+     && loongarch_check_macro (it->format, it->macro) != 0)
+          as_fatal (
+    	_ ("insn name: %s\nformat: %s\nmacro: %s\tsyntax error"),
+    	it->name, it->format, it->macro);
+      }
 
   /* FIXME: expressionS use 'offsetT' as constant,
    * we want this is 64-bit type.  */
