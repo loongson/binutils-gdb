@@ -181,6 +181,7 @@ eelf64briscv_lp64f.c
 eelf64btsmip.c
 eelf64btsmip_fbsd.c
 eelf64hppa.c
+eelf64loongarch.c
 eelf64lppc.c
 eelf64lppc_fbsd.c
 eelf64lriscv.c
