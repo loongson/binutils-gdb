@@ -29,8 +29,8 @@ static const bfd_arch_info_type bfd_loongarch32_arch =
   8,				/* 8 bits in a byte.  */
   bfd_arch_loongarch,		/* Architecture.  */
   bfd_mach_loongarch32, 	/* Machine number - 0 for now.  */
-  "loongarch32",		/* Architecture name.  */
-  "Loongarch32",		/* Printable name.  */
+  "loongarch",			/* Architecture name.  */
+  "loongarch32",		/* Printable name.  */
   3,				/* Section align power.  */
   false,			/* This is the default architecture.  */
   bfd_default_compatible,	/* Architecture comparison function.  */
@@ -49,8 +49,8 @@ const bfd_arch_info_type bfd_loongarch_arch =
   /* Machine number of LoongArch64 is larger
    * so that LoongArch64 is compatible to LoongArch32.  */
   bfd_mach_loongarch64,
-  "loongarch64",		/* Architecture name.  */
-  "Loongarch64",		/* Printable name.  */
+  "loongarch",			/* Architecture name.  */
+  "loongarch64",		/* Printable name.  */
   3,				/* Section align power.  */
   true, 			/* This is the default architecture.  */
   bfd_default_compatible,	/* Architecture comparison function.  */
