@@ -1821,7 +1821,7 @@ loongarch_dump_reloc_record (void (*p) (const char *fmt, ...))
      "-- Record dump end --\n\n");
 }
 
-static int
+static bool
 loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 				bfd *input_bfd, asection *input_section,
 				bfd_byte *contents, Elf_Internal_Rela *relocs,
