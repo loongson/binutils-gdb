@@ -475,25 +475,16 @@ config/rx-parse.h: config/rx-parse.c
 
 # The LoongArch lexical analyzer and parser.
 EXTRA_as_new_SOURCES += config/loongarch-parse.y
-loongarch-parse.c: $(srcdir)/config/loongarch-parse.y
-	$(SHELL) $(YLWRAP) $(srcdir)/config/loongarch-parse.y y.tab.c loongarch-parse.c y.tab.h loongarch-parse.h -- $(YACCCOMPILE) -d ;
-loongarch-parse.h: loongarch-parse.c
-loongarch-parse.h: ; @true
-$(srcdir)/config/loongarch-parse.h: ; @true
+config/loongarch-parse.c: $(srcdir)/config/loongarch-parse.y
+	$(SHELL) $(YLWRAP) $(srcdir)/config/loongarch-parse.y y.tab.c $@ y.tab.h config/loongarch-parse.h -- $(YACCCOMPILE) -d ;
+config/loongarch-parse.h: config/loongarch-parse.c
+	@true
 
-loongarch-lex.c: $(srcdir)/config/loongarch-lex.l
-	$(SHELL) $(YLWRAP) $(srcdir)/config/loongarch-lex.l lex.yy.c loongarch-lex.c -- $(LEXCOMPILE)
-loongarch-lex-wrapper.@OBJEXT@: $(srcdir)/config/loongarch-lex-wrapper.c loongarch-lex.c loongarch-parse.h
-if am__fastdepCC
-	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $(srcdir)/config/loongarch-lex-wrapper.c $(NO_WERROR)
-	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-else
-if AMDEP
-	source='loongarch-lex-wrapper.c' object='$@' libtool=no @AMDEPBACKSLASH@
-	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-endif
-	$(COMPILE) -c $(srcdir)/config/loongarch-lex-wrapper.c $(NO_WERROR)
-endif
+EXTRA_as_new_SOURCES += config/loongarch-lex.l
+config/loongarch-lex.c: $(srcdir)/config/loongarch-lex.l
+	$(SHELL) $(YLWRAP) $(srcdir)/config/loongarch-lex.l lex.yy.c $@ -- $(LEXCOMPILE)
+
+config/loongarch-lex-wrapper.@OBJEXT@: config/loongarch-lex.c config/loongarch-parse.h
 
 # The mips instruction table specification lexical analyzer and parser.
 

@@ -17,4 +17,4 @@
    see <http://www.gnu.org/licenses/>.  */
 
 #include "sysdep.h"
-#include "loongarch-lex.c"
+#include "config/loongarch-lex.c"

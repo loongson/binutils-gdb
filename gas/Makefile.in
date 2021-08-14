@@ -1612,20 +1612,15 @@ config/rx-parse.c: $(srcdir)/config/rx-parse.y
 	$(SHELL) $(YLWRAP) $(srcdir)/config/rx-parse.y y.tab.c $@ y.tab.h config/rx-parse.h -- $(YACCCOMPILE) -d ;
 config/rx-parse.h: config/rx-parse.c
 	@true
-loongarch-parse.c: $(srcdir)/config/loongarch-parse.y
-	$(SHELL) $(YLWRAP) $(srcdir)/config/loongarch-parse.y y.tab.c loongarch-parse.c y.tab.h loongarch-parse.h -- $(YACCCOMPILE) -d ;
-loongarch-parse.h: loongarch-parse.c
-loongarch-parse.h: ; @true
-$(srcdir)/config/loongarch-parse.h: ; @true
 
-loongarch-lex.c: $(srcdir)/config/loongarch-lex.l
-	$(SHELL) $(YLWRAP) $(srcdir)/config/loongarch-lex.l lex.yy.c loongarch-lex.c -- $(LEXCOMPILE)
-loongarch-lex-wrapper.@OBJEXT@: $(srcdir)/config/loongarch-lex-wrapper.c loongarch-lex.c loongarch-parse.h
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $(srcdir)/config/loongarch-lex-wrapper.c $(NO_WERROR)
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='loongarch-lex-wrapper.c' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(COMPILE) -c $(srcdir)/config/loongarch-lex-wrapper.c $(NO_WERROR)
+config/loongarch-parse.c: $(srcdir)/config/loongarch-parse.y
+	$(SHELL) $(YLWRAP) $(srcdir)/config/loongarch-parse.y y.tab.c $@ y.tab.h config/loongarch-parse.h -- $(YACCCOMPILE) -d ;
+config/loongarch-parse.h: config/loongarch-parse.c
+	@true
+config/loongarch-lex.c: $(srcdir)/config/loongarch-lex.l
+	$(SHELL) $(YLWRAP) $(srcdir)/config/loongarch-lex.l lex.yy.c $@ -- $(LEXCOMPILE)
+
+config/loongarch-lex-wrapper.@OBJEXT@: config/loongarch-lex.c config/loongarch-parse.h
 
 # The mips instruction table specification lexical analyzer and parser.
 
