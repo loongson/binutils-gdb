@@ -258,16 +258,16 @@ md_begin ()
       {
 	if (loongarch_check_format (it->format) != 0)
 	  as_fatal (_ ("insn name: %s\tformat: %s\tsyntax error"),
-		it->name, it->format);
+		    it->name, it->format);
 	if (it->mask == 0 && it->macro == 0)
 	  as_fatal (_ ("insn name: %s\nformat: %s\nwe want macro but "
-		  "macro is NULL"),
-		it->name, it->format);
+		       "macro is NULL"),
+		    it->name, it->format);
 	if (it->macro
-     && loongarch_check_macro (it->format, it->macro) != 0)
+	    && loongarch_check_macro (it->format, it->macro) != 0)
 	  as_fatal (
-	_ ("insn name: %s\nformat: %s\nmacro: %s\tsyntax error"),
-	it->name, it->format, it->macro);
+		    _ ("insn name: %s\nformat: %s\nmacro: %s\tsyntax error"),
+		    it->name, it->format, it->macro);
       }
 
   /* FIXME: expressionS use 'offsetT' as constant,
@@ -501,8 +501,8 @@ loongarch_args_parser_can_match_arg_helper (char esc_ch1, char esc_ch2,
 	    }
 	  if (reloc_type == BFD_RELOC_NONE)
 	    as_fatal (
-	      _ ("not support reloc bit-field\nfmt: %c%c %s\nargs: %s"),
-	      esc_ch1, esc_ch2, bit_field, arg);
+		      _ ("not support reloc bit-field\nfmt: %c%c %s\nargs: %s"),
+		      esc_ch1, esc_ch2, bit_field, arg);
 	  reloc_num++;
 	  ip->reloc_num += reloc_num;
 	  ip->reloc_info[ip->reloc_num - 1].type = reloc_type;
