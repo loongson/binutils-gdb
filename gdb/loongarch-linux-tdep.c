@@ -673,9 +673,9 @@ loongarch_linux_init_abi (struct gdbarch_info info, struct gdbarch *gdbarch)
 				     loongarch_linux_core_read_description);
 }
 
-void _initialize_loongarch_linux_tdep ();
+void _initialize_loongarch_linux_tdep (void);
 void
-_initialize_loongarch_linux_tdep ()
+_initialize_loongarch_linux_tdep (void)
 {
   gdbarch_register_osabi (
     bfd_arch_loongarch,
