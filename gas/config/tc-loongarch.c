@@ -79,7 +79,7 @@ const char comment_chars[] = "#";
    .line and .file directives will appear in the pre-processed output.  */
 /* Note that input_file.c hand checks for '#' at the beginning of the
    first line of the input file.  This is because the compiler outputs
-#NO_APP at the beginning of its output.  */
+   #NO_APP at the beginning of its output.  */
 /* Also note that C style comments are always supported.  */
 const char line_comment_chars[] = "#";
 
@@ -374,7 +374,7 @@ loongarch_internal_label_name (unsigned long label, int augend)
   *p++ = 'L';
   for (; label; label /= 10)
     *p++ = label % 10 + '0';
-  /* make sure internal label never belong to normal label namespace.  */
+  /* Make sure internal label never belong to normal label namespace.  */
   *p++ = ':';
   for (; want_label; want_label /= 10)
     *p++ = want_label % 10 + '0';
@@ -390,7 +390,8 @@ setup_internal_label_here (unsigned long label)
   colon (loongarch_internal_label_name (label, 0));
 }
 
-extern void /* No static. used by 'loongarch-parse.y'.   */
+/* No static. used by 'loongarch-parse.y'.   */
+extern void
 get_internal_label (expressionS *label_expr, unsigned long label,
 		    int augend /* 0 for previous, 1 for next.  */);
 
@@ -658,9 +659,9 @@ check_this_insn_before_appending (struct loongarch_cl_insn *ip)
   else if (ip->insn->mask == 0xffff8000
 	   /* amswap.w  rd, rk, rj  */
 	   && ((ip->insn_bin & 0xfff00000) == 0x38600000
-	   /* ammax_db.wu  rd, rk, rj  */
-	   || (ip->insn_bin & 0xffff0000) == 0x38700000
-	   /* ammin_db.wu  rd, rk, rj  */
+	       /* ammax_db.wu  rd, rk, rj  */
+	       || (ip->insn_bin & 0xffff0000) == 0x38700000
+	       /* ammin_db.wu  rd, rk, rj  */
 	       || (ip->insn_bin & 0xffff0000) == 0x38710000))
     {
       /* For AMO insn amswap.[wd], amadd.[wd], etc.  */
@@ -670,11 +671,11 @@ check_this_insn_before_appending (struct loongarch_cl_insn *ip)
 	  _ ("AMO insns require rd != base && rd != rt when rd isn't $r0"));
     }
   else if ((ip->insn->mask == 0xffe08000
-	    /* bstrins.w  rd, rj, msbw, lsbw  */
-	    && (ip->insn_bin & 0xffe00000) == 0x00600000)
+	   /* bstrins.w  rd, rj, msbw, lsbw  */
+	   && (ip->insn_bin & 0xffe00000) == 0x00600000)
 	   || (ip->insn->mask == 0xffc00000
-	    /* bstrins.d  rd, rj, msbd, lsbd  */
-	    && (ip->insn_bin & 0xff800000) == 0x00800000))
+	       /* bstrins.d  rd, rj, msbd, lsbd  */
+	       && (ip->insn_bin & 0xff800000) == 0x00800000))
     {
       /* For bstr(ins|pick).[wd].  */
       if (ip->args[2] < ip->args[3])
@@ -874,7 +875,9 @@ loongarch_assemble_INSNs (char *str)
       if (the_one.insn_length == 0 && the_one.insn->macro)
 	{
 	  char *c_str = loongarch_expand_macro (the_one.insn->macro,
-		    the_one.arg_strs, assember_macro_helper, &the_one);
+						the_one.arg_strs,
+						assember_macro_helper,
+						&the_one);
 	  loongarch_assemble_INSNs (c_str);
 	  free (c_str);
 	}

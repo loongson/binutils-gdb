@@ -1654,9 +1654,11 @@ dump_relocations (Filedata *          filedata,
 	case EM_Z80:
 	  rtype = elf_z80_reloc_type (type);
 	  break;
-    case EM_LOONGARCH:
-      rtype = elf_loongarch_reloc_type (type);
-      break;
+
+	case EM_LOONGARCH:
+	  rtype = elf_loongarch_reloc_type (type);
+	  break;
+
 	}
 
       if (rtype == NULL)

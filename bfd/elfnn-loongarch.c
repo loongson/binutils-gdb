@@ -2977,8 +2977,8 @@ loongarch_elf_grok_prstatus (bfd *abfd, Elf_Internal_Note *note)
     default:
       return false;
 
-    case sizeof (
-      prstatus_t): /* The sizeof(struct elf_prstatus) on Linux/LoongArch.  */
+    /* The sizeof (struct elf_prstatus) on Linux/LoongArch.  */
+    case sizeof (prstatus_t):
       /* pr_cursig  */
       elf_tdata (abfd)->core->signal =
 	bfd_get_16 (abfd, note->descdata + offsetof (prstatus_t, pr_cursig));
@@ -3003,8 +3003,8 @@ loongarch_elf_grok_psinfo (bfd *abfd, Elf_Internal_Note *note)
     default:
       return false;
 
-    case sizeof (
-      prpsinfo_t): /* sizeof(struct elf_prpsinfo) on Linux/LoongArch.  */
+    /* The sizeof (struct elf_prpsinfo) on Linux/LoongArch.  */
+    case sizeof (prpsinfo_t):
       /* pr_pid  */
       elf_tdata (abfd)->core->pid =
 	bfd_get_32 (abfd, note->descdata + offsetof (prpsinfo_t, pr_pid));
