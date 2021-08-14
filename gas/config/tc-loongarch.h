@@ -70,8 +70,7 @@ extern void tc_loongarch_parse_to_dw2regnum (expressionS *);
 
 /* A enumerated values to specific how to deal with align in '.text'.  */
 /* Now we want to fill 'andi $r0,$r0,0x0'.  */
-#define loongarch_nop_opcode() 0
-#define NOP_OPCODE (loongarch_nop_opcode ())
+#define NOP_OPCODE (0x00)
 
 #define HANDLE_ALIGN(fragp) loongarch_handle_align (fragp)
 extern void loongarch_handle_align (struct frag *);
