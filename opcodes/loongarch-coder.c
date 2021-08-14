@@ -245,11 +245,11 @@ loongarch_encode_imm (const char *bit_field, int32_t imm)
 }
 
 /* Parse such FORMAT
-     ""
-     "u"
-     "v0:5,r5:5,s10:10<<2"
-     "r0:5,r5:5,r10:5,u15:2+1"
-     "r,r,u0:5+32,u0:5+1"
+   ""
+   "u"
+   "v0:5,r5:5,s10:10<<2"
+   "r0:5,r5:5,r10:5,u15:2+1"
+   "r,r,u0:5+32,u0:5+1"
 */
 static int
 loongarch_parse_format (const char *format, char *esc1s, char *esc2s,

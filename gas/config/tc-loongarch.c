@@ -671,8 +671,8 @@ check_this_insn_before_appending (struct loongarch_cl_insn *ip)
 	  _ ("AMO insns require rd != base && rd != rt when rd isn't $r0"));
     }
   else if ((ip->insn->mask == 0xffe08000
-	   /* bstrins.w  rd, rj, msbw, lsbw  */
-	   && (ip->insn_bin & 0xffe00000) == 0x00600000)
+	    /* bstrins.w  rd, rj, msbw, lsbw  */
+	    && (ip->insn_bin & 0xffe00000) == 0x00600000)
 	   || (ip->insn->mask == 0xffc00000
 	       /* bstrins.d  rd, rj, msbd, lsbd  */
 	       && (ip->insn_bin & 0xff800000) == 0x00800000))
@@ -788,26 +788,26 @@ assember_macro_helper (const char *const args[], void *context_ptr)
 	| (((lo32 & 0x80000000) != 0) << 1) | ((lo32 & 0x00000800) != 0);
       allf_bit_vec = (((hi32 & 0xfff00000) == 0xfff00000) << 3)
 	| (((hi32 & 0x000fffff) == 0x000fffff) << 2)
-	|(((lo32 & 0xfffff000) == 0xfffff000) << 1)
+	| (((lo32 & 0xfffff000) == 0xfffff000) << 1)
 	| ((lo32 & 0x00000fff) == 0x00000fff);
       paritial_is_sext_of_prev =
 	(all0_bit_vec ^ allf_bit_vec) & (all0_bit_vec ^ (sign_bit_vec << 1));
 
       static const char *const li_32bit[] =
-      {
-	"lu12i.w %5,%3&0x80000?%3-0x100000:%3;ori %5,%5,%4;",
-	"lu12i.w %5,%3&0x80000?%3-0x100000:%3;",
-	"addi.w %5,$r0,%4&0x800?%4-0x1000:%4;",
-	"or %5,$r0,$r0;",
-      };
+	{
+	  "lu12i.w %5,%3&0x80000?%3-0x100000:%3;ori %5,%5,%4;",
+	  "lu12i.w %5,%3&0x80000?%3-0x100000:%3;",
+	  "addi.w %5,$r0,%4&0x800?%4-0x1000:%4;",
+	  "or %5,$r0,$r0;",
+	};
       static const char *const li_hi_32bit[] =
-      {
-	"lu32i.d %5,%2&0x80000?%2-0x100000:%2;"
-	"lu52i.d %5,%5,%1&0x800?%1-0x1000:%1;",
-	"lu52i.d %5,%5,%1&0x800?%1-0x1000:%1;",
-	"lu32i.d %5,%2&0x80000?%2-0x100000:%2;",
-	"",
-      };
+	{
+	  "lu32i.d %5,%2&0x80000?%2-0x100000:%2;"
+	    "lu52i.d %5,%5,%1&0x800?%1-0x1000:%1;",
+	  "lu52i.d %5,%5,%1&0x800?%1-0x1000:%1;",
+	  "lu32i.d %5,%2&0x80000?%2-0x100000:%2;",
+	  "",
+	};
       do
 	{
 	  insns_buf[0] = '\0';
@@ -830,8 +830,8 @@ assember_macro_helper (const char *const args[], void *context_ptr)
 }
 
 /* Accept instructions separated by ';'
-* assuming 'not starting with space and not ending with space' or pass in
-* empty c_str.  */
+ * assuming 'not starting with space and not ending with space' or pass in
+ * empty c_str.  */
 static void
 loongarch_assemble_INSNs (char *str)
 {
@@ -945,7 +945,7 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
 	  last_reloc_is_sop_push_pcrel_1 = 1;
 	  if (S_GET_SEGMENT (fixP->fx_addsy) == seg)
 	    stack_top = S_GET_VALUE (fixP->fx_addsy) + fixP->fx_offset
-	- (fixP->fx_where + fixP->fx_frag->fr_address);
+	      - (fixP->fx_where + fixP->fx_frag->fr_address);
 	  else
 	    stack_top = 0;
 	}
@@ -1183,8 +1183,8 @@ void
 md_show_usage (FILE *stream)
 {
   fprintf (stream, _ ("\
-		     LARCH options:\n\
-		     "));
+		      LARCH options:\n\
+		      "));
 }
 
 /* Fill in an rs_align_code fragment.  We want to fill 'andi $r0,$r0,0'.  */

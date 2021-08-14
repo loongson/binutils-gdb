@@ -109,8 +109,8 @@ loongarch_linux_nat_target::fetch_registers (struct regcache *regcache,
 
   if (sizeof (void *) == 4)
     gdb_assert (have_ptrace_getregset == TRIBOOL_TRUE
-		||register_size (regcache->arch (),
-		  gdbarch_tdep (regcache->arch ())->regs.r) != 32);
+		|| register_size (regcache->arch (),
+		   gdbarch_tdep (regcache->arch ())->regs.r) != 32);
 
   if (have_ptrace_getregset == TRIBOOL_TRUE)
     loongarch_fetch_regs (regcache, regnum);
@@ -468,9 +468,9 @@ fill_fpregset (const struct regcache *regcache,
 }
 
 /* -1 if the kernel and/or CPU do not support watch registers.
-    1 if watch_readback is valid and we can read style, num_valid
-      and the masks.
-    0 if we need to read the watch_readback.  */
+   1 if watch_readback is valid and we can read style, num_valid
+   and the masks.
+   0 if we need to read the watch_readback.  */
 
 static int watch_readback_valid;
 
@@ -502,12 +502,12 @@ loongarch_show_dr (const char *func, CORE_ADDR addr, int len,
     printf_unfiltered (
       " (addr=%s, len=%d, type=%s)", paddress (target_gdbarch (), addr), len,
       type == hw_write
-	? "data-write"
-	: (type == hw_read
-	     ? "data-read"
-	     : (type == hw_access ? "data-read/write"
-				  : (type == hw_execute ? "instruction-execute"
-							: "??unknown??"))));
+      ? "data-write"
+      : (type == hw_read
+	 ? "data-read"
+	 : (type == hw_access ? "data-read/write"
+	    : (type == hw_execute ? "instruction-execute"
+	       : "??unknown??"))));
   puts_unfiltered (":\n");
 
   for (i = 0; i < MAX_DEBUG_REGISTER; i++)

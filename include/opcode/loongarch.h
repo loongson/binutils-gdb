@@ -72,7 +72,7 @@ format : escape (literal+ escape)* literal* end
 end : '\0'       // Get here means parse end.
 
   // The intersection between any two among FIRST (end), FIRST
-     (literal) and FIRST (escape) must be empty.
+  // (literal) and FIRST (escape) must be empty.
   // So we can build a simple parser.
 literal : ','
 | '('
@@ -86,7 +86,7 @@ escape : esc_ch bit_field '<' '<' dec2
   // '|' means to concatenate nonadjacent bit fields
   // For example, "10:16|0:4" means
   // "16 bits starting from the 10th bit concatenating with 4 bits
-     starting from the 0th bit".
+  // starting from the 0th bit".
   // This is to say "[25..10]||[3..0]" (little endian).
 b_field : dec2 ':' dec2
 | dec2 ':' dec2 '|' bit_field
@@ -107,11 +107,11 @@ dec2 : [1-9][0-9]?
     const char *const format;
 
     /* MACRO: Indicate how a macro instruction expand for assembling.
-The main is to replace the '%num'(means the 'num'th 'escape' in 'format')
-in 'macro' string to get the real instruction.
+       The main is to replace the '%num'(means the 'num'th 'escape' in
+       'format') in 'macro' string to get the real instruction.
 
-Maybe need
-*/
+       Maybe need
+       */
     const char *const macro;
     const int *include;
     const int *exclude;
