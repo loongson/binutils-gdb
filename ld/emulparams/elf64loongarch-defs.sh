@@ -3,7 +3,6 @@ SCRIPT_NAME=elf
 ARCH=loongarch
 NO_REL_RELOCS=yes
 
-#TEMPLATE_NAME=elf32
 TEMPLATE_NAME=elf
 EXTRA_EM_FILE=loongarchelf
 
