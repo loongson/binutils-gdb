@@ -32,53 +32,100 @@ unsigned int loongarch_debug = 0;
 #include <../features/loongarch/lsx.c>
 #include <../features/loongarch/lasx.c>
 
-target_desc *
-loongarch_create_target_description (int rlen, int fpu32, int fpu64, int lbt,
-				     int lsx, int lasx)
+#ifndef GDBSERVER
+#define STATIC_IN_GDB static
+#else
+#define STATIC_IN_GDB
+#endif
+
+STATIC_IN_GDB target_desc_up
+loongarch_create_target_description (const struct loongarch_gdbarch_features features)
 {
-  gdb_assert (rlen == 32 || rlen == 64);
+  gdb_assert (features.rlen == 32 || features.rlen == 64);
 
   target_desc_up tdesc = allocate_target_description ();
 
-  set_tdesc_architecture (tdesc.get (),
-			  rlen == 64 ? "loongarch64" : "loongarch32");
+#ifndef IN_PROCESS_AGENT
+  std::string arch_name = "loongarch";
+
+  if (features.rlen == 32)
+    {
+      arch_name.append ("32");
+    }
+  else if (features.rlen == 64)
+    arch_name.append ("64");
+  else
+    gdb_assert_not_reached ("rlen unknown");
+
+  set_tdesc_architecture (tdesc.get (), arch_name.c_str ());
+#endif
 
   int regnum = 0;
 
-  if (rlen == 64)
+  if (features.rlen == 64)
     regnum = create_feature_loongarch_base64 (tdesc.get (), regnum);
-  else if (rlen == 32)
+  else if (features.rlen == 32)
     regnum = create_feature_loongarch_base32 (tdesc.get (), regnum);
   else
     gdb_assert_not_reached ("rlen unknown");
 
-  if (fpu32)
+  if (features.fpu32)
     regnum = create_feature_loongarch_fpu32 (tdesc.get (), regnum);
-  else if (fpu64)
+  else if (features.fpu64)
     regnum = create_feature_loongarch_fpu64 (tdesc.get (), regnum);
 
-  if (lbt && rlen == 32)
+  if (features.lbt && features.rlen == 32)
     regnum = create_feature_loongarch_lbt32 (tdesc.get (), regnum);
-  else if (lbt && rlen == 64)
+  else if (features.lbt && features.rlen == 64)
     regnum = create_feature_loongarch_lbt64 (tdesc.get (), regnum);
 
-  if (lsx)
+  if (features.lsx)
     regnum = create_feature_loongarch_lsx (tdesc.get (), regnum);
 
-  if (lasx)
+  if (features.lasx)
     regnum = create_feature_loongarch_lasx (tdesc.get (), regnum);
 
-  return tdesc.release ();
+  return tdesc;
 }
 
-target_desc *
-loongarch_get_base_target_description (int rlen)
+#ifndef GDBSERVER
+
+/* Wrapper used by std::unordered_map to generate hash for feature set.  */
+struct loongarch_gdbarch_features_hasher
 {
-  if (rlen == 64)
-    return loongarch_create_target_description (64, 0, 0, 0, 0, 0);
-  else if (rlen == 32)
-    return loongarch_create_target_description (32, 0, 0, 0, 0, 0);
-  else
-    gdb_assert_not_reached ("rlen unknown");
-  return NULL;
+  std::size_t
+  operator() (const loongarch_gdbarch_features &features) const noexcept
+  {
+    return features.hash ();
+  }
+};
+
+/* Cache of previously seen target descriptions, indexed by the feature set
+   that created them.  */
+static std::unordered_map<loongarch_gdbarch_features,
+			  const target_desc_up,
+			  loongarch_gdbarch_features_hasher> loongarch_tdesc_cache;
+
+/* See arch/loongarch.h.  */
+
+const target_desc *
+loongarch_lookup_target_description (const struct loongarch_gdbarch_features features)
+{
+  /* Lookup in the cache.  If we find it then return the pointer out of
+     the target_desc_up (which is a unique_ptr).  This is safe as the
+     loongarch_tdesc_cache will exist until GDB exits.  */
+  const auto it = loongarch_tdesc_cache.find (features);
+  if (it != loongarch_tdesc_cache.end ())
+    return it->second.get ();
+
+  target_desc_up tdesc (loongarch_create_target_description (features));
+
+  /* Add to the cache, and return a pointer borrowed from the
+     target_desc_up.  This is safe as the cache (and the pointers
+     contained within it) are not deleted until GDB exits.  */
+  target_desc *ptr = tdesc.get ();
+  loongarch_tdesc_cache.emplace (features, std::move (tdesc));
+  return ptr;
 }
+
+#endif /* !GDBSERVER */

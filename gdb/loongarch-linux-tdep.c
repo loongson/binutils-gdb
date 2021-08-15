@@ -40,6 +40,7 @@
 #include "linux-tdep.h"
 #include "xml-syscall.h"
 #include "gdbsupport/gdb_signals.h"
+#include "elf/loongarch.h"
 
 static void
 loongarch_supply_elf_gregset (const struct regset *r,
@@ -541,18 +542,17 @@ static const struct target_desc *
 loongarch_linux_core_read_description (struct gdbarch *gdbarch,
 				       struct target_ops *target, bfd *abfd)
 {
-  int rlen, fpu32, fpu64, lbt, lsx, lasx;
+  struct loongarch_gdbarch_features features;
 
-  rlen = 64;
-  fpu32 = 0;
+  features.rlen = 64;
+  features.fpu32 = 0;
 
-  fpu64 = !!bfd_get_section_by_name (abfd, ".reg2");
-  lbt = !!bfd_get_section_by_name (abfd, ".reg-loongarch-lbt");
-  lsx = !!bfd_get_section_by_name (abfd, ".reg-loongarch-lsx");
-  lasx = !!bfd_get_section_by_name (abfd, ".reg-loongarch-lasx");
+  features.fpu64 = !!bfd_get_section_by_name (abfd, ".reg2");
+  features.lbt = !!bfd_get_section_by_name (abfd, ".reg-loongarch-lbt");
+  features.lsx = !!bfd_get_section_by_name (abfd, ".reg-loongarch-lsx");
+  features.lasx = !!bfd_get_section_by_name (abfd, ".reg-loongarch-lasx");
 
-  return loongarch_create_target_description (rlen, fpu32, fpu64, lbt, lsx,
-					      lasx);
+  return loongarch_lookup_target_description (features);
 }
 
 static void

@@ -28,8 +28,6 @@ loongarch_cpucfg (uint64_t rj)
   return ret;
 }
 
-struct target_desc;
-
-extern struct target_desc *loongarch_linux_read_description_runtime (int tid);
+const struct target_desc * loongarch_linux_read_description_runtime (int tid);
 
 #endif
