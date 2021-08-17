@@ -865,8 +865,11 @@ loongarch_assemble_INSNs (char *str)
       get_loongarch_opcode (&the_one);
 
       if (!the_one.all_match)
-	as_fatal (_ ("no match insn: %s\t%s"), the_one.name,
+	{
+	  as_bad (_ ("no match insn: %s\t%s"), the_one.name,
 		  loongarch_cat_splited_strs (the_one.arg_strs));
+	  return;
+	}
 
       if (check_this_insn_before_appending (&the_one) != 0)
 	break;
