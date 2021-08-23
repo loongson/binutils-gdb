@@ -27,33 +27,194 @@
 #include "elf/loongarch.h"
 #include "elfxx-loongarch.h"
 
+#define ALL_ONES (~ (bfd_vma) 0)
+
 /* This does not include any relocation information, but should be
    good enough for GDB or objdump to read the file.  */
 
 static reloc_howto_type howto_table[] =
 {
 #define LOONGARCH_HOWTO(r_name)						 \
-  HOWTO (R_LARCH_##r_name, 0, 3, 32, false, 0, complain_overflow_signed, \
-	 bfd_elf_generic_reloc, "R_LARCH_" #r_name, false, 0, 0, false)
+  HOWTO (R_LARCH_##r_name, 0, 2, 32, false, 0, complain_overflow_signed, \
+	 bfd_elf_generic_reloc, "R_LARCH_" #r_name, false, 0, 0xffffffff, false)
   LOONGARCH_HOWTO (NONE),
-  LOONGARCH_HOWTO (32),
-  LOONGARCH_HOWTO (64),
-  LOONGARCH_HOWTO (RELATIVE),
-  LOONGARCH_HOWTO (COPY),
-  LOONGARCH_HOWTO (JUMP_SLOT),
-  LOONGARCH_HOWTO (TLS_DTPMOD32),
-  LOONGARCH_HOWTO (TLS_DTPMOD64),
-  LOONGARCH_HOWTO (TLS_DTPREL32),
-  LOONGARCH_HOWTO (TLS_DTPREL64),
-  LOONGARCH_HOWTO (TLS_TPREL32),
-  LOONGARCH_HOWTO (TLS_TPREL64),
-  LOONGARCH_HOWTO (IRELATIVE),
+
+  /* 32 bit relocation.  */
+  HOWTO (R_LARCH_32,			/* type */
+	 0,				/* rightshift */
+	 2,				/* size */
+	 32,				/* bitsize */
+	 false,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_dont,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_LARCH_32",			/* name */
+	 false,				/* partial_inplace */
+	 0,				/* src_mask */
+	 0xffffffff,			/* dst_mask */
+	 false),			/* pcrel_offset */
+
+  /* 64 bit relocation.  */
+  HOWTO (R_LARCH_64,			/* type */
+	 0,				/* rightshift */
+	 4,				/* size */
+	 64,				/* bitsize */
+	 false,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_dont,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_LARCH_64",			/* name */
+	 false,				/* partial_inplace */
+	 0,				/* src_mask */
+	 ALL_ONES,			/* dst_mask */
+	 false),			/* pcrel_offset */
+
+  HOWTO (R_LARCH_RELATIVE,		/* type */
+	 0,				/* rightshift */
+	 2,				/* size */
+	 32,				/* bitsize */
+	 false,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_dont,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_LARCH_RELATIVE",		/* name */
+	 false,				/* partial_inplace */
+	 0,				/* src_mask */
+	 0xffffffff,			/* dst_mask */
+	 false),			/* pcrel_offset */
+
+  HOWTO (R_LARCH_COPY,			/* type */
+	 0,				/* rightshift */
+	 0,				/* this one is variable size */
+	 0,				/* bitsize */
+	 false,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_bitfield,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_LARCH_COPY",		/* name */
+	 false,				/* partial_inplace */
+	 0,				/* src_mask */
+	 0,				/* dst_mask */
+	 false),			/* pcrel_offset */
+
+  HOWTO (R_LARCH_JUMP_SLOT,		/* type */
+	 0,				/* rightshift */
+	 4,				/* size */
+	 64,				/* bitsize */
+	 false,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_bitfield,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_LARCH_JUMP_SLOT",		/* name */
+	 false,				/* partial_inplace */
+	 0,				/* src_mask */
+	 0,				/* dst_mask */
+	 false),			/* pcrel_offset */
+
+  /* Dynamic TLS relocations.  */
+  HOWTO (R_LARCH_TLS_DTPMOD32,		/* type */
+	 0,				/* rightshift */
+	 2,				/* size */
+	 32,				/* bitsize */
+	 false,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_dont,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_LARCH_TLS_DTPMOD32",	/* name */
+	 false,				/* partial_inplace */
+	 0,				/* src_mask */
+	 0xffffffff,			/* dst_mask */
+	 false),			/* pcrel_offset */
+
+  HOWTO (R_LARCH_TLS_DTPMOD64,		/* type */
+	 0,				/* rightshift */
+	 4,				/* size */
+	 64,				/* bitsize */
+	 false,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_dont,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_LARCH_TLS_DTPMOD64",	/* name */
+	 false,				/* partial_inplace */
+	 0,				/* src_mask */
+	 ALL_ONES,			/* dst_mask */
+	 false),			/* pcrel_offset */
+
+  HOWTO (R_LARCH_TLS_DTPREL32,		/* type */
+	 0,				/* rightshift */
+	 2,				/* size */
+	 32,				/* bitsize */
+	 false,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_dont,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_LARCH_TLS_DTPREL32",	/* name */
+	 true,				/* partial_inplace */
+	 0,				/* src_mask */
+	 0xffffffff,			/* dst_mask */
+	 false),			/* pcrel_offset */
+
+  HOWTO (R_LARCH_TLS_DTPREL64,		/* type */
+	 0,				/* rightshift */
+	 4,				/* size */
+	 64,				/* bitsize */
+	 false,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_dont,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_LARCH_TLS_DTPREL64",	/* name */
+	 true,				/* partial_inplace */
+	 0,				/* src_mask */
+	 ALL_ONES,			/* dst_mask */
+	 false),			/* pcrel_offset */
+
+  HOWTO (R_LARCH_TLS_TPREL32,		/* type */
+	 0,				/* rightshift */
+	 2,				/* size */
+	 32,				/* bitsize */
+	 false,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_dont,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_LARCH_TLS_TPREL32",		/* name */
+	 false,				/* partial_inplace */
+	 0,				/* src_mask */
+	 0xffffffff,			/* dst_mask */
+	 false),			/* pcrel_offset */
+
+  HOWTO (R_LARCH_TLS_TPREL64,		/* type */
+	 0,				/* rightshift */
+	 4,				/* size */
+	 64,				/* bitsize */
+	 false,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_dont,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_LARCH_TLS_TPREL64",		/* name */
+	 false,				/* partial_inplace */
+	 0,				/* src_mask */
+	 ALL_ONES,			/* dst_mask */
+	 false),			/* pcrel_offset */
+
+  HOWTO (R_LARCH_IRELATIVE,		/* type */
+	 0,				/* rightshift */
+	 2,				/* size */
+	 32,				/* bitsize */
+	 false,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_dont,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_LARCH_IRELATIVE",		/* name */
+	 false,				/* partial_inplace */
+	 0,				/* src_mask */
+	 0xffffffff,			/* dst_mask */
+	 false),			/* pcrel_offset */
 
   LOONGARCH_HOWTO (MARK_LA),
   LOONGARCH_HOWTO (MARK_PCREL),
   HOWTO (R_LARCH_SOP_PUSH_PCREL,	      	/* type.  */
 	 2,				   	/* rightshift.  */
-	 3,				   	/* size.  */
+	 2,				   	/* size.  */
 	 32,				  	/* bitsize.  */
 	 true /* FIXME: somewhat use this.  */,	/* pc_relative.  */
 	 0,				   	/* bitpos.  */
