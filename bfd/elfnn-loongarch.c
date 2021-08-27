@@ -27,8 +27,6 @@
 #include "elf/loongarch.h"
 #include "elfxx-loongarch.h"
 
-#include <sys/procfs.h>
-
 static bool
 loongarch_info_to_howto_rela (bfd *abfd ATTRIBUTE_UNUSED, arelent *cache_ptr,
 			      Elf_Internal_Rela *dst)
@@ -2967,6 +2965,12 @@ loongarch_elf_copy_indirect_symbol (struct bfd_link_info *info,
   _bfd_elf_link_hash_copy_indirect (info, dir, ind);
 }
 
+#define PRSTATUS_SIZE		    0x1d8
+#define PRSTATUS_OFFSET_PR_CURSIG   0xc
+#define PRSTATUS_OFFSET_PR_PID	    0x20
+#define ELF_GREGSET_T_SIZE	    0x168
+#define PRSTATUS_OFFSET_PR_REG	    0x70
+
 /* Support for core dump NOTE sections.  */
 
 static bool
@@ -2978,22 +2982,30 @@ loongarch_elf_grok_prstatus (bfd *abfd, Elf_Internal_Note *note)
       return false;
 
     /* The sizeof (struct elf_prstatus) on Linux/LoongArch.  */
-    case sizeof (prstatus_t):
+    case PRSTATUS_SIZE:
       /* pr_cursig  */
       elf_tdata (abfd)->core->signal =
-	bfd_get_16 (abfd, note->descdata + offsetof (prstatus_t, pr_cursig));
+	bfd_get_16 (abfd, note->descdata + PRSTATUS_OFFSET_PR_CURSIG);
 
       /* pr_pid  */
       elf_tdata (abfd)->core->lwpid =
-	bfd_get_32 (abfd, note->descdata + offsetof (prstatus_t, pr_pid));
+	bfd_get_32 (abfd, note->descdata + PRSTATUS_OFFSET_PR_PID);
       break;
     }
 
   /* Make a ".reg/999" section.  */
-  return _bfd_elfcore_make_pseudosection (abfd, ".reg", sizeof (elf_gregset_t),
+  return _bfd_elfcore_make_pseudosection (abfd, ".reg", ELF_GREGSET_T_SIZE,
 					  note->descpos
-					  + offsetof (prstatus_t, pr_reg));
+					  + PRSTATUS_OFFSET_PR_REG);
 }
+
+#define PRPSINFO_SIZE		    0x88
+#define PRPSINFO_OFFSET_PR_PID	    0x18
+#define PRPSINFO_OFFSET_PR_FNAME    0x28
+#define PRPSINFO_SIZEOF_PR_FNAME    0x10
+#define PRPSINFO_OFFSET_PR_PS_ARGS  0x38
+#define PRPSINFO_SIZEOF_PR_PS_ARGS  0x50
+
 
 static bool
 loongarch_elf_grok_psinfo (bfd *abfd, Elf_Internal_Note *note)
@@ -3003,21 +3015,21 @@ loongarch_elf_grok_psinfo (bfd *abfd, Elf_Internal_Note *note)
     default:
       return false;
 
-    /* The sizeof (struct elf_prpsinfo) on Linux/LoongArch.  */
-    case sizeof (prpsinfo_t):
+    /* The sizeof (prpsinfo_t) on Linux/LoongArch.  */
+    case PRPSINFO_SIZE:
       /* pr_pid  */
       elf_tdata (abfd)->core->pid =
-	bfd_get_32 (abfd, note->descdata + offsetof (prpsinfo_t, pr_pid));
+	bfd_get_32 (abfd, note->descdata + PRPSINFO_OFFSET_PR_PID);
 
       /* pr_fname  */
       elf_tdata (abfd)->core->program = _bfd_elfcore_strndup (
-	abfd, note->descdata + offsetof (prpsinfo_t, pr_fname),
-	sizeof (((prpsinfo_t *) 0)->pr_fname));
+	abfd, note->descdata + PRPSINFO_OFFSET_PR_FNAME,
+	PRPSINFO_SIZEOF_PR_FNAME);
 
       /* pr_psargs  */
       elf_tdata (abfd)->core->command = _bfd_elfcore_strndup (
-	abfd, note->descdata + offsetof (prpsinfo_t, pr_psargs),
-	sizeof (((prpsinfo_t *) 0)->pr_psargs));
+	abfd, note->descdata + PRPSINFO_OFFSET_PR_PS_ARGS,
+	PRPSINFO_SIZEOF_PR_PS_ARGS);
       break;
     }
 
