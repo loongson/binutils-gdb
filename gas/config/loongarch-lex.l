@@ -27,7 +27,9 @@
 %}
 
 D	[0-9]
-L	[a-zA-Z_\.\$]
+/* We consider anything greater than \x7f to be a "letter" for UTF-8
+   support.  See the lex_type array in ../read.c.  */
+L	[a-zA-Z_\.\$\x80-\xff]
 H	[0-9A-Fa-f]
 
 hex	0[xX]{H}+
