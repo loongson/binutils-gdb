@@ -404,6 +404,88 @@ get_internal_label (expressionS *label_expr, unsigned long label,
   label_expr->X_add_number = 0;
 }
 
+extern int loongarch_parse_expr (const char *expr,
+				 struct reloc_info *reloc_stack_top,
+				 size_t max_reloc_num, size_t *reloc_num,
+				 offsetT *imm_if_no_reloc);
+
+static int
+is_internal_label (const char *c_str)
+{
+  do
+    {
+      if (*c_str != ':')
+	break;
+      c_str++;
+      if (!('0' <= *c_str && *c_str <= '9'))
+	break;
+      while ('0' <= *c_str && *c_str <= '9')
+	c_str++;
+      if (*c_str != 'b' && *c_str != 'f')
+	break;
+      c_str++;
+      return *c_str == '\0';
+    }
+  while (0);
+  return 0;
+}
+
+static int
+is_label (const char *c_str)
+{
+  if (is_internal_label (c_str))
+    return 1;
+  else if ('0' <= *c_str && *c_str <= '9')
+    {
+      /* [0-9]+[bf]  */
+      while ('0' <= *c_str && *c_str <= '9')
+	c_str++;
+      return *c_str == 'b' || *c_str == 'f';
+    }
+  else if (is_name_beginner (*c_str))
+    {
+      /* [a-zA-Z\._\$][0-9a-zA-Z\._\$]*  */
+      c_str++;
+      while (is_part_of_name (*c_str))
+	c_str++;
+      return *c_str == '\0';
+    }
+  else
+    return 0;
+}
+
+static int
+is_label_with_addend (const char *c_str)
+{
+  if (is_internal_label (c_str))
+    return 1;
+  else if ('0' <= *c_str && *c_str <= '9')
+    {
+      /* [0-9]+[bf]  */
+      while ('0' <= *c_str && *c_str <= '9')
+	c_str++;
+      if (*c_str == 'b' || *c_str == 'f')
+	c_str++;
+      else
+	return 0;
+      return *c_str == '\0'
+		       || ((*c_str == '-' || *c_str == '+')
+			   && is_unsigned (c_str + 1));
+    }
+  else if (is_name_beginner (*c_str))
+    {
+      /* [a-zA-Z\._\$][0-9a-zA-Z\._\$]*  */
+      c_str++;
+      while (is_part_of_name (*c_str))
+	c_str++;
+      return *c_str == '\0'
+		       || ((*c_str == '-' || *c_str == '+')
+			   && is_unsigned (c_str + 1));
+    }
+  else
+    return 0;
+}
+
 static int32_t
 loongarch_args_parser_can_match_arg_helper (char esc_ch1, char esc_ch2,
 					    const char *bit_field,

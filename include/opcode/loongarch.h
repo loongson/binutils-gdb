@@ -139,8 +139,6 @@ dec2 : [1-9][0-9]?
 
   extern int is_unsigned (const char *);
   extern int is_signed (const char *);
-  extern int is_label_with_addend (const char *);
-  extern int is_label (const char *);
   extern int is_branch_label (const char *);
 
   extern int loongarch_get_bit_field_width (const char *bit_field, char **end);
