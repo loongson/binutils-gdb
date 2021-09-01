@@ -210,8 +210,34 @@ static reloc_howto_type howto_table[] =
 	 0xffffffff,			/* dst_mask */
 	 false),			/* pcrel_offset */
 
-  LOONGARCH_HOWTO (MARK_LA),
-  LOONGARCH_HOWTO (MARK_PCREL),
+  HOWTO (R_LARCH_MARK_LA,			/* type.  */
+	 0,				   	/* rightshift.  */
+	 3,				   	/* size.  */
+	 0,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_MARK_LA",			/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask.  */
+	 0,					/* dst_mask.  */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_MARK_PCREL,			/* type.  */
+	 0,				   	/* rightshift.  */
+	 3,				   	/* size.  */
+	 0,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_MARK_PCREL",			/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask.  */
+	 0,					/* dst_mask.  */
+	 false),			      	/* pcrel_offset.  */
+
   HOWTO (R_LARCH_SOP_PUSH_PCREL,	      	/* type.  */
 	 2,				   	/* rightshift.  */
 	 2,				   	/* size.  */
@@ -225,6 +251,7 @@ static reloc_howto_type howto_table[] =
 	 0x03ffffff,			  	/* src_mask.  */
 	 0x03ffffff,			  	/* dst_mask.  */
 	 false),			      	/* pcrel_offset.  */
+
   LOONGARCH_HOWTO (SOP_PUSH_ABSOLUTE),
   LOONGARCH_HOWTO (SOP_PUSH_DUP),
   LOONGARCH_HOWTO (SOP_PUSH_GPREL),
@@ -240,25 +267,273 @@ static reloc_howto_type howto_table[] =
   LOONGARCH_HOWTO (SOP_ADD),
   LOONGARCH_HOWTO (SOP_AND),
   LOONGARCH_HOWTO (SOP_IF_ELSE),
-  LOONGARCH_HOWTO (SOP_POP_32_S_10_5),
-  LOONGARCH_HOWTO (SOP_POP_32_U_10_12),
-  LOONGARCH_HOWTO (SOP_POP_32_S_10_12),
-  LOONGARCH_HOWTO (SOP_POP_32_S_10_16),
-  LOONGARCH_HOWTO (SOP_POP_32_S_10_16_S2),
-  LOONGARCH_HOWTO (SOP_POP_32_S_5_20),
-  LOONGARCH_HOWTO (SOP_POP_32_S_0_5_10_16_S2),
-  LOONGARCH_HOWTO (SOP_POP_32_S_0_10_10_16_S2),
-  LOONGARCH_HOWTO (SOP_POP_32_U),
-  LOONGARCH_HOWTO (ADD8),
-  LOONGARCH_HOWTO (ADD16),
-  LOONGARCH_HOWTO (ADD24),
-  LOONGARCH_HOWTO (ADD32),
-  LOONGARCH_HOWTO (ADD64),
-  LOONGARCH_HOWTO (SUB8),
-  LOONGARCH_HOWTO (SUB16),
-  LOONGARCH_HOWTO (SUB24),
-  LOONGARCH_HOWTO (SUB32),
-  LOONGARCH_HOWTO (SUB64),
+
+  HOWTO (R_LARCH_SOP_POP_32_S_10_5,	      	/* type.  */
+	 0,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 5,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 10,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SOP_POP_32_S_10_5",	    	/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0x7c00,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_SOP_POP_32_U_10_12,	      	/* type.  */
+	 0,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 12,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 10,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SOP_POP_32_U_10_12",	    	/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0x3ffc00,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_SOP_POP_32_S_10_12,	      	/* type.  */
+	 0,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 12,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 10,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SOP_POP_32_S_10_12",	    	/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0x3ffc00,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_SOP_POP_32_S_10_16,	      	/* type.  */
+	 0,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 16,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 10,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SOP_POP_32_S_10_16",	    	/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0x3fffc00,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_SOP_POP_32_S_10_16_S2,	      	/* type.  */
+	 2,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 16,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 10,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SOP_POP_32_S_10_16_S2",    	/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0x3fffc00,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_SOP_POP_32_S_5_20,	      	/* type.  */
+	 0,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 16,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 5,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SOP_POP_32_S_5_20",    	/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0x1fffe0,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_SOP_POP_32_S_0_5_10_16_S2,    	/* type.  */
+	 2,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 21,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SOP_POP_32_S_0_5_10_16_S2",  	/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0xfc0003e0,				/* src_mask */
+	 0xfc0003e0,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_SOP_POP_32_S_0_10_10_16_S2,   	/* type.  */
+	 2,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 26,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SOP_POP_32_S_0_10_10_16_S2", 	/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0xfc000000,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_SOP_POP_32_U,	      		/* type.  */
+	 0,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 32,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SOP_POP_32_S_U",    		/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0,					/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_ADD8,	      			/* type.  */
+	 0,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 8,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_ADD8",    			/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0xffffffff,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_ADD16,	      			/* type.  */
+	 0,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 16,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_ADD16",    			/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0xffffffff,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_ADD24,	      			/* type.  */
+	 0,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 24,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_ADD24",    			/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0xffffffff,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_ADD32,	      			/* type.  */
+	 0,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 32,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_ADD32",    			/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0xffffffff,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_ADD64,	      			/* type.  */
+	 0,				   	/* rightshift.  */
+	 4,				   	/* size.  */
+	 64,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_ADD64",    			/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 ALL_ONES,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_SUB8,	      			/* type.  */
+	 0,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 8,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SUB8",    			/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0xffffffff,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_SUB16,	      			/* type.  */
+	 0,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 16,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SUB16",    			/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0xffffffff,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_SUB24,	      			/* type.  */
+	 0,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 24,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SUB24",    			/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0xffffffff,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_SUB32,	      			/* type.  */
+	 0,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 32,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SUB32",    			/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0xffffffff,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
+  HOWTO (R_LARCH_SUB64,	      			/* type.  */
+	 0,				   	/* rightshift.  */
+	 4,				   	/* size.  */
+	 64,				  	/* bitsize.  */
+	 false,					/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SUB64",    			/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0,					/* src_mask */
+	 ALL_ONES,				/* dst_mask */
+	 false),			      	/* pcrel_offset.  */
+
 };
 
 struct elf_reloc_map

@@ -136,15 +136,21 @@ struct loongarch_elf_link_hash_table
 
 /* Generate a PLT header.  */
 
-static void
+static bool
 loongarch_make_plt_header (bfd_vma got_plt_addr, bfd_vma plt_header_addr,
 			   uint32_t *entry)
 {
-  int64_t pcrel = got_plt_addr - plt_header_addr;
-  int64_t hi = (pcrel & 0x800 ? 1 : 0) + (pcrel >> 12);
-  int64_t lo = pcrel & 0xfff;
-  if ((hi >> 19) != 0 && (hi >> 19) != -1)
-    abort ();
+  bfd_vma pcrel = got_plt_addr - plt_header_addr;
+  bfd_vma hi, lo;
+
+  if (pcrel + 0x80000800 > 0xffffffff)
+    {
+      _bfd_error_handler (_ ("0x%lx invaild imm"), pcrel);
+      bfd_set_error (bfd_error_bad_value);
+      return false;
+    }
+  hi = ((pcrel + 0x800) >> 12) & 0xfffff;
+  lo = pcrel & 0xfff;
 
   /* pcaddu12i  $t2, %hi(%pcrel(.got.plt))
      sub.[wd]   $t1, $t1, $t3
@@ -177,25 +183,34 @@ loongarch_make_plt_header (bfd_vma got_plt_addr, bfd_vma plt_header_addr,
       entry[6] = 0x2880018c | GOT_ENTRY_SIZE << 10;
       entry[7] = 0x4c0001e0;
     }
+  return true;
 }
 
 /* Generate a PLT entry.  */
 
-static void
+static bool
 loongarch_make_plt_entry (bfd_vma got_plt_entry_addr, bfd_vma plt_entry_addr,
 			  uint32_t *entry)
 {
-  int64_t pcrel = got_plt_entry_addr - plt_entry_addr;
-  int64_t hi = (pcrel & 0x800 ? 1 : 0) + (pcrel >> 12);
-  int64_t lo = pcrel & 0xfff;
-  if ((hi >> 19) != 0 && (hi >> 19) != -1)
-    abort ();
+  bfd_vma pcrel = got_plt_entry_addr - plt_entry_addr;
+  bfd_vma hi, lo;
+
+  if (pcrel + 0x80000800 > 0xffffffff)
+    {
+      _bfd_error_handler (_ ("0x%lx invaild imm"), pcrel);
+      bfd_set_error (bfd_error_bad_value);
+      return false;
+    }
+  hi = ((pcrel + 0x800) >> 12) & 0xfffff;
+  lo = pcrel & 0xfff;
 
   entry[0] = 0x1c00000f | (hi & 0xfffff) << 5;
   entry[1] = (GOT_ENTRY_SIZE == 8 ? 0x28c001ef : 0x288001ef)
 	     | (lo & 0xfff) << 10;
   entry[2] = 0x4c0001ed;	/* jirl $r13, $15, 0 */
   entry[3] = 0x03400000;	/* nop */
+
+  return true;
 }
 
 /* Create an entry in an LoongArch ELF linker hash table.  */
@@ -544,7 +559,7 @@ loongarch_elf_record_tls_and_got_reference (bfd *abfd,
       /* No need for GOT.  */
       break;
     default:
-      _bfd_error_handler (_ ("Interl error: unreachable."));
+      _bfd_error_handler (_ ("Internal error: unreachable."));
       return false;
     }
 
@@ -1429,16 +1444,95 @@ loongarch_elf_append_rela (bfd *abfd, asection *s, Elf_Internal_Rela *rel)
   bed->s->swap_reloca_out (abfd, rel, loc);
 }
 
+#define LARCH_RELOC_PERFORM_3OP(op1, op2, op3)	      \
+  ({						      \
+    bfd_reloc_status_type ret = loongarch_pop (&op2); \
+    if (ret == bfd_reloc_ok)			      \
+      {						      \
+      ret = loongarch_pop (&op1);		      \
+      if (ret == bfd_reloc_ok)			      \
+	ret = loongarch_push (op3);		      \
+      }						      \
+    ret;					      \
+   })
+
+/* FIXME, check rel->r_offset in range of contents.  */
+static inline bool
+loongarch_check_offset (const Elf_Internal_Rela *rel,
+			const asection *input_section)
+{
+  (void)rel;
+  (void)input_section;
+  return true;
+}
+
+#define LARCH_RELOC_UINT32_BIT_MASK(bitsize) \
+  (~((0x1U << (bitsize)) - 1))
+
+static bfd_reloc_status_type
+loongarch_reloc_rewrite_imm_insn (const Elf_Internal_Rela *rel,
+				  const asection *input_section,
+				  reloc_howto_type *howto, bfd *input_bfd,
+				  bfd_byte *contents, int64_t op,
+				  bool is_signed)
+{
+
+  if (!loongarch_check_offset(rel, input_section))
+    return bfd_reloc_outofrange;
+
+  /* Check op low bits if rightshift != 0, before rightshift  */
+  if (howto->rightshift
+      && ((0x1U << howto->rightshift) & op))
+	return bfd_reloc_overflow;
+
+  uint32_t imm = (uint32_t)(int32_t)(op >> howto->rightshift);
+
+  if (is_signed)
+    {
+      if (op >= 0)
+	{
+	  if (LARCH_RELOC_UINT32_BIT_MASK (howto->bitsize - 1) & imm)
+	    return bfd_reloc_overflow;
+	}
+      else
+	{
+	  if ((LARCH_RELOC_UINT32_BIT_MASK (howto->bitsize - 1) & imm)
+	      != LARCH_RELOC_UINT32_BIT_MASK(howto->bitsize - 1))
+	    return bfd_reloc_overflow;
+	}
+    }
+  else
+    {
+      if (LARCH_RELOC_UINT32_BIT_MASK(howto->bitsize) & imm)
+	return bfd_reloc_overflow;
+    }
+
+
+  int bits = bfd_get_reloc_size(howto) * 8;
+  uint32_t insn = bfd_get (bits, input_bfd, contents + rel->r_offset);
+
+  imm <<= howto->bitpos;
+  insn = (insn & howto->src_mask)
+    | ((insn & (~(uint32_t) howto->dst_mask)) | imm);
+  bfd_put (bits, input_bfd, insn, contents + rel->r_offset);
+
+  return bfd_reloc_ok;
+}
+
 /* Emplace a static relocation.  */
 
 static bfd_reloc_status_type
-perform_relocation (const Elf_Internal_Rela *rel, bfd_vma value,
+perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
+		    reloc_howto_type *howto, bfd_vma value,
 		    bfd *input_bfd, bfd_byte *contents)
 {
 
   uint32_t insn1;
   int64_t opr1, opr2, opr3;
   bfd_reloc_status_type r = bfd_reloc_ok;
+  int bits = bfd_get_reloc_size(howto) * 8;
+
+
   switch (ELFNN_R_TYPE (rel->r_info))
     {
     case R_LARCH_SOP_PUSH_PCREL:
@@ -1452,12 +1546,13 @@ perform_relocation (const Elf_Internal_Rela *rel, bfd_vma value,
       break;
 
     case R_LARCH_SOP_PUSH_DUP:
-      r = bfd_reloc_outofrange;
-      if (loongarch_pop (&opr1) != bfd_reloc_ok
-	  || loongarch_push (opr1) != bfd_reloc_ok
-	  || loongarch_push (opr1) != bfd_reloc_ok)
-	break;
-      r = bfd_reloc_ok;
+      r = loongarch_pop(&opr1);
+      if (r == bfd_reloc_ok)
+	{
+	  r = loongarch_push(opr1);
+	  if(r == bfd_reloc_ok)
+	    r = loongarch_push(opr1);
+	}
       break;
 
     case R_LARCH_SOP_ASSERT:
@@ -1467,250 +1562,157 @@ perform_relocation (const Elf_Internal_Rela *rel, bfd_vma value,
       break;
 
     case R_LARCH_SOP_NOT:
-      r = bfd_reloc_outofrange;
-      if (loongarch_pop (&opr1) != bfd_reloc_ok
-	  || loongarch_push (!opr1) != bfd_reloc_ok)
-	break;
-      r = bfd_reloc_ok;
+      r = loongarch_pop (&opr1);
+      if (r == bfd_reloc_ok)
+	  r= loongarch_push (!opr1);
       break;
 
     case R_LARCH_SOP_SUB:
-      r = bfd_reloc_outofrange;
-      if (loongarch_pop (&opr2) != bfd_reloc_ok
-	  || loongarch_pop (&opr1) != bfd_reloc_ok
-	  || loongarch_push (opr1 - opr2) != bfd_reloc_ok)
-	break;
-      r = bfd_reloc_ok;
+      r = LARCH_RELOC_PERFORM_3OP (opr1, opr2, opr1 - opr2);
       break;
 
     case R_LARCH_SOP_SL:
-      r = bfd_reloc_outofrange;
-      if (loongarch_pop (&opr2) != bfd_reloc_ok
-	  || loongarch_pop (&opr1) != bfd_reloc_ok
-	  || loongarch_push (opr1 << opr2) != bfd_reloc_ok)
-	break;
-      r = bfd_reloc_ok;
+      r = LARCH_RELOC_PERFORM_3OP (opr1, opr2, opr1 << opr2);
       break;
 
     case R_LARCH_SOP_SR:
-      r = bfd_reloc_outofrange;
-      if (loongarch_pop (&opr2) != bfd_reloc_ok
-	  || loongarch_pop (&opr1) != bfd_reloc_ok
-	  || loongarch_push (opr1 >> opr2) != bfd_reloc_ok)
-	break;
-      r = bfd_reloc_ok;
+      r = LARCH_RELOC_PERFORM_3OP (opr1, opr2, opr1 >> opr2);
       break;
 
     case R_LARCH_SOP_AND:
-      r = bfd_reloc_outofrange;
-      if (loongarch_pop (&opr2) != bfd_reloc_ok
-	  || loongarch_pop (&opr1) != bfd_reloc_ok
-	  || loongarch_push (opr1 & opr2) != bfd_reloc_ok)
-	break;
-      r = bfd_reloc_ok;
+      r = LARCH_RELOC_PERFORM_3OP (opr1, opr2, opr1 & opr2);
       break;
 
     case R_LARCH_SOP_ADD:
-      r = bfd_reloc_outofrange;
-      if (loongarch_pop (&opr2) != bfd_reloc_ok
-	  || loongarch_pop (&opr1) != bfd_reloc_ok
-	  || loongarch_push (opr1 + opr2) != bfd_reloc_ok)
-	break;
-      r = bfd_reloc_ok;
+      r = LARCH_RELOC_PERFORM_3OP (opr1, opr2, opr1 + opr2);
       break;
 
     case R_LARCH_SOP_IF_ELSE:
-      r = bfd_reloc_outofrange;
-      if (loongarch_pop (&opr3) != bfd_reloc_ok
-	  || loongarch_pop (&opr2) != bfd_reloc_ok
-	  || loongarch_pop (&opr1) != bfd_reloc_ok
-	  || loongarch_push (opr1 ? opr2 : opr3) != bfd_reloc_ok)
-	break;
-      r = bfd_reloc_ok;
+      r = loongarch_pop (&opr3);
+      if (r == bfd_reloc_ok)
+	{
+	  r = loongarch_pop(&opr2);
+	  if (r == bfd_reloc_ok)
+	    {
+	      r = loongarch_pop(&opr1);
+	      if (r == bfd_reloc_ok)
+		r = loongarch_push(opr1 ? opr2 : opr3);
+	    }
+	}
       break;
 
     case R_LARCH_SOP_POP_32_S_10_5:
+    case R_LARCH_SOP_POP_32_S_10_12:
+    case R_LARCH_SOP_POP_32_S_10_16:
+    case R_LARCH_SOP_POP_32_S_10_16_S2:
+    case R_LARCH_SOP_POP_32_S_5_20:
       r = loongarch_pop (&opr1);
-      if (r != bfd_reloc_ok)
-	break;
-      if ((opr1 & ~(uint64_t) 0xf) != 0x0
-	  && (opr1 & ~(uint64_t) 0xf) != ~(uint64_t) 0xf)
-	r = bfd_reloc_overflow;
-      if (r != bfd_reloc_ok)
-	break;
-      insn1 = bfd_get (32, input_bfd, contents + rel->r_offset);
-      insn1 = (insn1 & (~(uint32_t) 0x7c00)) | ((opr1 & 0x1f) << 10);
-      bfd_put (32, input_bfd, insn1, contents + rel->r_offset);
+      if (r == bfd_reloc_ok)
+	{
+	r = loongarch_reloc_rewrite_imm_insn(rel, input_section,
+					     howto, input_bfd,
+					     contents, opr1, true);
+	}
       break;
 
     case R_LARCH_SOP_POP_32_U_10_12:
       r = loongarch_pop (&opr1);
-      if (r != bfd_reloc_ok)
-	break;
-      if (opr1 & ~(uint64_t) 0xfff)
-	r = bfd_reloc_overflow;
-      if (r != bfd_reloc_ok)
-	break;
-      insn1 = bfd_get (32, input_bfd, contents + rel->r_offset);
-      insn1 = (insn1 & (~(uint32_t) 0x3ffc00)) | ((opr1 & 0xfff) << 10);
-      bfd_put (32, input_bfd, insn1, contents + rel->r_offset);
-      break;
-
-    case R_LARCH_SOP_POP_32_S_10_12:
-      r = loongarch_pop (&opr1);
-      if (r != bfd_reloc_ok)
-	break;
-      if ((opr1 & ~(uint64_t) 0x7ff) != 0x0
-	  && (opr1 & ~(uint64_t) 0x7ff) != ~(uint64_t) 0x7ff)
-	r = bfd_reloc_overflow;
-      if (r != bfd_reloc_ok)
-	break;
-      insn1 = bfd_get (32, input_bfd, contents + rel->r_offset);
-      insn1 = (insn1 & (~(uint32_t) 0x3ffc00)) | ((opr1 & 0xfff) << 10);
-      bfd_put (32, input_bfd, insn1, contents + rel->r_offset);
-      break;
-
-    case R_LARCH_SOP_POP_32_S_10_16:
-      r = loongarch_pop (&opr1);
-      if (r != bfd_reloc_ok)
-	break;
-      if ((opr1 & ~(uint64_t) 0x7fff) != 0x0
-	  && (opr1 & ~(uint64_t) 0x7fff) != ~(uint64_t) 0x7fff)
-	r = bfd_reloc_overflow;
-      if (r != bfd_reloc_ok)
-	break;
-      insn1 = bfd_get (32, input_bfd, contents + rel->r_offset);
-      insn1 = (insn1 & 0xfc0003ff) | ((opr1 & 0xffff) << 10);
-      bfd_put (32, input_bfd, insn1, contents + rel->r_offset);
-      break;
-
-    case R_LARCH_SOP_POP_32_S_10_16_S2:
-      r = loongarch_pop (&opr1);
-      if (r != bfd_reloc_ok)
-	break;
-      if ((opr1 & 0x3) != 0)
-	r = bfd_reloc_overflow;
-      opr1 >>= 2;
-      if ((opr1 & ~(uint64_t) 0x7fff) != 0x0
-	  && (opr1 & ~(uint64_t) 0x7fff) != ~(uint64_t) 0x7fff)
-	r = bfd_reloc_overflow;
-      if (r != bfd_reloc_ok)
-	break;
-      insn1 = bfd_get (32, input_bfd, contents + rel->r_offset);
-      insn1 = (insn1 & 0xfc0003ff) | ((opr1 & 0xffff) << 10);
-      bfd_put (32, input_bfd, insn1, contents + rel->r_offset);
+      if (r == bfd_reloc_ok)
+	{
+	r = loongarch_reloc_rewrite_imm_insn(rel, input_section,
+					     howto, input_bfd,
+					     contents, opr1, false);
+	}
       break;
 
     case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
+	{
       r = loongarch_pop (&opr1);
       if (r != bfd_reloc_ok)
 	break;
+
       if ((opr1 & 0x3) != 0)
-	r = bfd_reloc_overflow;
-      opr1 >>= 2;
-      if ((opr1 & ~(uint64_t) 0xfffff) != 0x0
-	  && (opr1 & ~(uint64_t) 0xfffff) != ~(uint64_t) 0xfffff)
-	r = bfd_reloc_overflow;
-      if (r != bfd_reloc_ok)
-	break;
-      insn1 = bfd_get (32, input_bfd, contents + rel->r_offset);
-      insn1 = (insn1 & 0xfc0003e0)
-	      | ((opr1 & 0xffff) << 10)
-	      | ((opr1 & 0x1f0000) >> 16);
-      bfd_put (32, input_bfd, insn1, contents + rel->r_offset);
-      break;
+	{
+	  r = bfd_reloc_overflow;
+	  break;
+	}
 
-    case R_LARCH_SOP_POP_32_S_5_20:
-      r = loongarch_pop (&opr1);
-      if (r != bfd_reloc_ok)
-	break;
-      if ((opr1 & ~(uint64_t) 0x7ffff) != 0x0
-	  && (opr1 & ~(uint64_t) 0x7ffff) != ~(uint64_t) 0x7ffff)
-	r = bfd_reloc_overflow;
-      if (r != bfd_reloc_ok)
-	break;
-      insn1 = bfd_get (32, input_bfd, contents + rel->r_offset);
-      insn1 = (insn1 & (~(uint32_t) 0x1ffffe0)) | ((opr1 & 0xfffff) << 5);
-      bfd_put (32, input_bfd, insn1, contents + rel->r_offset);
-      break;
+      uint32_t imm = opr1 >> howto->rightshift;
+      if ((imm & (~0xfffffU)) && ((imm & (~0xfffffU)) != (~0xfffffU)))
+	{
+	  r = bfd_reloc_overflow;
+	  break;
+	}
 
+      insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
+      insn1 = (insn1 & howto->src_mask)
+	| ((imm & 0xffffU) << 10)
+	| ((imm & 0x1f0000U) >> 16);
+      bfd_put (bits, input_bfd, insn1, contents + rel->r_offset);
+      break;
+	}
     case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
-      r = loongarch_pop (&opr1);
-      if (r != bfd_reloc_ok)
-	break;
-      if ((opr1 & 0x3) != 0)
-	r = bfd_reloc_overflow;
-      opr1 >>= 2;
-      if ((opr1 & ~(uint64_t) 0x1ffffff) != 0x0
-	  && (opr1 & ~(uint64_t) 0x1ffffff) != ~(uint64_t) 0x1ffffff)
-	r = bfd_reloc_overflow;
-      if (r != bfd_reloc_ok)
-	break;
-      insn1 = bfd_get (32, input_bfd, contents + rel->r_offset);
-      insn1 = (insn1 & 0xfc000000)
-	      | ((opr1 & 0xffff) << 10)
-	      | ((opr1 & 0x3ff0000) >> 16);
-      bfd_put (32, input_bfd, insn1, contents + rel->r_offset);
-      break;
+	{
+	  r = loongarch_pop (&opr1);
+	  if (r != bfd_reloc_ok)
+	    break;
 
+	  if ((opr1 & 0x3) != 0)
+	    {
+	      r = bfd_reloc_overflow;
+	      break;
+	    }
+
+	  uint32_t imm = opr1 >> howto->rightshift;
+	  if ((imm & (~0x1ffffffU)) && (imm & (~0x1ffffffU)) != (~0x1ffffffU))
+	    {
+	      r = bfd_reloc_overflow;
+	      break;
+	    }
+
+	  insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
+	  insn1 = (insn1 & howto->src_mask)
+	    | ((imm & 0xffffU) << 10)
+	    | ((imm & 0x3ff0000U) >> 16);
+	  bfd_put (bits, input_bfd, insn1, contents + rel->r_offset);
+	  break;
+	}
     case R_LARCH_SOP_POP_32_U:
       r = loongarch_pop (&opr1);
       if (r != bfd_reloc_ok)
 	break;
-      if (opr1 & ~(uint64_t) 0xffffffff)
+      if ((uint64_t)opr1 & ~(uint64_t) 0xffffffff)
 	r = bfd_reloc_overflow;
       if (r != bfd_reloc_ok)
 	break;
-      bfd_put (32, input_bfd, opr1, contents + rel->r_offset);
+      bfd_put (bits, input_bfd, opr1, contents + rel->r_offset);
       break;
 
     case R_LARCH_TLS_DTPREL32:
     case R_LARCH_32:
-      bfd_put (32, input_bfd, value, contents + rel->r_offset);
-      break;
     case R_LARCH_TLS_DTPREL64:
     case R_LARCH_64:
-      bfd_put (64, input_bfd, value, contents + rel->r_offset);
+      bfd_put (bits, input_bfd, value, contents + rel->r_offset);
       break;
+
     case R_LARCH_ADD8:
-      opr1 = bfd_get (8, input_bfd, contents + rel->r_offset);
-      bfd_put (8, input_bfd, opr1 + value, contents + rel->r_offset);
-      break;
     case R_LARCH_ADD16:
-      opr1 = bfd_get (16, input_bfd, contents + rel->r_offset);
-      bfd_put (16, input_bfd, opr1 + value, contents + rel->r_offset);
-      break;
     case R_LARCH_ADD24:
-      opr1 = bfd_get (24, input_bfd, contents + rel->r_offset);
-      bfd_put (24, input_bfd, opr1 + value, contents + rel->r_offset);
-      break;
     case R_LARCH_ADD32:
-      opr1 = bfd_get (32, input_bfd, contents + rel->r_offset);
-      bfd_put (32, input_bfd, opr1 + value, contents + rel->r_offset);
-      break;
     case R_LARCH_ADD64:
-      opr1 = bfd_get (64, input_bfd, contents + rel->r_offset);
-      bfd_put (64, input_bfd, opr1 + value, contents + rel->r_offset);
+      opr1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
+      bfd_put (bits, input_bfd, opr1 + value,
+	       contents + rel->r_offset);
       break;
+
     case R_LARCH_SUB8:
-      opr1 = bfd_get (8, input_bfd, contents + rel->r_offset);
-      bfd_put (8, input_bfd, opr1 - value, contents + rel->r_offset);
-      break;
     case R_LARCH_SUB16:
-      opr1 = bfd_get (16, input_bfd, contents + rel->r_offset);
-      bfd_put (16, input_bfd, opr1 - value, contents + rel->r_offset);
-      break;
     case R_LARCH_SUB24:
-      opr1 = bfd_get (24, input_bfd, contents + rel->r_offset);
-      bfd_put (24, input_bfd, opr1 - value, contents + rel->r_offset);
-      break;
     case R_LARCH_SUB32:
-      opr1 = bfd_get (32, input_bfd, contents + rel->r_offset);
-      bfd_put (32, input_bfd, opr1 - value, contents + rel->r_offset);
-      break;
     case R_LARCH_SUB64:
-      opr1 = bfd_get (64, input_bfd, contents + rel->r_offset);
-      bfd_put (64, input_bfd, opr1 - value, contents + rel->r_offset);
+      opr1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
+      bfd_put (bits, input_bfd, opr1 - value,
+	       contents + rel->r_offset);
       break;
 
     default:
@@ -1818,6 +1820,54 @@ loongarch_dump_reloc_record (void (*p) (const char *fmt, ...))
   p ("\n"
      "-- Record dump end --\n\n");
 }
+
+
+static bool
+loongarch_reloc_is_fatal (struct bfd_link_info *info,
+			  bfd *input_bfd,
+			  asection *input_section,
+			  Elf_Internal_Rela *rel,
+			  reloc_howto_type *howto,
+			  bfd_reloc_status_type rtype,
+			  bool is_undefweak,
+			  const char *name,
+			  const char *msg)
+{
+  bool fatal = true;
+  switch (rtype)
+    {
+      /* 'dangerous' means we do it but can't promise it's ok
+	 'unsupport' means out of ability of relocation type
+	 'undefined' means we can't deal with the undefined symbol.  */
+    case bfd_reloc_undefined:
+      info->callbacks->undefined_symbol (
+	 info, name, input_bfd, input_section, rel->r_offset, true);
+      info->callbacks->info (
+	     "%X%pB(%pA+0x%v): error: %s against %s`%s':\n%s\n",
+	     input_bfd, input_section, (bfd_vma) rel->r_offset, howto->name,
+	     is_undefweak ? "[undefweak] " : "", name, msg);
+      break;
+    case bfd_reloc_dangerous:
+      info->callbacks->info (
+	     "%pB(%pA+0x%v): warning: %s against %s`%s':\n%s\n",
+	     input_bfd, input_section, (bfd_vma) rel->r_offset, howto->name,
+	     is_undefweak ? "[undefweak] " : "", name, msg);
+      fatal = false;
+      break;
+    case bfd_reloc_notsupported:
+      info->callbacks->info (
+	     "%X%pB(%pA+0x%v): error: %s against %s`%s':\n%s\n",
+	     input_bfd, input_section, (bfd_vma) rel->r_offset, howto->name,
+	     is_undefweak ? "[undefweak] " : "", name, msg);
+      break;
+    default:
+      break;
+    }
+  return fatal;
+}
+
+
+
 
 static int
 loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
@@ -1985,50 +2035,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
       is_ie = false;
       switch (r_type)
 	{
-#define LARCH_ASSERT(cond, bfd_fail_state, message)			      \
-  ({									      \
-    if (!(cond))							      \
-      {									      \
-	r = bfd_fail_state;						      \
-	switch (r)							      \
-	  {								      \
-	  /* 'dangerous' means we do it but can't promise it's ok	      \
-       'unsupport' means out of ability of relocation type		      \
-       'undefined' means we can't deal with the undefined symbol.  */	      \
-	  case bfd_reloc_undefined:					      \
-	    info->callbacks->undefined_symbol (				      \
-	      info, name, input_bfd, input_section, rel->r_offset, true);     \
-	    fatal = true;						      \
-	    info->callbacks->info (					      \
-	      "%X%pB(%pA+0x%v): error: %s against %s`%s':\n" message "\n",    \
-	      input_bfd, input_section, (bfd_vma) rel->r_offset, howto->name, \
-	      is_undefweak ? "[undefweak] " : "", name);		      \
-	    break;							      \
-	  default:							      \
-	    fatal = true;						      \
-	    info->callbacks->info (					      \
-	      "%X%pB(%pA+0x%v): error: %s against %s`%s':\n" message "\n",    \
-	      input_bfd, input_section, (bfd_vma) rel->r_offset, howto->name, \
-	      is_undefweak ? "[undefweak] " : "", name);		      \
-	    break;							      \
-	  case bfd_reloc_dangerous:					      \
-	    info->callbacks->info (					      \
-	      "%pB(%pA+0x%v): warning: %s against %s`%s':\n" message "\n",    \
-	      input_bfd, input_section, (bfd_vma) rel->r_offset, howto->name, \
-	      is_undefweak ? "[undefweak] " : "", name);		      \
-	    break;							      \
-	  case bfd_reloc_ok:						      \
-	  case bfd_reloc_continue:					      \
-	    info->callbacks->info (					      \
-	      "%pB(%pA+0x%v): message: %s against %s`%s':\n" message "\n",    \
-	      input_bfd, input_section, (bfd_vma) rel->r_offset, howto->name, \
-	      is_undefweak ? "[undefweak] " : "", name);		      \
-	    break;							      \
-	  }								      \
-	if (fatal)							      \
-	  break;							      \
-      }								       	      \
-  })
 	case R_LARCH_MARK_PCREL:
 	case R_LARCH_MARK_LA:
 	case R_LARCH_NONE:
@@ -2080,14 +2086,21 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_SUB24:
 	case R_LARCH_SUB32:
 	case R_LARCH_SUB64:
-	  LARCH_ASSERT (
-	    !resolved_dynly, bfd_reloc_undefined,
-	    "Can't be resolved dynamically.  If this procedure is hand-writing "
-	    "assemble,\n"
-	    "there must be something like '.dword sym1 - sym2' to generate "
-	    "these relocs\n"
-	    "and we can't get known link-time address of these symbols.");
-	  relocation += rel->r_addend;
+	  if (resolved_dynly)
+	    {
+	    fatal = loongarch_reloc_is_fatal (info, input_bfd,
+		      input_section, rel, howto, bfd_reloc_undefined,
+		      is_undefweak, name,
+		      "Can't be resolved dynamically.  "
+		      "If this procedure is hand-writing assemble,\n"
+		      "there must be something like '.dword sym1 - sym2' "
+		      "to generate these relocs\n"
+		      "and we can't get known link-time address of "
+		      "these symbols.  ");
+	    }
+	  else
+	    relocation += rel->r_addend;
+
 	  break;
 
 	case R_LARCH_TLS_DTPREL32:
@@ -2109,32 +2122,50 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      break;
 	    }
 
-	  LARCH_ASSERT (!resolved_to_const, bfd_reloc_notsupported,
-			"Internal:");
+	  if (resolved_to_const)
+	    {
+	    fatal = loongarch_reloc_is_fatal (info, input_bfd,
+		      input_section, rel, howto, bfd_reloc_notsupported,
+		      is_undefweak, name,
+		      "Internal:");
+	    }
 	  break;
 	case R_LARCH_SOP_PUSH_TLS_TPREL:
 	  if (resolved_local)
 	    {
-	      LARCH_ASSERT (elf_hash_table (info)->tls_sec,
-			    bfd_reloc_notsupported,
-			    "TLS section not be created");
-	      relocation -= elf_hash_table (info)->tls_sec->vma;
+	      if (!elf_hash_table (info)->tls_sec)
+		{
+		fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			  input_section, rel, howto, bfd_reloc_notsupported,
+			  is_undefweak, name, "TLS section not be created");
+		}
+	      else
+		relocation -= elf_hash_table (info)->tls_sec->vma;
 	    }
-
-	  LARCH_ASSERT (resolved_local, bfd_reloc_undefined,
-			"TLS LE just can be resolved local only.");
+	  else
+	    {
+	    fatal = loongarch_reloc_is_fatal (info, input_bfd,
+		      input_section, rel, howto, bfd_reloc_undefined,
+		      is_undefweak, name,
+		      "TLS LE just can be resolved local only.");
+	    }
 	  break;
 
 	case R_LARCH_SOP_PUSH_ABSOLUTE:
 	  if (is_undefweak)
 	    {
-	      LARCH_ASSERT (
-		!resolved_dynly, bfd_reloc_dangerous,
-		"Someone require us to resolve undefweak symbol dynamically.\n"
-		"But this reloc can't be done.  I think I can't throw error "
-		"for this\n"
-		"so I resolved it to 0.  I suggest to re-compile with "
-		"'-fpic'.");
+	      if (resolved_dynly)
+		fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			input_section, rel, howto,
+			bfd_reloc_dangerous, is_undefweak, name,
+			  "Someone require us to resolve undefweak "
+			  "symbol dynamically.  \n"
+			  "But this reloc can't be done.  "
+			  "I think I can't throw error "
+			  "for this\n"
+			  "so I resolved it to 0.  "
+			  "I suggest to re-compile with '-fpic'.  ");
+
 	      relocation = 0;
 	      unresolved_reloc = false;
 	      break;
@@ -2146,19 +2177,36 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      break;
 	    }
 
-	  LARCH_ASSERT (!is_pic, bfd_reloc_notsupported,
-			"Under PIC we don't know load address.  Re-compile src "
-			"with '-fpic'?");
+	  if (is_pic)
+	    {
+	    fatal = loongarch_reloc_is_fatal (info, input_bfd,
+		      input_section, rel, howto, bfd_reloc_notsupported,
+		      is_undefweak, name,
+		      "Under PIC we don't know load address.  Re-compile src "
+		      "with '-fpic'?");
+	    break;
+	    }
 
 	  if (resolved_dynly)
 	    {
-	      LARCH_ASSERT (plt && h && h->plt.offset != MINUS_ONE,
-			    bfd_reloc_undefined,
-			    "Can't be resolved dynamically.  Try to re-compile "
-			    "src with '-fpic'?");
+	      if (!(plt && h && h->plt.offset != MINUS_ONE))
+		{
+		fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			  input_section, rel, howto, bfd_reloc_undefined,
+			  is_undefweak, name,
+			  "Can't be resolved dynamically.  Try to re-compile "
+			  "src with '-fpic'?");
+		break;
+		}
 
-	      LARCH_ASSERT (rel->r_addend == 0, bfd_reloc_notsupported,
+	      if (rel->r_addend != 0)
+		{
+		  fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			    input_section, rel, howto,
+			    bfd_reloc_notsupported, is_undefweak, name,
 			    "Shouldn't be with r_addend.");
+		  break;
+		}
 
 	      relocation = sec_addr (plt) + h->plt.offset;
 	      unresolved_reloc = false;
@@ -2191,26 +2239,35 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  if (h && h->plt.offset != MINUS_ONE)
 		    i = 1, j = 2;
 		  else
-		    LARCH_ASSERT (0, bfd_reloc_dangerous,
-				  "Undefweak need to be resolved dynamically, "
-				  "but PLT stub doesn't represent.");
+		    fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			      input_section, rel, howto,
+			      bfd_reloc_dangerous, is_undefweak, name,
+			      "Undefweak need to be resolved dynamically, "
+			      "but PLT stub doesn't represent.");
 		}
 	    }
 	  else
 	    {
-	      LARCH_ASSERT (
-		defined_local || (h && h->plt.offset != MINUS_ONE),
-		bfd_reloc_undefined,
-		"PLT stub does not represent and symbol not defined.");
+	      if (!(defined_local || (h && h->plt.offset != MINUS_ONE)))
+		{
+		  fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			    input_section, rel, howto,
+			    bfd_reloc_undefined, is_undefweak, name,
+			    "PLT stub does not represent and "
+			    "symbol not defined.");
+		  break;
+		}
 
 	      if (resolved_local)
 		i = 0, j = 2;
 	      else /* if (resolved_dynly) */
 		{
-		  LARCH_ASSERT (h && h->plt.offset != MINUS_ONE,
-				bfd_reloc_dangerous,
-				"Internal: PLT stub doesn't represent.  "
-				"Resolve it with pcrel");
+		  if (!(h && h->plt.offset != MINUS_ONE))
+		    fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			      input_section, rel, howto,
+			      bfd_reloc_dangerous, is_undefweak, name,
+			      "Internal: PLT stub doesn't represent.  "
+			      "Resolve it with pcrel");
 		  i = 1, j = 3;
 		}
 	    }
@@ -2226,8 +2283,14 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      if ((i & 1) && h && h->plt.offset != MINUS_ONE)
 		{
-		  LARCH_ASSERT (rel->r_addend == 0, bfd_reloc_notsupported,
+		  if (rel->r_addend != 0)
+		    {
+		      fatal = loongarch_reloc_is_fatal (info, input_bfd,
+				input_section, rel, howto,
+				bfd_reloc_notsupported, is_undefweak, name,
 				"PLT shouldn't be with r_addend.");
+		      break;
+		    }
 		  relocation = sec_addr (plt) + h->plt.offset - pc;
 		  break;
 		}
@@ -2237,15 +2300,27 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_SOP_PUSH_GPREL:
 	  unresolved_reloc = false;
 
-	  LARCH_ASSERT (rel->r_addend == 0, bfd_reloc_notsupported,
+	  if (rel->r_addend != 0)
+	    {
+	      fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			input_section, rel, howto,
+			bfd_reloc_notsupported, is_undefweak, name,
 			"Shouldn't be with r_addend.");
+	      break;
+	    }
 
 	  if (h != NULL)
 	    {
 	      off = h->got.offset;
 
-	      LARCH_ASSERT (off != MINUS_ONE, bfd_reloc_notsupported,
+	      if (off == MINUS_ONE)
+		{
+		  fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			    input_section, rel, howto,
+			    bfd_reloc_notsupported, is_undefweak, name,
 			    "Internal: GOT entry doesn't represent.");
+		  break;
+		}
 
 	      if (!WILL_CALL_FINISH_DYNAMIC_SYMBOL (is_dyn, is_pic, h)
 		  || (is_pic && SYMBOL_REFERENCES_LOCAL (info, h)))
@@ -2263,10 +2338,22 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		     relocation entry to initialize the value.  This
 		     is done in the finish_dynamic_symbol routine.  */
 
-		  LARCH_ASSERT (!resolved_dynly, bfd_reloc_dangerous,
-				"Internal: here shouldn't dynamic.");
-		  LARCH_ASSERT (defined_local || resolved_to_const,
-				bfd_reloc_undefined, "Internal: ");
+		  if (resolved_dynly)
+		    {
+		      fatal = loongarch_reloc_is_fatal (info, input_bfd,
+				input_section, rel, howto,
+				bfd_reloc_dangerous, is_undefweak, name,
+				"Internal: here shouldn't dynamic.  ");
+		    }
+
+		  if (!(defined_local || resolved_to_const))
+		    {
+		      fatal = loongarch_reloc_is_fatal (info, input_bfd,
+				input_section, rel, howto,
+				bfd_reloc_undefined, is_undefweak, name,
+				"Internal: ");
+		      break;
+		    }
 
 		  if ((off & 1) != 0)
 		    off &= ~1;
@@ -2279,13 +2366,25 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    }
 	  else
 	    {
-	      LARCH_ASSERT (local_got_offsets, bfd_reloc_notsupported,
+	      if (!local_got_offsets)
+		{
+		  fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			    input_section, rel, howto,
+			    bfd_reloc_notsupported, is_undefweak, name,
 			    "Internal: local got offsets not reporesent.");
+		  break;
+		}
 
 	      off = local_got_offsets[r_symndx];
 
-	      LARCH_ASSERT (off != MINUS_ONE, bfd_reloc_notsupported,
+	      if (off == MINUS_ONE)
+		{
+		  fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			    input_section, rel, howto,
+			    bfd_reloc_notsupported, is_undefweak, name,
 			    "Internal: GOT entry doesn't represent.");
+		  break;
+		}
 
 	      /* The offset must always be a multiple of the word size.
 		 So, we can use the least significant bit to record
@@ -2301,8 +2400,14 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		      /* We need to generate a R_LARCH_RELATIVE reloc
 			 for the dynamic linker.  */
 		      s = htab->elf.srelgot;
-		      LARCH_ASSERT (s, bfd_reloc_notsupported,
+		      if (!s)
+			{
+			  fatal = loongarch_reloc_is_fatal (info, input_bfd,
+				    input_section, rel, howto,
+				    bfd_reloc_notsupported, is_undefweak, name,
 				    "Internal: '.rel.got' not represent");
+			  break;
+			}
 
 		      outrel.r_offset = sec_addr (got) + off;
 		      outrel.r_info = ELFNN_R_INFO (0, R_LARCH_RELATIVE);
@@ -2323,8 +2428,15 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    is_ie = true;
 	  unresolved_reloc = false;
 
-	  LARCH_ASSERT (rel->r_addend == 0, bfd_reloc_notsupported,
+	  if (rel->r_addend != 0)
+	    {
+	      fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			input_section, rel, howto,
+			bfd_reloc_notsupported, is_undefweak, name,
 			"Shouldn't be with r_addend.");
+	      break;
+	    }
+
 
 	  if (resolved_to_const && is_undefweak && h->dynindx != -1)
 	    {
@@ -2333,8 +2445,14 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      resolved_dynly = true;
 	    }
 
-	  LARCH_ASSERT (!resolved_to_const, bfd_reloc_notsupported,
+	  if (resolved_to_const)
+	    {
+	      fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			input_section, rel, howto,
+			bfd_reloc_notsupported, is_undefweak, name,
 			"Internal: Shouldn't be resolved to const.");
+	      break;
+	    }
 
 	  if (h != NULL)
 	    {
@@ -2347,8 +2465,14 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      local_got_offsets[r_symndx] |= 1;
 	    }
 
-	  LARCH_ASSERT (off != MINUS_ONE, bfd_reloc_notsupported,
+	  if (off == MINUS_ONE)
+	    {
+	      fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			input_section, rel, howto,
+			bfd_reloc_notsupported, is_undefweak, name,
 			"Internal: TLS GOT entry doesn't represent.");
+	      break;
+	    }
 
 	  tls_type = _bfd_loongarch_elf_tls_type (input_bfd, h, r_symndx);
 
@@ -2367,9 +2491,14 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      if (resolved_local)
 		{
-		  LARCH_ASSERT (elf_hash_table (info)->tls_sec,
-				bfd_reloc_notsupported,
+		  if (!elf_hash_table (info)->tls_sec)
+		    {
+		      fatal = loongarch_reloc_is_fatal (info, input_bfd,
+				input_section, rel, howto,
+				bfd_reloc_notsupported, is_undefweak, name,
 				"Internal: TLS sec not represent.");
+		      break;
+		    }
 		  tls_block_off =
 		    relocation - elf_hash_table (info)->tls_sec->vma;
 		}
@@ -2459,10 +2588,11 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	  if (input_section->output_section->flags & SEC_DEBUGGING)
 	    {
-	      LARCH_ASSERT (
-		0, bfd_reloc_dangerous,
-		"Seems dynamic linker not process sections 'SEC_DEBUGGING'.");
-	      break;
+	      fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			input_section, rel, howto,
+			bfd_reloc_dangerous, is_undefweak, name,
+			"Seems dynamic linker not process "
+			"sections 'SEC_DEBUGGING'.  ");
 	    }
 	  if (!is_dyn)
 	    break;
@@ -2472,7 +2602,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      info->flags |= DF_TEXTREL;
 	}
       while (0);
-#undef LARCH_ASSERT
 
       if (fatal)
 	break;
@@ -2481,7 +2610,8 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 				  rel->r_offset, sym, h, rel->r_addend);
 
       if (r != bfd_reloc_continue)
-	r = perform_relocation (rel, relocation, input_bfd, contents);
+	r = perform_relocation (rel, input_section, howto, relocation,
+				input_bfd, contents);
 
       switch (r)
 	{
@@ -2579,8 +2709,10 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
       loc = plt->contents + h->plt.offset;
 
       /* Fill in the PLT entry itself.  */
-      loongarch_make_plt_entry (got_address, sec_addr (plt) + h->plt.offset,
-				plt_entry);
+      if (!loongarch_make_plt_entry (got_address, sec_addr (plt) + h->plt.offset,
+				plt_entry))
+	return false;
+
       for (i = 0; i < PLT_ENTRY_INSNS; i++)
 	bfd_put_32 (output_bfd, plt_entry[i], loc + 4 * i);
 
@@ -2775,7 +2907,7 @@ loongarch_elf_finish_dynamic_sections (bfd *output_bfd,
 				       struct bfd_link_info *info)
 {
   bfd *dynobj;
-  asection *sdyn, *plt, *gotplt;
+  asection *sdyn, *plt, *gotplt = NULL;
   struct loongarch_elf_link_hash_table *htab;
 
   htab = loongarch_elf_hash_table (info);
@@ -2800,8 +2932,10 @@ loongarch_elf_finish_dynamic_sections (bfd *output_bfd,
     {
       size_t i;
       uint32_t plt_header[PLT_HEADER_INSNS];
-      loongarch_make_plt_header (sec_addr (gotplt), sec_addr (plt),
-				 plt_header);
+      if (!loongarch_make_plt_header (sec_addr (gotplt), sec_addr (plt),
+				 plt_header))
+	return false;
+
       for (i = 0; i < PLT_HEADER_INSNS; i++)
 	bfd_put_32 (output_bfd, plt_header[i], plt->contents + 4 * i);
 
