@@ -21,6 +21,7 @@
 
 #include "as.h"
 #include "dw2gencfi.h"
+#include "loongarch-lex.h"
 #include "elf/loongarch.h"
 #include "opcode/loongarch.h"
 #include "obj-elf.h"
@@ -390,11 +391,6 @@ setup_internal_label_here (unsigned long label)
   colon (loongarch_internal_label_name (label, 0));
 }
 
-/* No static. used by 'loongarch-parse.y'.   */
-extern void
-get_internal_label (expressionS *label_expr, unsigned long label,
-		    int augend /* 0 for previous, 1 for next.  */);
-
 void
 get_internal_label (expressionS *label_expr, unsigned long label,
 		    int augend /* 0 for previous, 1 for next.  */)
@@ -407,11 +403,6 @@ get_internal_label (expressionS *label_expr, unsigned long label,
     symbol_find_or_make (loongarch_internal_label_name (label, augend));
   label_expr->X_add_number = 0;
 }
-
-extern int loongarch_parse_expr (const char *expr,
-				 struct reloc_info *reloc_stack_top,
-				 size_t max_reloc_num, size_t *reloc_num,
-				 offsetT *imm_if_no_reloc);
 
 static int32_t
 loongarch_args_parser_can_match_arg_helper (char esc_ch1, char esc_ch2,

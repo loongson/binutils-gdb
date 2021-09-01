@@ -87,10 +87,6 @@ private:
   void loongarch_store_regs (struct regcache *regcache, int regno);
 };
 
-/* Assume that we have PTRACE_{GET,SET}REGSET et al. support.  If we do not,
-   we'll clear this and use PTRACE_PEEKUSR instead.  */
-extern enum tribool have_ptrace_getregset;
-
 static void
 ensure_ptrace_getregset ()
 {

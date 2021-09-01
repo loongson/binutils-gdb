@@ -18,16 +18,12 @@
    see <http://www.gnu.org/licenses/>.  */
 %{
 #include "as.h"
+#include "loongarch-lex.h"
 #include "loongarch-parse.h"
 static void yyerror (const char *s ATTRIBUTE_UNUSED)
 {
 };
-extern int yylex (void);
-extern void yy_scan_string (const char *);
-extern void
-get_internal_label (expressionS *label_expr,
-		    unsigned long label,
-		    int augend);
+int yylex (void);
 
 
 static struct reloc_info *top, *end;
@@ -50,20 +46,15 @@ loongarch_parse_expr (const char *expr,
 		      struct reloc_info *reloc_stack_top,
 		      size_t max_reloc_num,
 		      size_t *reloc_num,
-		      offsetT *imm);
-
-int
-loongarch_parse_expr (const char *expr,
-		      struct reloc_info *reloc_stack_top,
-		      size_t max_reloc_num,
-		      size_t *reloc_num,
 		      offsetT *imm)
 {
   int ret;
+  struct yy_buffer_state *buffstate;
   top = reloc_stack_top;
   end = top + max_reloc_num;
-  yy_scan_string (expr);
+  buffstate = yy_scan_string (expr);
   ret = yyparse ();
+
   if (ret == 0)
     {
       if (is_const (top - 1))
@@ -72,6 +63,8 @@ loongarch_parse_expr (const char *expr,
 	*imm = 0;
       *reloc_num = top - reloc_stack_top;
     }
+  yy_delete_buffer (buffstate);
+
   return ret;
 }
 
