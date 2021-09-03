@@ -857,8 +857,9 @@ loongarch_assemble_INSNs (char *str)
 
       if (!the_one.all_match)
 	{
-	  as_bad (_ ("no match insn: %s\t%s"), the_one.name,
-		  loongarch_cat_splited_strs (the_one.arg_strs));
+	  char *ss = loongarch_cat_splited_strs (the_one.arg_strs);
+	  as_bad (_ ("no match insn: %s\t%s"), the_one.name, ss ? ss : "");
+	  free(ss);
 	  return;
 	}
 

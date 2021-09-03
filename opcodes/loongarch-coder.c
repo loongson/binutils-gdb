@@ -213,7 +213,9 @@ loongarch_encode_imm (const char *bit_field, int32_t imm)
   char *bit_field_1 = (char *) bit_field;
   char *t = bit_field_1;
   int width, b_start;
-  insn_t ret = 0, i;
+  insn_t ret = 0;
+  uint32_t i;
+  uint32_t uimm = (uint32_t)imm;
 
   width = loongarch_get_bit_field_width (t, &t);
   if (width == -1)
@@ -222,20 +224,20 @@ loongarch_encode_imm (const char *bit_field, int32_t imm)
   if (*t == '<' && *(++t) == '<')
     width += atoi (t + 1);
   else if (*t == '+')
-    imm -= atoi (t + 1);
+    uimm -= atoi (t + 1);
 
-  imm <<= sizeof (imm) * 8 - width;
+  uimm <<= sizeof (uimm) * 8 - width;
   while (1)
     {
       b_start = strtol (bit_field_1, &bit_field_1, 10);
       if (*bit_field_1 != ':')
 	break;
       width = strtol (bit_field_1 + 1, &bit_field_1, 10);
-      i = imm;
+      i = uimm;
       i >>= sizeof (i) * 8 - width;
       i <<= b_start;
       ret |= i;
-      imm <<= width;
+      uimm <<= width;
 
       if (*bit_field_1 != '|')
 	break;
@@ -365,6 +367,9 @@ loongarch_cat_splited_strs (const char *arg_strs[])
   for (l = 0, n = 0; arg_strs[n]; n++)
     l += strlen (arg_strs[n]);
   ret = malloc (l + n + 1);
+  if (!ret)
+    return ret;
+
   ret[0] = '\0';
   if (0 < n)
     strcat (ret, arg_strs[0]);
@@ -527,7 +532,9 @@ loongarch_bits_imm_needed (int64_t imm, int si)
     {
       if (imm < 0)
 	{
-	  for (ret = 0; imm < 0; imm <<= 1, ret++)
+	  uint64_t uimm = (uint64_t)imm;
+	  uint64_t uimax = 0x1UL<<63;
+	  for (ret = 0; (uimm & uimax) != 0; uimm <<= 1, ret++)
 	    ;
 	  ret = 64 - ret + 1;
 	}
