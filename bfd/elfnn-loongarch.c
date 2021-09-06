@@ -1482,7 +1482,7 @@ loongarch_reloc_rewrite_imm_insn (const Elf_Internal_Rela *rel,
 
   /* Check op low bits if rightshift != 0, before rightshift  */
   if (howto->rightshift
-      && ((0x1U << howto->rightshift) & op))
+      && (((0x1U << howto->rightshift) - 1) & op))
 	return bfd_reloc_overflow;
 
   uint32_t imm = (uint32_t)(int32_t)(op >> howto->rightshift);
@@ -1511,6 +1511,7 @@ loongarch_reloc_rewrite_imm_insn (const Elf_Internal_Rela *rel,
   int bits = bfd_get_reloc_size(howto) * 8;
   uint32_t insn = bfd_get (bits, input_bfd, contents + rel->r_offset);
 
+  imm = imm & ((0x1U << howto->bitsize) - 1);
   imm <<= howto->bitpos;
   insn = (insn & howto->src_mask)
     | ((insn & (~(uint32_t) howto->dst_mask)) | imm);

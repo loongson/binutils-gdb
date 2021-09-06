@@ -341,7 +341,7 @@ static reloc_howto_type howto_table[] =
   HOWTO (R_LARCH_SOP_POP_32_S_5_20,	      	/* type.  */
 	 0,				   	/* rightshift.  */
 	 2,				   	/* size.  */
-	 16,				  	/* bitsize.  */
+	 20,				  	/* bitsize.  */
 	 false,					/* pc_relative.  */
 	 5,				   	/* bitpos.  */
 	 complain_overflow_signed,	    	/* complain_on_overflow.  */
@@ -376,7 +376,7 @@ static reloc_howto_type howto_table[] =
 	 bfd_elf_generic_reloc,	       		/* special_function.  */
 	 "R_LARCH_SOP_POP_32_S_0_10_10_16_S2", 	/* name.  */
 	 false,			       		/* partial_inplace.  */
-	 0,					/* src_mask */
+	 0xfc000000,				/* src_mask */
 	 0xfc000000,				/* dst_mask */
 	 false),			      	/* pcrel_offset.  */
 
