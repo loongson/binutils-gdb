@@ -37,7 +37,21 @@ static reloc_howto_type howto_table[] =
 #define LOONGARCH_HOWTO(r_name)						 \
   HOWTO (R_LARCH_##r_name, 0, 2, 32, false, 0, complain_overflow_signed, \
 	 bfd_elf_generic_reloc, "R_LARCH_" #r_name, false, 0, 0xffffffff, false)
-  LOONGARCH_HOWTO (NONE),
+  
+  /* No relocation.  */
+  HOWTO (R_LARCH_NONE,			/* type */
+	 0,				/* rightshift */
+	 3,				/* size */
+	 0,				/* bitsize */
+	 false,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_dont,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_LARCH_NONE",		/* name */
+	 false,				/* partial_inplace */
+	 0,				/* src_mask */
+	 0,				/* dst_mask */
+	 false),			/* pcrel_offset */
 
   /* 32 bit relocation.  */
   HOWTO (R_LARCH_32,			/* type */
