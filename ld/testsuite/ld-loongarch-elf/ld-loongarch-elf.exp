@@ -21,7 +21,7 @@
 
 proc loongarch_choose_lp64_emul {} {
     if { [istarget "loongarch64be-*"] } {
-        return "elf64bloongarch"
+	return "elf64bloongarch"
     }
     return "elf64lloongarch"
 }

@@ -22,13 +22,13 @@ iocsrwr.b  $r4,$r5
 iocsrwr.h  $r4,$r5
 iocsrwr.w  $r4,$r5
 iocsrwr.d  $r4,$r5
-tlbclr  
-tlbflush  
-tlbsrch  
-tlbrd  
-tlbwr  
-tlbfill  
-ertn  
+tlbclr
+tlbflush
+tlbsrch
+tlbrd
+tlbwr
+tlbfill
+ertn
 idle  0
 idle  0x7fff
 invtlb  0,$r5,$r6

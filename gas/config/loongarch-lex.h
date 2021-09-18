@@ -25,7 +25,7 @@ struct yy_buffer_state *yy_scan_string (const char *);
 void yy_delete_buffer (struct yy_buffer_state *b);
 void get_internal_label (expressionS *label_expr,
 			unsigned long label,
-		    	int augend);
+			int augend);
 int
 loongarch_parse_expr (const char *expr,
 		      struct reloc_info *reloc_stack_top,
