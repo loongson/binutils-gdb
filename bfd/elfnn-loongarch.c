@@ -28,10 +28,11 @@
 #include "elfxx-loongarch.h"
 
 static bool
-loongarch_info_to_howto_rela (bfd *abfd ATTRIBUTE_UNUSED, arelent *cache_ptr,
+loongarch_info_to_howto_rela (bfd *abfd, arelent *cache_ptr,
 			      Elf_Internal_Rela *dst)
 {
-  cache_ptr->howto = loongarch_elf_rtype_to_howto (ELFNN_R_TYPE (dst->r_info));
+  cache_ptr->howto = loongarch_elf_rtype_to_howto (abfd,
+						   ELFNN_R_TYPE (dst->r_info));
   return cache_ptr->howto != NULL;
 }
 
@@ -1803,7 +1804,8 @@ loongarch_dump_reloc_record (void (*p) (const char *fmt, ...))
 	inited = 1, p ("...\n");
 
       reloc_howto_type *howto =
-	loongarch_elf_rtype_to_howto (larch_reloc_queue[i].r_type);
+	loongarch_elf_rtype_to_howto (larch_reloc_queue[i].bfd,
+				      larch_reloc_queue[i].r_type);
       p ("0x%V %s\t`%s'", (bfd_vma) larch_reloc_queue[i].top_then,
 	 howto ? howto->name : "<unknown reloc>",
 	 loongarch_sym_name (larch_reloc_queue[i].bfd, larch_reloc_queue[i].h,
@@ -1896,7 +1898,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
       int r_type = ELFNN_R_TYPE (rel->r_info);
       unsigned long r_symndx = ELFNN_R_SYM (rel->r_info);
       bfd_vma pc = sec_addr (input_section) + rel->r_offset;
-      reloc_howto_type *howto = loongarch_elf_rtype_to_howto (r_type);
+      reloc_howto_type *howto = NULL;
       asection *sec = NULL;
       Elf_Internal_Sym *sym = NULL;
       struct elf_link_hash_entry *h = NULL;
@@ -1909,6 +1911,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
       bfd_vma off, ie_off;
       int i, j;
 
+      howto = loongarch_elf_rtype_to_howto (input_bfd, r_type);
       if (howto == NULL || r_type == R_LARCH_GNU_VTINHERIT
 	  || r_type == R_LARCH_GNU_VTENTRY)
 	continue;

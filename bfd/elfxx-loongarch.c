@@ -37,7 +37,7 @@ static reloc_howto_type howto_table[] =
 #define LOONGARCH_HOWTO(r_name)						 \
   HOWTO (R_LARCH_##r_name, 0, 2, 32, false, 0, complain_overflow_signed, \
 	 bfd_elf_generic_reloc, "R_LARCH_" #r_name, false, 0, 0xffffffff, false)
-  
+
   /* No relocation.  */
   HOWTO (R_LARCH_NONE,			/* type */
 	 0,				/* rightshift */
@@ -613,9 +613,16 @@ static const struct elf_reloc_map larch_reloc_map[] =
 };
 
 reloc_howto_type *
-loongarch_elf_rtype_to_howto (unsigned int r_type)
+loongarch_elf_rtype_to_howto (bfd *abfd, unsigned int r_type)
 {
   size_t i;
+  if (r_type >= ARRAY_SIZE (howto_table))
+    {
+      (*_bfd_error_handler) (_("%pB: unsupported relocation type %#x"),
+			     abfd, r_type);
+      bfd_set_error (bfd_error_bad_value);
+      return NULL;
+    }
   for (i = 0; i < ARRAY_SIZE (howto_table); i++)
     if (howto_table[i].type == r_type)
       return &howto_table[i];
@@ -629,7 +636,8 @@ loongarch_reloc_type_lookup (bfd *abfd ATTRIBUTE_UNUSED,
   unsigned int i;
   for (i = 0; i < ARRAY_SIZE (larch_reloc_map); i++)
     if (larch_reloc_map[i].bfd_val == code)
-      return loongarch_elf_rtype_to_howto ((int) larch_reloc_map[i].elf_val);
+      return loongarch_elf_rtype_to_howto (abfd,
+					   (int) larch_reloc_map[i].elf_val);
 
   return NULL;
 }
