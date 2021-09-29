@@ -625,16 +625,13 @@ reloc_howto_type *
 loongarch_elf_rtype_to_howto (bfd *abfd, unsigned int r_type)
 {
   size_t i;
-  if (r_type >= ARRAY_SIZE (howto_table))
-    {
-      (*_bfd_error_handler) (_("%pB: unsupported relocation type %#x"),
-			     abfd, r_type);
-      bfd_set_error (bfd_error_bad_value);
-      return NULL;
-    }
   for (i = 0; i < ARRAY_SIZE (howto_table); i++)
     if (howto_table[i].type == r_type)
       return &howto_table[i];
+
+  (*_bfd_error_handler) (_("%pB: unsupported relocation type %#x"),
+			 abfd, r_type);
+  bfd_set_error (bfd_error_bad_value);
   return NULL;
 }
 
