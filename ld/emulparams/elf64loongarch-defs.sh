@@ -26,7 +26,9 @@ case "$target" in
     ;;
 esac
 
-NOP=0x03400000
+# In all cases, the number is big-endian.
+# LoongArch nop is 'andi $r0,$r0,0'.
+NOP=0x00004003
 
 TEXT_START_ADDR=0x120000000
 MAXPAGESIZE="CONSTANT (MAXPAGESIZE)"

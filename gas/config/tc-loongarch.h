@@ -64,12 +64,12 @@ extern int loongarch_dwarf2_addr_size (void);
   loongarch_cfi_frame_initial_instructions
 extern void loongarch_cfi_frame_initial_instructions (void);
 
-/* #define tc_regname_to_dw2regnum tc_loongarch_regname_to_dw2regnum  */
 #define tc_parse_to_dw2regnum tc_loongarch_parse_to_dw2regnum
 extern void tc_loongarch_parse_to_dw2regnum (expressionS *);
 
-/* A enumerated values to specific how to deal with align in '.text'.  */
-/* Now we want to fill 'andi $r0,$r0,0x0'.  */
+/* A enumerated values to specific how to deal with align in '.text'.
+   Now we want to fill 'andi $r0,$r0,0x0'.
+   Here is the type 0, will fill andi insn later.  */
 #define NOP_OPCODE (0x00)
 
 #define HANDLE_ALIGN(fragp) loongarch_handle_align (fragp)

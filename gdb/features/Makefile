@@ -180,9 +180,9 @@ GDB = false
 aarch64-feature = 1
 arm-feature = 1
 i386-feature = 1
+loongarch-feature = 1
 riscv-feature = 1
 tic6x-feature = 1
-loongarch-feature = 1
 
 all: $(OUTPUTS)
 
@@ -232,11 +232,6 @@ FEATURE_XMLFILES = aarch64-core.xml \
 	i386/64bit-pkeys.xml \
 	i386/64bit-sse.xml \
 	i386/x32-core.xml \
-	riscv/rv32e-xregs.xml \
-	riscv/32bit-cpu.xml \
-	riscv/32bit-fpu.xml \
-	riscv/64bit-cpu.xml \
-	riscv/64bit-fpu.xml \
 	loongarch/base32.xml \
 	loongarch/base64.xml \
 	loongarch/fpu32.xml \
@@ -245,6 +240,11 @@ FEATURE_XMLFILES = aarch64-core.xml \
 	loongarch/lbt64.xml \
 	loongarch/lsx.xml \
 	loongarch/lasx.xml \
+	riscv/rv32e-xregs.xml \
+	riscv/32bit-cpu.xml \
+	riscv/32bit-fpu.xml \
+	riscv/64bit-cpu.xml \
+	riscv/64bit-fpu.xml \
 	tic6x-c6xp.xml \
 	tic6x-core.xml \
 	tic6x-gp.xml
