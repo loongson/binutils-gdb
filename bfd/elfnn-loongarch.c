@@ -1446,6 +1446,19 @@ loongarch_elf_append_rela (bfd *abfd, asection *s, Elf_Internal_Rela *rel)
   bed->s->swap_reloca_out (abfd, rel, loc);
 }
 
+/* FIXME, check rel->r_offset in range of contents.  */
+static bfd_reloc_status_type
+loongarch_check_offset (const Elf_Internal_Rela *rel,
+                       const asection *input_section)
+{
+  if (0 == strcmp(input_section->name, ".text")
+      && rel->r_offset > input_section->size)
+    return bfd_reloc_overflow;
+
+  return bfd_reloc_ok;
+}
+
+
 #define LARCH_RELOC_PERFORM_3OP(op1, op2, op3)	      \
   ({						      \
     bfd_reloc_status_type ret = loongarch_pop (&op2); \
@@ -1496,7 +1509,6 @@ loongarch_reloc_rewrite_imm_insn (const Elf_Internal_Rela *rel,
 	return bfd_reloc_overflow;
     }
 
-
   int bits = bfd_get_reloc_size (howto) * 8;
   uint32_t insn = bfd_get (bits, input_bfd, contents + rel->r_offset);
 
@@ -1516,7 +1528,6 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
 		    reloc_howto_type *howto, bfd_vma value,
 		    bfd *input_bfd, bfd_byte *contents)
 {
-
   uint32_t insn1;
   int64_t opr1, opr2, opr3;
   bfd_reloc_status_type r = bfd_reloc_ok;
@@ -1597,22 +1608,28 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
     case R_LARCH_SOP_POP_32_S_10_16_S2:
     case R_LARCH_SOP_POP_32_S_5_20:
       r = loongarch_pop (&opr1);
-      if (r == bfd_reloc_ok)
-	{
-	  r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
-						howto, input_bfd,
-						contents, opr1, true);
-	}
+      if (r != bfd_reloc_ok)
+	break;
+      r = loongarch_check_offset (rel, input_section);
+      if (r != bfd_reloc_ok)
+	break;
+
+      r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
+					    howto, input_bfd,
+					    contents, opr1, true);
       break;
 
     case R_LARCH_SOP_POP_32_U_10_12:
       r = loongarch_pop (&opr1);
-      if (r == bfd_reloc_ok)
-	{
-	  r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
-						howto, input_bfd,
-						contents, opr1, false);
-	}
+      if (r != bfd_reloc_ok)
+	break;
+      r = loongarch_check_offset (rel, input_section);
+      if (r != bfd_reloc_ok)
+	break;
+
+      r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
+					    howto, input_bfd,
+					    contents, opr1, false);
       break;
 
     case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
@@ -1633,6 +1650,10 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
 	    r = bfd_reloc_overflow;
 	    break;
 	  }
+
+	r = loongarch_check_offset (rel, input_section);
+	if (r != bfd_reloc_ok)
+	  break;
 
 	insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
 	insn1 = (insn1 & howto->src_mask)
@@ -1661,6 +1682,10 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
 	    break;
 	  }
 
+	r = loongarch_check_offset (rel, input_section);
+	if (r != bfd_reloc_ok)
+	  break;
+
 	insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
 	insn1 = (insn1 & howto->src_mask)
 		| ((imm & 0xffffU) << 10)
@@ -1677,6 +1702,10 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
 	r = bfd_reloc_overflow;
       if (r != bfd_reloc_ok)
 	break;
+      r = loongarch_check_offset (rel, input_section);
+      if (r != bfd_reloc_ok)
+	break;
+
       bfd_put (bits, input_bfd, opr1, contents + rel->r_offset);
       break;
 
@@ -1684,6 +1713,10 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
     case R_LARCH_32:
     case R_LARCH_TLS_DTPREL64:
     case R_LARCH_64:
+      r = loongarch_check_offset (rel, input_section);
+      if (r != bfd_reloc_ok)
+	break;
+
       bfd_put (bits, input_bfd, value, contents + rel->r_offset);
       break;
 
@@ -1692,6 +1725,10 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
     case R_LARCH_ADD24:
     case R_LARCH_ADD32:
     case R_LARCH_ADD64:
+      r = loongarch_check_offset (rel, input_section);
+      if (r != bfd_reloc_ok)
+	break;
+
       opr1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
       bfd_put (bits, input_bfd, opr1 + value,
 	       contents + rel->r_offset);
@@ -1702,6 +1739,10 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
     case R_LARCH_SUB24:
     case R_LARCH_SUB32:
     case R_LARCH_SUB64:
+      r = loongarch_check_offset (rel, input_section);
+      if (r != bfd_reloc_ok)
+	break;
+
       opr1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
       bfd_put (bits, input_bfd, opr1 - value,
 	       contents + rel->r_offset);
