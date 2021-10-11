@@ -276,15 +276,6 @@ md_begin ()
   assert (8 <= sizeof (offsetT));
 }
 
-void
-md_operand (expressionS *e)
-{
-  /* Because we use 'expression' to check if a actual arg is a expr at first.
-     If not, we want a returning.  */
-  if (e->X_op == O_absent)
-    e->X_op = O_illegal;
-}
-
 static const expressionS const_0 = { .X_op = O_constant, .X_add_number = 0 };
 
 static const char *
