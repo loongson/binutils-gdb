@@ -42,6 +42,7 @@ extern const char *loongarch_target_format (void);
 extern int loongarch_relax_frag (asection *, struct frag *, long);
 #define md_section_align(seg, size) (size)
 #define md_undefined_symbol(name) (0)
+#define md_operand(x)
 
 /* This is called to see whether a reloc against a defined symbol
    should be converted into a reloc against a section.  */
