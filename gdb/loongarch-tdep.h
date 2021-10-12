@@ -25,7 +25,7 @@
 
 struct gdbarch_tdep
 {
-  int ef_abi; /* EF_LARCH_ABI  */
+  int ef_abi; /* EF_LOONGARCH_ABI  */
 
   struct
   {

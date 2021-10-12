@@ -601,13 +601,9 @@ loongarch_linux_get_syscall_number (struct gdbarch *gdbarch,
   struct regcache *regcache = get_thread_regcache (thread);
   LONGEST ret;
 
-  switch (tdep->ef_abi)
-    {
-    case EF_LARCH_ABI_LP64:
-      if (REG_VALID
-	  == regcache_cooked_read_signed (regcache, regs->r + 11, &ret))
-	return ret;
-    }
+  if ((EF_LOONGARCH_IS_LP64 (tdep->ef_abi))
+    && (REG_VALID == regcache_cooked_read_signed (regcache, regs->r + 11, &ret)))
+      return ret;
 
   return -1;
 }
@@ -620,14 +616,11 @@ loongarch_linux_syscall_next_pc (struct frame_info *frame)
   auto regs = &tdep->regs;
   ULONGEST a7 = get_frame_register_unsigned (frame, regs->r + 11);
 
-  switch (tdep->ef_abi)
-    {
-    case EF_LARCH_ABI_LP64:
-      /* If we are about to make a sigreturn syscall, use the unwinder to
-	 decode the signal frame.  */
-      if (a7 == 0x8b /* LP64: __NR_rt_sigreturn.  */)
-	return frame_unwind_caller_pc (get_current_frame ());
-    }
+  /* If we are about to make a sigreturn syscall, use the unwinder to
+     decode the signal frame.  */
+  if ((EF_LOONGARCH_IS_LP64 (tdep->ef_abi))
+    && (a7 == 0x8b /* LP64: __NR_rt_sigreturn.  */))
+    return frame_unwind_caller_pc (get_current_frame ());
 
   return -1;
 }
@@ -639,13 +632,12 @@ loongarch_linux_init_abi (struct gdbarch_info info, struct gdbarch *gdbarch)
 
   linux_init_abi (info, gdbarch, 0); /* FIXME displaced step support.  */
 
-  switch (tdep->ef_abi)
-    {
-    case EF_LARCH_ABI_LP32:
+  if (EF_LOONGARCH_IS_ILP32 (tdep->ef_abi))
       set_solib_svr4_fetch_link_map_offsets (
 	gdbarch, svr4_ilp32_fetch_link_map_offsets);
-      break;
-    case EF_LARCH_ABI_LP64:
+
+  else if (EF_LOONGARCH_IS_LP64 (tdep->ef_abi))
+    {
       set_solib_svr4_fetch_link_map_offsets (gdbarch,
 					     svr4_lp64_fetch_link_map_offsets);
       tramp_frame_prepend_unwinder (gdbarch,
@@ -654,7 +646,6 @@ loongarch_linux_init_abi (struct gdbarch_info info, struct gdbarch *gdbarch)
 
       set_gdbarch_get_syscall_number (gdbarch,
 				      loongarch_linux_get_syscall_number);
-      break;
     }
 
   /* GNU/Linux uses the dynamic linker included in the GNU C Library.  */

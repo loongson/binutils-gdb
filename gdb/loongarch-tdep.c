@@ -59,15 +59,12 @@
 static int
 loongarch_rlen (struct gdbarch *gdbarch)
 {
-  switch (gdbarch_tdep (gdbarch)->ef_abi)
-    {
-    case EF_LARCH_ABI_LP64:
-      return 64;
-    case EF_LARCH_ABI_LP32:
+  if (EF_LOONGARCH_IS_LP64 (gdbarch_tdep (gdbarch)->ef_abi))
+    return 64;
+  else if (EF_LOONGARCH_IS_ILP32 (gdbarch_tdep (gdbarch)->ef_abi))
       return 32;
-    default:
+  else
       gdb_assert_not_reached ("unknown ABI");
-    }
   return 0;
 }
 
@@ -310,18 +307,14 @@ loongarch_register_name (struct gdbarch *gdbarch, int regnum)
 {
   auto regs = &gdbarch_tdep (gdbarch)->regs;
 
-  if (0 <= regs->r && regs->r <= regnum && regnum < regs->r + 32)
-    switch (gdbarch_tdep (gdbarch)->ef_abi)
-      {
-      case EF_LARCH_ABI_LP64:
+  if ((0 <= regs->r && regs->r <= regnum && regnum < regs->r + 32)
+    && (EF_LOONGARCH_IS_LP64 (gdbarch_tdep (gdbarch)->ef_abi)))
 	return loongarch_r_lp64_name[regnum - regs->r] + 1;
-      }
-  else if (0 <= regs->f && regs->f <= regnum && regnum < regs->f + 32)
-    switch (gdbarch_tdep (gdbarch)->ef_abi)
-      {
-      case EF_LARCH_ABI_LP64:
+
+  else if ((0 <= regs->f && regs->f <= regnum && regnum < regs->f + 32)
+    && (EF_LOONGARCH_IS_LP64 (gdbarch_tdep (gdbarch)->ef_abi)))
 	return loongarch_f_lp64_name[regnum - regs->f] + 1;
-      }
+
   return tdesc_register_name (gdbarch, regnum);
 }
 
@@ -1523,26 +1516,19 @@ loongarch_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   if (info.abfd != NULL
       && bfd_get_flavour (info.abfd) == bfd_target_elf_flavour)
     {
-      int e_flags = elf_elfheader (info.abfd)->e_flags;
-      auto e_abi = e_flags & EF_LARCH_ABI;
+      tdep->ef_abi = elf_elfheader (info.abfd)->e_flags & EF_LOONGARCH_ABI;
+      gdb_assert (0 != (tdep->ef_abi & EF_LOONGARCH_ABI_MASK));
 
-      switch (e_abi)
-	{
-	case EF_LARCH_ABI_LP32:
-	case EF_LARCH_ABI_LP64:
-	  tdep->ef_abi = e_abi;
-	  break;
-	default:
-	  tdep->ef_abi = EF_LARCH_ABI_LP64;
-	}
     }
   else
-    tdep->ef_abi = EF_LARCH_ABI_LP64;
+    {
+      gdb_assert_not_reached ("unknown ABI");
+    }
 
   /* Check any target description for validity.  */
   if (!tdesc_has_registers (tdesc))
     tdesc = loongarch_get_base_target_description (
-      tdep->ef_abi == EF_LARCH_ABI_LP32 ? 32 : 64);
+      EF_LOONGARCH_IS_ILP32 (tdep->ef_abi) ? 32 : 64);
 
   int valid_p = 1;
   const struct tdesc_feature *feature;
@@ -1647,9 +1633,8 @@ loongarch_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   gdbarch = gdbarch_alloc (&info, tdep);
 
   /* Target data types.  */
-  switch (tdep->ef_abi)
+  if (EF_LOONGARCH_IS_ILP32 (tdep->ef_abi))
     {
-    case EF_LARCH_ABI_LP32:
       set_gdbarch_short_bit (gdbarch, 16);
       set_gdbarch_int_bit (gdbarch, 32);
       set_gdbarch_long_bit (gdbarch, 32);
@@ -1660,8 +1645,9 @@ loongarch_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
       set_gdbarch_long_double_format (gdbarch, floatformats_ia64_quad);
       set_gdbarch_ptr_bit (gdbarch, 32);
       set_gdbarch_char_signed (gdbarch, 0);
-      break;
-    case EF_LARCH_ABI_LP64:
+    }
+  else if (EF_LOONGARCH_IS_LP64 (tdep->ef_abi))
+    {
       set_gdbarch_short_bit (gdbarch, 16);
       set_gdbarch_int_bit (gdbarch, 32);
       set_gdbarch_long_bit (gdbarch, 64);
@@ -1699,10 +1685,9 @@ loongarch_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 				   loongarch_lp32lp64_push_dummy_call);
       set_gdbarch_return_value (gdbarch, loongarch_lp64_return_value);
 
-      break;
-    default:
-      gdb_assert_not_reached ("unknown ABI");
     }
+  else
+      gdb_assert_not_reached ("unknown ABI");
 
   /* Hook in OS ABI-specific overrides, if they have been registered.  */
   info.target_desc = tdesc;
