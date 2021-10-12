@@ -1520,10 +1520,6 @@ loongarch_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
       gdb_assert (0 != (tdep->ef_abi & EF_LOONGARCH_ABI_MASK));
 
     }
-  else
-    {
-      gdb_assert_not_reached ("unknown ABI");
-    }
 
   /* Check any target description for validity.  */
   if (!tdesc_has_registers (tdesc))
@@ -1633,61 +1629,64 @@ loongarch_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   gdbarch = gdbarch_alloc (&info, tdep);
 
   /* Target data types.  */
-  if (EF_LOONGARCH_IS_ILP32 (tdep->ef_abi))
+  if (info.abfd)
     {
-      set_gdbarch_short_bit (gdbarch, 16);
-      set_gdbarch_int_bit (gdbarch, 32);
-      set_gdbarch_long_bit (gdbarch, 32);
-      set_gdbarch_long_long_bit (gdbarch, 32);
-      set_gdbarch_float_bit (gdbarch, 32);
-      set_gdbarch_double_bit (gdbarch, 64);
-      set_gdbarch_long_double_bit (gdbarch, 128);
-      set_gdbarch_long_double_format (gdbarch, floatformats_ia64_quad);
-      set_gdbarch_ptr_bit (gdbarch, 32);
-      set_gdbarch_char_signed (gdbarch, 0);
+      if (EF_LOONGARCH_IS_ILP32 (tdep->ef_abi))
+        {
+          set_gdbarch_short_bit (gdbarch, 16);
+          set_gdbarch_int_bit (gdbarch, 32);
+          set_gdbarch_long_bit (gdbarch, 32);
+          set_gdbarch_long_long_bit (gdbarch, 32);
+          set_gdbarch_float_bit (gdbarch, 32);
+          set_gdbarch_double_bit (gdbarch, 64);
+          set_gdbarch_long_double_bit (gdbarch, 128);
+          set_gdbarch_long_double_format (gdbarch, floatformats_ia64_quad);
+          set_gdbarch_ptr_bit (gdbarch, 32);
+          set_gdbarch_char_signed (gdbarch, 0);
+        }
+      else if (EF_LOONGARCH_IS_LP64 (tdep->ef_abi))
+        {
+          set_gdbarch_short_bit (gdbarch, 16);
+          set_gdbarch_int_bit (gdbarch, 32);
+          set_gdbarch_long_bit (gdbarch, 64);
+          set_gdbarch_long_long_bit (gdbarch, 64);
+          set_gdbarch_float_bit (gdbarch, 32);
+          set_gdbarch_double_bit (gdbarch, 64);
+          set_gdbarch_long_double_bit (gdbarch, 128);
+          set_gdbarch_long_double_format (gdbarch, floatformats_ia64_quad);
+          set_gdbarch_ptr_bit (gdbarch, 64);
+          set_gdbarch_char_signed (gdbarch, 0);
+
+          tdep->regs.ra = tdep->regs.r + 1;
+          tdep->regs.sp = tdep->regs.r + 3;
+
+          for (i = 0; i < ARRAY_SIZE (loongarch_r_normal_name); ++i)
+	    if (loongarch_r_normal_name[i][0] != '\0')
+	      user_reg_add (gdbarch, loongarch_r_normal_name[i] + 1,
+			    value_of_loongarch_user_reg,
+			    (void *) (size_t) (tdep->regs.r + i));
+
+	  for (i = 0; i < ARRAY_SIZE (loongarch_r_lp64_name); ++i)
+	    if (loongarch_r_lp64_name[i][0] != '\0')
+	      user_reg_add (gdbarch, loongarch_r_lp64_name[i] + 1,
+			    value_of_loongarch_user_reg,
+			    (void *) (size_t) (tdep->regs.r + i));
+
+	  for (i = 0; i < ARRAY_SIZE (loongarch_r_lp64_name1); ++i)
+	    if (loongarch_r_lp64_name[i][0] != '\0')
+	      user_reg_add (gdbarch, loongarch_r_lp64_name1[i] + 1,
+			    value_of_loongarch_user_reg,
+			    (void *) (size_t) (tdep->regs.r + i));
+
+	  /* Functions handling dummy frames.  */
+	  set_gdbarch_push_dummy_call (gdbarch,
+				       loongarch_lp32lp64_push_dummy_call);
+	  set_gdbarch_return_value (gdbarch, loongarch_lp64_return_value);
+
+	}
+      else
+	gdb_assert_not_reached ("unknown ABI");
     }
-  else if (EF_LOONGARCH_IS_LP64 (tdep->ef_abi))
-    {
-      set_gdbarch_short_bit (gdbarch, 16);
-      set_gdbarch_int_bit (gdbarch, 32);
-      set_gdbarch_long_bit (gdbarch, 64);
-      set_gdbarch_long_long_bit (gdbarch, 64);
-      set_gdbarch_float_bit (gdbarch, 32);
-      set_gdbarch_double_bit (gdbarch, 64);
-      set_gdbarch_long_double_bit (gdbarch, 128);
-      set_gdbarch_long_double_format (gdbarch, floatformats_ia64_quad);
-      set_gdbarch_ptr_bit (gdbarch, 64);
-      set_gdbarch_char_signed (gdbarch, 0);
-
-      tdep->regs.ra = tdep->regs.r + 1;
-      tdep->regs.sp = tdep->regs.r + 3;
-
-      for (i = 0; i < ARRAY_SIZE (loongarch_r_normal_name); ++i)
-	if (loongarch_r_normal_name[i][0] != '\0')
-	  user_reg_add (gdbarch, loongarch_r_normal_name[i] + 1,
-			value_of_loongarch_user_reg,
-			(void *) (size_t) (tdep->regs.r + i));
-
-      for (i = 0; i < ARRAY_SIZE (loongarch_r_lp64_name); ++i)
-	if (loongarch_r_lp64_name[i][0] != '\0')
-	  user_reg_add (gdbarch, loongarch_r_lp64_name[i] + 1,
-			value_of_loongarch_user_reg,
-			(void *) (size_t) (tdep->regs.r + i));
-
-      for (i = 0; i < ARRAY_SIZE (loongarch_r_lp64_name1); ++i)
-	if (loongarch_r_lp64_name[i][0] != '\0')
-	  user_reg_add (gdbarch, loongarch_r_lp64_name1[i] + 1,
-			value_of_loongarch_user_reg,
-			(void *) (size_t) (tdep->regs.r + i));
-
-      /* Functions handling dummy frames.  */
-      set_gdbarch_push_dummy_call (gdbarch,
-				   loongarch_lp32lp64_push_dummy_call);
-      set_gdbarch_return_value (gdbarch, loongarch_lp64_return_value);
-
-    }
-  else
-      gdb_assert_not_reached ("unknown ABI");
 
   /* Hook in OS ABI-specific overrides, if they have been registered.  */
   info.target_desc = tdesc;
