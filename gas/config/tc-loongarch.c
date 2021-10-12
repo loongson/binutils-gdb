@@ -104,6 +104,7 @@ enum options
   OPTION_SOFT_FLOAT,
   OPTION_HARD_FLOAT,
   OPTION_ABI,
+  OPTION_FLOAT_ABI,
 
   OPTION_LA_LOCAL_WITH_ABS,
   OPTION_LA_GLOBAL_WITH_PCREL,
@@ -117,6 +118,7 @@ struct option md_longopts[] =
   { "msoft-float", no_argument, NULL, OPTION_SOFT_FLOAT },
   { "mhard-float", no_argument, NULL, OPTION_HARD_FLOAT },
   { "mabi", required_argument, NULL, OPTION_ABI },
+  { "mfloat-abi", required_argument, NULL, OPTION_FLOAT_ABI },
 
   { "mla-local-with-abs", no_argument, NULL, OPTION_LA_LOCAL_WITH_ABS },
   { "mla-global-with-pcrel", no_argument, NULL, OPTION_LA_GLOBAL_WITH_PCREL },
@@ -135,15 +137,27 @@ md_parse_option (int c, const char *arg)
     {
     case OPTION_SOFT_FLOAT:
       LARCH_opts.ase_float = 0;
+      LARCH_opts.ase_abi |= EF_LOONGARCH_FLOAT_ABI_SOFT;
       break;
     case OPTION_HARD_FLOAT:
       LARCH_opts.ase_float = 1;
+      LARCH_opts.ase_abi |= EF_LOONGARCH_FLOAT_ABI_DOUBLE;
       break;
     case OPTION_ABI:
       if (strcasecmp (arg, "lp64") == 0)
-	LARCH_opts.abi_is_lp64 = 1;
+	LARCH_opts.ase_abi |= EF_LOONGARCH_ABI_LP64;
       else if (strcasecmp (arg, "lp32") == 0)
-	LARCH_opts.abi_is_lp32 = 1;
+	LARCH_opts.ase_abi |= EF_LOONGARCH_ABI_ILP32;
+      else
+	ret = 0;
+      break;
+    case OPTION_FLOAT_ABI:
+      if (strcasecmp (arg, "soft") == 0)
+	LARCH_opts.ase_abi |= EF_LOONGARCH_FLOAT_ABI_SOFT;
+      else if (strcasecmp (arg, "single") == 0)
+	LARCH_opts.ase_abi |= EF_LOONGARCH_FLOAT_ABI_SINGLE;
+      else if (strcasecmp (arg, "double") == 0)
+	LARCH_opts.ase_abi |= EF_LOONGARCH_FLOAT_ABI_DOUBLE;
       else
 	ret = 0;
       break;
@@ -209,16 +223,18 @@ loongarch_after_parse_args ()
   for (i = 0; i < ARRAY_SIZE (loongarch_x_normal_name); i++)
     str_hash_insert (x_htab, loongarch_x_normal_name[i], (void *) (i + 1), 0);
 
-  if (LARCH_opts.abi_is_lp64 + LARCH_opts.abi_is_lp32 == 0)
-    {
-      /* as_warn (_("default LARCH ABI is lp64")); */
-      LARCH_opts.abi_is_lp64 = 1;
-    }
+  /* Set default ABI LP64.  */
+  if (!EF_LOONGARCH_IS_LP64(LARCH_opts.ase_abi)
+      && !EF_LOONGARCH_IS_ILP32(LARCH_opts.ase_abi))
+	LARCH_opts.ase_abi |= EF_LOONGARCH_ABI_LP64;
 
-  if (1 < LARCH_opts.abi_is_lp64 + LARCH_opts.abi_is_lp32)
-    as_fatal (_ ("we can specify only ONE abi"));
+  /* Set default ABI double-float.  */
+  if (!EF_LOONGARCH_IS_SOFT_FLOAT(LARCH_opts.ase_abi)
+      && !EF_LOONGARCH_IS_SINGLE_FLOAT(LARCH_opts.ase_abi)
+      && !EF_LOONGARCH_IS_DOUBLE_FLOAT(LARCH_opts.ase_abi))
+	LARCH_opts.ase_abi |= EF_LOONGARCH_FLOAT_ABI_DOUBLE;
 
-  if (LARCH_opts.abi_is_lp64)
+  if (EF_LOONGARCH_IS_LP64(LARCH_opts.ase_abi))
     {
       LARCH_opts.addrwidth_is_64 = 1;
       LARCH_opts.rlen_is_64 = 1;
@@ -234,9 +250,11 @@ loongarch_after_parse_args ()
       for (i = 0; i < ARRAY_SIZE (loongarch_f_lp64_name1); i++)
 	str_hash_insert (f_htab, loongarch_f_lp64_name1[i], (void *) (i + 1),
 			 0);
+      LARCH_opts.abi_is_lp64 = 1;
+      LARCH_opts.addrwidth_is_64 = 1;
     }
 
-  if (LARCH_opts.abi_is_lp32)
+  if (EF_LOONGARCH_IS_ILP32(LARCH_opts.ase_abi))
     {
       LARCH_opts.addrwidth_is_32 = 1;
       LARCH_opts.rlen_is_32 = 1;
@@ -1293,8 +1311,5 @@ loongarch_handle_align (fragS *fragp)
 void
 loongarch_elf_final_processing (void)
 {
-  if (LARCH_opts.abi_is_lp64)
-    elf_elfheader (stdoutput)->e_flags |= EF_LARCH_ABI_LP64;
-  else if (LARCH_opts.abi_is_lp32)
-    elf_elfheader (stdoutput)->e_flags |= EF_LARCH_ABI_LP32;
+  elf_elfheader (stdoutput)->e_flags |= LARCH_opts.ase_abi;
 }
