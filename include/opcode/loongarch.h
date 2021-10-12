@@ -207,6 +207,7 @@ dec2 : [1-9][0-9]?
 
     int abi_is_lp32;
     int abi_is_lp64;
+    int ase_abi;
   } LARCH_opts;
 
   extern size_t loongarch_insn_length (insn_t insn);

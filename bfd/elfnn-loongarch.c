@@ -380,20 +380,6 @@ elfNN_loongarch_merge_private_bfd_data (bfd *ibfd, struct bfd_link_info *info)
 
   if (!is_loongarch_elf (ibfd) || !is_loongarch_elf (obfd))
     {
-      /* Make sure one of ibfd or obfd e_flags must be set.  */
-      /* FIXME: EF_LARCH_ABI_LP64 ? .  */
-      if (!is_loongarch_elf (ibfd) && !elf_flags_init (obfd))
-	{
-	  elf_flags_init (obfd) = true;
-	  elf_elfheader (obfd)->e_flags = EF_LARCH_ABI_LP64;
-	}
-
-      if (!is_loongarch_elf (obfd) && !elf_flags_init (ibfd))
-	{
-	  elf_flags_init (ibfd) = true;
-	  elf_elfheader (ibfd)->e_flags = EF_LARCH_ABI_LP64;
-	}
-
       return true;
     }
 
@@ -416,8 +402,8 @@ elfNN_loongarch_merge_private_bfd_data (bfd *ibfd, struct bfd_link_info *info)
       return true;
     }
 
-  /* Disallow linking different float ABIs.  */
-  if ((out_flags ^ in_flags) & EF_LARCH_ABI)
+  /* Disallow linking different ABIs.  */
+  if ((out_flags ^ in_flags) & EF_LOONGARCH_ABI)
     {
       _bfd_error_handler (_ ("%pB: can't link different ABI object."), ibfd);
       goto fail;
@@ -1203,9 +1189,9 @@ loongarch_elf_size_dynamic_sections (bfd *output_bfd,
 	  flagword flags = elf_elfheader (output_bfd)->e_flags;
 	  s = bfd_get_linker_section (dynobj, ".interp");
 	  BFD_ASSERT (s != NULL);
-	  if ((flags & EF_LARCH_ABI) == EF_LARCH_ABI_LP32)
+	  if (EF_LOONGARCH_IS_ILP32 (flags))
 	    interpreter = "/lib32/ld.so.1";
-	  else if ((flags & EF_LARCH_ABI) == EF_LARCH_ABI_LP64)
+	  else if (EF_LOONGARCH_IS_LP64 (flags))
 	    interpreter = "/lib64/ld.so.1";
 	  else
 	    interpreter = "/lib/ld.so.1";
@@ -3246,28 +3232,6 @@ loongarch_elf_gc_mark_hook (asection *sec, struct bfd_link_info *info,
   return _bfd_elf_gc_mark_hook (sec, info, rel, h, sym);
 }
 
-static bool
-_loongarch_bfd_set_section_contents (bfd *abfd, sec_ptr section,
-				     const void *location, file_ptr offset,
-				     bfd_size_type conut)
-
-{
-  if (elf_elfheader (abfd)->e_flags == 0)
-    {
-      if (abfd->arch_info->arch == bfd_arch_loongarch)
-	{
-	  if (abfd->arch_info->mach == bfd_mach_loongarch32)
-	    elf_elfheader (abfd)->e_flags = EF_LARCH_ABI_LP32;
-	  else if (abfd->arch_info->mach == bfd_mach_loongarch64)
-	    elf_elfheader (abfd)->e_flags = EF_LARCH_ABI_LP64;
-	  else
-	    return false;
-	}
-    }
-  return _bfd_elf_set_section_contents (abfd, section, location, offset,
-					conut);
-}
-
 #define TARGET_LITTLE_SYM loongarch_elfNN_vec
 #define TARGET_LITTLE_NAME "elfNN-loongarch"
 #define ELF_ARCH bfd_arch_loongarch
@@ -3282,8 +3246,6 @@ _loongarch_bfd_set_section_contents (bfd *abfd, sec_ptr section,
 #define elf_info_to_howto loongarch_info_to_howto_rela
 #define bfd_elfNN_bfd_merge_private_bfd_data				  \
   elfNN_loongarch_merge_private_bfd_data
-
-#define bfd_elfNN_set_section_contents _loongarch_bfd_set_section_contents
 
 #define elf_backend_reloc_type_class loongarch_reloc_type_class
 #define elf_backend_copy_indirect_symbol loongarch_elf_copy_indirect_symbol
