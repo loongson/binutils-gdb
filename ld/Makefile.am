@@ -408,6 +408,7 @@ ALL_64_EMULATION_SOURCES = \
 	eelf32elmip.c \
 	eelf32elmipvxworks.c \
 	eelf32l4300.c \
+	eelf32loongarch.c \
 	eelf32lmip.c \
 	eelf32lr5900.c \
 	eelf32lr5900n32.c \
@@ -902,6 +903,7 @@ $(ALL_EMULATION_SOURCES) $(ALL_64_EMULATION_SOURCES): $(GEN_DEPENDS)
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf32elmip.Pc@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf32elmipvxworks.Pc@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf32l4300.Pc@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf32loongarch.Pc@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf32lmip.Pc@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf32lr5900.Pc@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf32lr5900n32.Pc@am__quote@
