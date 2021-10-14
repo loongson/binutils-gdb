@@ -217,9 +217,9 @@ dec2 : [1-9][0-9]?
 #define ase_ilp32	isa.use_ilp32
 #define ase_lp64	isa.use_lp64
 
-#define ase_sof		isa.use_soft_float
-#define ase_sif		isa.use_single_float
-#define ase_dof 	isa.use_double_float
+#define ase_nf		isa.use_soft_float
+#define ase_sf		isa.use_single_float
+#define ase_df		isa.use_double_float
 
 #define ase_lsx		isa.use_lsx
 #define ase_lasx	isa.use_lasx
