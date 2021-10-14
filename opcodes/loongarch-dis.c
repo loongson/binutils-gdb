@@ -69,10 +69,12 @@ static const char *const *loongarch_x_disname = NULL;
 static void
 set_default_loongarch_dis_options (void)
 {
-  LARCH_opts.ase_fix = 1;
-  LARCH_opts.ase_float = 1;
-  LARCH_opts.ase_128vec = 1;
-  LARCH_opts.ase_256vec = 1;
+  LARCH_opts.ase_ilp32 = 1;
+  LARCH_opts.ase_lp64 = 1;
+  LARCH_opts.ase_sif = 1;
+  LARCH_opts.ase_dof = 1;
+  LARCH_opts.ase_lsx = 1;
+  LARCH_opts.ase_lasx = 1;
 
   loongarch_r_disname = loongarch_r_lp64_name;
   loongarch_f_disname = loongarch_f_lp64_name;
