@@ -111,6 +111,7 @@ eelf32ip2k.c
 eelf32iq10.c
 eelf32iq2000.c
 eelf32l4300.c
+eelf32loongarch.c
 eelf32lm32.c
 eelf32lm32fd.c
 eelf32lmip.c
