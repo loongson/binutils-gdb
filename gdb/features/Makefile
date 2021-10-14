@@ -68,6 +68,7 @@ WHICH = mips-linux mips-dsp-linux \
 	tic6x-c64xp-linux tic6x-c64x-linux tic6x-c62x-linux
 
 # Record which registers should be sent to GDB by default after stop.
+loongarch-expedite = r3,pc
 mips-expedite = r29,pc
 mips-dsp-expedite = r29,pc
 mips64-expedite = r29,pc
@@ -172,6 +173,7 @@ GDB = false
 aarch64-feature = 1
 arm-feature = 1
 i386-feature = 1
+loongarch-feature = 1
 riscv-feature = 1
 tic6x-feature = 1
 
@@ -225,6 +227,14 @@ FEATURE_XMLFILES = aarch64-core.xml \
 	i386/64bit-pkeys.xml \
 	i386/64bit-sse.xml \
 	i386/x32-core.xml \
+	loongarch/base32.xml \
+	loongarch/base64.xml \
+	loongarch/fpu32.xml \
+	loongarch/fpu64.xml \
+	loongarch/lbt32.xml \
+	loongarch/lbt64.xml \
+	loongarch/lsx.xml \
+	loongarch/lasx.xml \
 	riscv/rv32e-xregs.xml \
 	riscv/32bit-cpu.xml \
 	riscv/32bit-fpu.xml \
