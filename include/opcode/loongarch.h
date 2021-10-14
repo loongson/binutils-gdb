@@ -192,22 +192,42 @@ dec2 : [1-9][0-9]?
 
   extern struct loongarch_ASEs_option
   {
-    int ase_fix;
-    int ase_float;
-    int ase_128vec;
-    int ase_256vec;
+    struct opt_abi
+    {
+	    int elf_abi;
+    } abi;
+#define ase_abi abi.elf_abi
 
-    int addrwidth_is_32;
-    int addrwidth_is_64;
-    int rlen_is_32;
-    int rlen_is_64;
-    int la_local_with_abs;
-    int la_global_with_pcrel;
-    int la_global_with_abs;
+    struct opt_isa
+    {
+	    int use_ilp32;
+	    int use_lp64;
 
-    int abi_is_lp32;
-    int abi_is_lp64;
-    int ase_abi;
+	    int use_soft_float;
+	    int use_single_float;
+	    int use_double_float;
+
+	    int use_lsx;
+	    int use_lasx;
+
+	    int use_la_local_with_abs;
+	    int use_la_global_with_pcrel;
+	    int use_la_global_with_abs;
+    } isa;
+#define ase_ilp32	isa.use_ilp32
+#define ase_lp64	isa.use_lp64
+
+#define ase_sof		isa.use_soft_float
+#define ase_sif		isa.use_single_float
+#define ase_dof 	isa.use_double_float
+
+#define ase_lsx		isa.use_lsx
+#define ase_lasx	isa.use_lasx
+
+#define ase_labs	isa.use_la_local_with_abs
+#define ase_gpcr	isa.use_la_global_with_pcrel
+#define ase_gabs	isa.use_la_global_with_abs
+
   } LARCH_opts;
 
   extern size_t loongarch_insn_length (insn_t insn);

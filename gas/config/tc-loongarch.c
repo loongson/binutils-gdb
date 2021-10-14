@@ -101,10 +101,10 @@ enum options
 {
   OPTION_IGNORE = OPTION_MD_BASE,
 
-  OPTION_SOFT_FLOAT,
-  OPTION_HARD_FLOAT,
   OPTION_ABI,
   OPTION_FLOAT_ABI,
+
+  OPTION_FLOAT_ISA,
 
   OPTION_LA_LOCAL_WITH_ABS,
   OPTION_LA_GLOBAL_WITH_PCREL,
@@ -115,10 +115,10 @@ enum options
 
 struct option md_longopts[] =
 {
-  { "msoft-float", no_argument, NULL, OPTION_SOFT_FLOAT },
-  { "mhard-float", no_argument, NULL, OPTION_HARD_FLOAT },
   { "mabi", required_argument, NULL, OPTION_ABI },
   { "mfloat-abi", required_argument, NULL, OPTION_FLOAT_ABI },
+
+  { "mfpu", required_argument, NULL, OPTION_FLOAT_ISA },
 
   { "mla-local-with-abs", no_argument, NULL, OPTION_LA_LOCAL_WITH_ABS },
   { "mla-global-with-pcrel", no_argument, NULL, OPTION_LA_GLOBAL_WITH_PCREL },
@@ -135,22 +135,22 @@ md_parse_option (int c, const char *arg)
   int ret = 1;
   switch (c)
     {
-    case OPTION_SOFT_FLOAT:
-      LARCH_opts.ase_float = 0;
-      LARCH_opts.ase_abi |= EF_LOONGARCH_FLOAT_ABI_SOFT;
-      break;
-    case OPTION_HARD_FLOAT:
-      LARCH_opts.ase_float = 1;
-      LARCH_opts.ase_abi |= EF_LOONGARCH_FLOAT_ABI_DOUBLE;
-      break;
     case OPTION_ABI:
       if (strcasecmp (arg, "lp64") == 0)
-	LARCH_opts.ase_abi |= EF_LOONGARCH_ABI_LP64;
+	{
+	  LARCH_opts.ase_abi |= EF_LOONGARCH_ABI_LP64;
+	  LARCH_opts.ase_ilp32 = 1;
+	  LARCH_opts.ase_lp64 = 1;
+	}
       else if (strcasecmp (arg, "lp32") == 0)
-	LARCH_opts.ase_abi |= EF_LOONGARCH_ABI_ILP32;
+	{
+	  LARCH_opts.ase_abi |= EF_LOONGARCH_ABI_ILP32;
+	  LARCH_opts.ase_ilp32 = 1;
+	}
       else
 	ret = 0;
       break;
+
     case OPTION_FLOAT_ABI:
       if (strcasecmp (arg, "soft") == 0)
 	LARCH_opts.ase_abi |= EF_LOONGARCH_FLOAT_ABI_SOFT;
@@ -161,17 +161,36 @@ md_parse_option (int c, const char *arg)
       else
 	ret = 0;
       break;
+
+    case OPTION_FLOAT_ISA:
+      if (strcasecmp (arg, "soft") == 0)
+	LARCH_opts.ase_sof = 1;
+      else if (strcasecmp (arg, "single") == 0)
+	LARCH_opts.ase_sif = 1;
+      else if (strcasecmp (arg, "double") == 0)
+	{
+	  LARCH_opts.ase_sif = 1;
+	  LARCH_opts.ase_dof = 1;
+	}
+      else
+	ret = 0;
+      break;
+
     case OPTION_LA_LOCAL_WITH_ABS:
-      LARCH_opts.la_local_with_abs = 1;
+      LARCH_opts.ase_labs = 1;
       break;
+
     case OPTION_LA_GLOBAL_WITH_PCREL:
-      LARCH_opts.la_global_with_pcrel = 1;
+      LARCH_opts.ase_gpcr = 1;
       break;
+
     case OPTION_LA_GLOBAL_WITH_ABS:
-      LARCH_opts.la_global_with_abs = 1;
+      LARCH_opts.ase_gabs = 1;
       break;
+
     case OPTION_IGNORE:
       break;
+
     default:
       ret = 0;
       break;
@@ -189,82 +208,113 @@ static struct htab *x_htab = NULL;
 void
 loongarch_after_parse_args ()
 {
-  size_t i;
-
-  LARCH_opts.ase_fix = 1;
-  LARCH_opts.ase_float = 1;
-  LARCH_opts.ase_128vec = 1;
-  LARCH_opts.ase_256vec = 1;
-
-  if (!r_htab)
-    r_htab = str_htab_create (), str_hash_insert (r_htab, "", 0, 0);
-  if (!f_htab)
-    f_htab = str_htab_create (), str_hash_insert (f_htab, "", 0, 0);
-  if (!c_htab)
-    c_htab = str_htab_create (), str_hash_insert (c_htab, "", 0, 0);
-  if (!cr_htab)
-    cr_htab = str_htab_create (), str_hash_insert (cr_htab, "", 0, 0);
-  if (!v_htab)
-    v_htab = str_htab_create (), str_hash_insert (v_htab, "", 0, 0);
-  if (!x_htab)
-    x_htab = str_htab_create (), str_hash_insert (x_htab, "", 0, 0);
-
-  for (i = 0; i < ARRAY_SIZE (loongarch_r_normal_name); i++)
-    str_hash_insert (r_htab, loongarch_r_normal_name[i], (void *) (i + 1), 0);
-  for (i = 0; i < ARRAY_SIZE (loongarch_f_normal_name); i++)
-    str_hash_insert (f_htab, loongarch_f_normal_name[i], (void *) (i + 1), 0);
-  for (i = 0; i < ARRAY_SIZE (loongarch_c_normal_name); i++)
-    str_hash_insert (c_htab, loongarch_c_normal_name[i], (void *) (i + 1), 0);
-  for (i = 0; i < ARRAY_SIZE (loongarch_cr_normal_name); i++)
-    str_hash_insert (cr_htab, loongarch_cr_normal_name[i], (void *) (i + 1),
-		     0);
-  for (i = 0; i < ARRAY_SIZE (loongarch_v_normal_name); i++)
-    str_hash_insert (v_htab, loongarch_v_normal_name[i], (void *) (i + 1), 0);
-  for (i = 0; i < ARRAY_SIZE (loongarch_x_normal_name); i++)
-    str_hash_insert (x_htab, loongarch_x_normal_name[i], (void *) (i + 1), 0);
-
-  /* Set default ABI LP64.  */
+  /* Set default ABI/ISA LP64.  */
   if (!EF_LOONGARCH_IS_LP64(LARCH_opts.ase_abi)
       && !EF_LOONGARCH_IS_ILP32(LARCH_opts.ase_abi))
-	LARCH_opts.ase_abi |= EF_LOONGARCH_ABI_LP64;
+    {
+      LARCH_opts.ase_abi |= EF_LOONGARCH_ABI_LP64;
+      LARCH_opts.ase_ilp32 = 1;
+      LARCH_opts.ase_lp64 = 1;
+    }
 
   /* Set default ABI double-float.  */
   if (!EF_LOONGARCH_IS_SOFT_FLOAT(LARCH_opts.ase_abi)
       && !EF_LOONGARCH_IS_SINGLE_FLOAT(LARCH_opts.ase_abi)
       && !EF_LOONGARCH_IS_DOUBLE_FLOAT(LARCH_opts.ase_abi))
-	LARCH_opts.ase_abi |= EF_LOONGARCH_FLOAT_ABI_DOUBLE;
+    LARCH_opts.ase_abi |= EF_LOONGARCH_FLOAT_ABI_DOUBLE;
 
-  if (EF_LOONGARCH_IS_LP64(LARCH_opts.ase_abi))
+  /* Set default ISA double-float.  */
+  if (!LARCH_opts.ase_sof
+      && !LARCH_opts.ase_sif
+      && !LARCH_opts.ase_dof)
     {
-      LARCH_opts.addrwidth_is_64 = 1;
-      LARCH_opts.rlen_is_64 = 1;
+      LARCH_opts.ase_sif = 1;
+      LARCH_opts.ase_dof = 1;
+    }
+
+  size_t i;
+
+  assert(LARCH_opts.ase_ilp32);
+
+  /* Init ilp32/lp64 registers names.  */
+  if (!r_htab)
+    r_htab = str_htab_create (), str_hash_insert (r_htab, "", 0, 0);
+
+  for (i = 0; i < ARRAY_SIZE (loongarch_r_normal_name); i++)
+    str_hash_insert (r_htab, loongarch_r_normal_name[i], (void *) (i + 1), 0);
+
+  if (!cr_htab)
+    cr_htab = str_htab_create (), str_hash_insert (cr_htab, "", 0, 0);
+
+  for (i = 0; i < ARRAY_SIZE (loongarch_cr_normal_name); i++)
+    str_hash_insert (cr_htab, loongarch_cr_normal_name[i], (void *) (i + 1), 0);
+
+  /* Init single/double float registers names.  */
+  if (LARCH_opts.ase_sif || LARCH_opts.ase_dof)
+    {
+      if (!f_htab)
+	f_htab = str_htab_create (), str_hash_insert (f_htab, "", 0, 0);
+
+      for (i = 0; i < ARRAY_SIZE (loongarch_f_normal_name); i++)
+	str_hash_insert (f_htab, loongarch_f_normal_name[i], (void *) (i + 1),
+			 0);
+
+      if (!c_htab)
+	c_htab = str_htab_create (), str_hash_insert (c_htab, "", 0, 0);
+
+      for (i = 0; i < ARRAY_SIZE (loongarch_c_normal_name); i++)
+	str_hash_insert (c_htab, loongarch_c_normal_name[i], (void *) (i + 1),
+			 0);
+
+    }
+
+  /* Init lsx registers names.  */
+  if (LARCH_opts.ase_lsx)
+    {
+      if (!v_htab)
+	v_htab = str_htab_create (), str_hash_insert (v_htab, "", 0, 0);
+      for (i = 0; i < ARRAY_SIZE (loongarch_v_normal_name); i++)
+	str_hash_insert (v_htab, loongarch_v_normal_name[i], (void *) (i + 1),
+			 0);
+    }
+
+  /* Init lasx registers names.  */
+  if (LARCH_opts.ase_lasx)
+    {
+      if (!x_htab)
+	x_htab = str_htab_create (), str_hash_insert (x_htab, "", 0, 0);
+      for (i = 0; i < ARRAY_SIZE (loongarch_x_normal_name); i++)
+	str_hash_insert (x_htab, loongarch_x_normal_name[i], (void *) (i + 1),
+			 0);
+    }
+
+  /* Init lp64 registers alias.  */
+  if (LARCH_opts.ase_lp64)
+    {
       for (i = 0; i < ARRAY_SIZE (loongarch_r_lp64_name); i++)
 	str_hash_insert (r_htab, loongarch_r_lp64_name[i], (void *) (i + 1),
 			 0);
       for (i = 0; i < ARRAY_SIZE (loongarch_r_lp64_name1); i++)
 	str_hash_insert (r_htab, loongarch_r_lp64_name1[i], (void *) (i + 1),
 			 0);
-      for (i = 0; i < ARRAY_SIZE (loongarch_f_lp64_name); i++)
-	str_hash_insert (f_htab, loongarch_f_lp64_name[i], (void *) (i + 1),
-			 0);
-      for (i = 0; i < ARRAY_SIZE (loongarch_f_lp64_name1); i++)
-	str_hash_insert (f_htab, loongarch_f_lp64_name1[i], (void *) (i + 1),
-			 0);
-      LARCH_opts.abi_is_lp64 = 1;
-      LARCH_opts.addrwidth_is_64 = 1;
     }
 
-  if (EF_LOONGARCH_IS_ILP32(LARCH_opts.ase_abi))
+  /* Init float-lp64 registers alias */
+  if ((LARCH_opts.ase_sif || LARCH_opts.ase_dof) && LARCH_opts.ase_lp64)
     {
-      LARCH_opts.addrwidth_is_32 = 1;
-      LARCH_opts.rlen_is_32 = 1;
+      for (i = 0; i < ARRAY_SIZE (loongarch_f_lp64_name); i++)
+	str_hash_insert (f_htab, loongarch_f_lp64_name[i],
+			 (void *) (i + 1), 0);
+      for (i = 0; i < ARRAY_SIZE (loongarch_f_lp64_name1); i++)
+	str_hash_insert (f_htab, loongarch_f_lp64_name1[i],
+			 (void *) (i + 1), 0);
     }
 }
 
 const char *
 loongarch_target_format ()
 {
-  return LARCH_opts.addrwidth_is_32 ? "elf32-loongarch" : "elf64-loongarch";
+  return LARCH_opts.ase_lp64 ? "elf64-loongarch" : "elf32-loongarch";
 }
 
 void
@@ -854,7 +904,7 @@ assember_macro_helper (const char *const args[], void *context_ptr)
 	  hi32 = lo32 & 0x80000000 ? 0xffffffff : 0;
 	}
 
-      if (strcmp (insn->name, "li.d") == 0 && LARCH_opts.rlen_is_32)
+      if (strcmp (insn->name, "li.d") == 0 && !LARCH_opts.ase_lp64)
 	as_fatal (_ ("we can't li.d on 32bit-arch"));
 
       snprintf (args_buf, sizeof (args_buf), "0x%x,0x%x,0x%x,0x%x,%s",
@@ -1256,7 +1306,7 @@ loongarch_cfi_frame_initial_instructions (void)
 int
 loongarch_dwarf2_addr_size (void)
 {
-  return LARCH_opts.addrwidth_is_32 ? 4 : 8;
+  return LARCH_opts.ase_lp64 ? 8 : 4;
 }
 
 void
