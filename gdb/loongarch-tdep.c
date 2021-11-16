@@ -1686,6 +1686,37 @@ loongarch_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 	}
       else
 	gdb_assert_not_reached ("unknown ABI");
+
+      if(!EF_LOONGARCH_IS_SOFT_FLOAT(tdep->ef_abi))
+	{
+	  for (i = 0; i < ARRAY_SIZE (loongarch_f_normal_name); ++i)
+	    {
+	      if (loongarch_f_normal_name[i][0] != '\0')
+		user_reg_add (gdbarch, loongarch_f_normal_name[i] + 1,
+			      value_of_loongarch_user_reg,
+			      (void *) (size_t) (tdep->regs.f + i));
+	    }
+
+	  if(EF_LOONGARCH_IS_DOUBLE_FLOAT(tdep->ef_abi))
+	    {
+	      for (i = 0; i < ARRAY_SIZE (loongarch_f_lp64_name); ++i)
+		{
+		  if (loongarch_f_lp64_name[i][0] != '\0')
+		    user_reg_add (gdbarch, loongarch_f_lp64_name[i] + 1,
+				  value_of_loongarch_user_reg,
+				  (void *) (size_t) (tdep->regs.f + i));
+		}
+
+	      for (i = 0; i < ARRAY_SIZE (loongarch_f_lp64_name1); ++i)
+		{
+		  if (loongarch_f_lp64_name1[i][0] != '\0')
+		    user_reg_add (gdbarch, loongarch_f_lp64_name1[i] + 1,
+				  value_of_loongarch_user_reg,
+				  (void *) (size_t) (tdep->regs.f + i));
+		}
+	    }
+	}
+
     }
 
   /* Hook in OS ABI-specific overrides, if they have been registered.  */
