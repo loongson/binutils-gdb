@@ -2150,7 +2150,28 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		      is_undefweak, name,
 		      "Internal:");
 	    }
+
+	  if (resolved_local)
+	    {
+	      if (!elf_hash_table (info)->tls_sec)
+		{
+		fatal = loongarch_reloc_is_fatal (info, input_bfd,
+			  input_section, rel, howto, bfd_reloc_notsupported,
+			  is_undefweak, name, "TLS section not be created");
+		}
+	      else
+		relocation -= elf_hash_table (info)->tls_sec->vma;
+	    }
+	  else
+	    {
+	    fatal = loongarch_reloc_is_fatal (info, input_bfd,
+		      input_section, rel, howto, bfd_reloc_undefined,
+		      is_undefweak, name,
+		      "TLS LE just can be resolved local only.");
+	    }
+
 	  break;
+
 	case R_LARCH_SOP_PUSH_TLS_TPREL:
 	  if (resolved_local)
 	    {
