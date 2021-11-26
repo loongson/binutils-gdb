@@ -1516,8 +1516,8 @@ loongarch_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   if (info.abfd != NULL
       && bfd_get_flavour (info.abfd) == bfd_target_elf_flavour)
     {
-      tdep->ef_abi = elf_elfheader (info.abfd)->e_flags & EF_LOONGARCH_ABI;
-      gdb_assert (0 != (tdep->ef_abi & EF_LOONGARCH_ABI_MASK));
+      tdep->ef_abi = EF_LOONGARCH_ABI(elf_elfheader (info.abfd)->e_flags);
+      gdb_assert (0 != tdep->ef_abi);
 
     }
 
