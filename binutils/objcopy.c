@@ -303,6 +303,10 @@ enum long_section_name_handling
    This is also the only behaviour for 'strip'.  */
 static enum long_section_name_handling long_section_names = KEEP;
 
+/* Use alternative elf header e_flags?  */
+static bool alt_elf_eflags_set = false;
+static unsigned int alt_elf_eflags = 0;
+
 /* 150 isn't special; it's just an arbitrary non-ASCII char value.  */
 enum command_line_switch
 {
@@ -310,6 +314,7 @@ enum command_line_switch
   OPTION_ADD_GNU_DEBUGLINK,
   OPTION_ADD_SYMBOL,
   OPTION_ALT_MACH_CODE,
+  OPTION_ALT_ELF_EFLAGS,
   OPTION_CHANGE_ADDRESSES,
   OPTION_CHANGE_LEADING_CHAR,
   OPTION_CHANGE_SECTION_ADDRESS,
@@ -427,6 +432,7 @@ static struct option copy_options[] =
   {"adjust-vma", required_argument, 0, OPTION_CHANGE_ADDRESSES},
   {"adjust-warnings", no_argument, 0, OPTION_CHANGE_WARNINGS},
   {"alt-machine-code", required_argument, 0, OPTION_ALT_MACH_CODE},
+  {"alt-elf-eflags", required_argument, 0, OPTION_ALT_ELF_EFLAGS},
   {"binary-architecture", required_argument, 0, 'B'},
   {"byte", required_argument, 0, 'b'},
   {"change-addresses", required_argument, 0, OPTION_CHANGE_ADDRESSES},
@@ -660,6 +666,7 @@ copy_usage (FILE *stream, int exit_status)
      --weaken-symbols <file>       -W for all symbols listed in <file>\n\
      --add-symbol <name>=[<section>:]<value>[,<flags>]  Add a symbol\n\
      --alt-machine-code <index>    Use the target's <index>'th alternative machine\n\
+     --alt-elf-eflags=<value> 	   Use the alternative elf header e_flags\n\
      --writable-text               Mark the output text as writable\n\
      --readonly-text               Make the output text write protected\n\
      --pure                        Mark the output file as demand paged\n\
@@ -3485,6 +3492,11 @@ copy_object (bfd *ibfd, bfd *obfd, const bfd_arch_info_type *input_arch)
 	    non_fatal (_("ignoring the alternative value"));
 	}
     }
+  
+  if (alt_elf_eflags_set)
+    {
+      elf_elfheader (obfd)->e_flags = alt_elf_eflags;
+    }
 
   return true;
 }
@@ -5821,6 +5833,11 @@ copy_main (int argc, char *argv[])
 	  VerilogDataWidth = parse_vma (optarg, "--verilog-data-width");
 	  if (VerilogDataWidth < 1)
 	    fatal (_("verilog data width must be at least 1 byte"));
+	  break;
+
+	case OPTION_ALT_ELF_EFLAGS:
+	  alt_elf_eflags_set = true;
+	  alt_elf_eflags = parse_vma (optarg, "--alt-elf-eflags");
 	  break;
 
 	case 0:
