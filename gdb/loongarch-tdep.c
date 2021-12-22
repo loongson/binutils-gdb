@@ -51,6 +51,7 @@
 #include "gdbsupport/common-defs.h"
 #include "cli/cli-decode.h"
 #include "observable.h"
+#include "target-float.h"
 #include "loongarch-tdep.h"
 #include "arch/loongarch.h"
 
@@ -1349,6 +1350,38 @@ loongarch_print_all_r_registers (struct gdbarch *gdbarch, struct ui_file *file,
 }
 
 static void
+loongarch_print_fp_register (struct ui_file *file, struct frame_info *frame,
+			     int regnum)
+{
+  struct gdbarch *gdbarch = get_frame_arch (frame);
+  struct value *value = get_frame_register_value (frame, regnum);
+  const gdb_byte *raw_buffer = value_contents_all (value);
+  struct value_print_options opts;
+
+  fprintf_filtered (file, "%-5s ", gdbarch_register_name (gdbarch, regnum));
+
+  get_formatted_print_options (&opts, 'x');
+  fprintf_filtered (file, "%s","{f = ");
+  print_scalar_formatted (raw_buffer,
+			  builtin_type (gdbarch)->builtin_uint32,
+			  &opts, 'w', file);
+  fprintf_filtered (file, ", %s","d = ");
+  print_scalar_formatted (raw_buffer,
+			  builtin_type (gdbarch)->builtin_uint32,
+			  &opts, 'g', file);
+  fprintf_filtered (file, "%s","} ");
+
+  fprintf_filtered (file, "{f = %s, ",
+		    target_float_to_string (raw_buffer,
+		    builtin_type (gdbarch)->builtin_float, "%-17.9g").c_str());
+
+  fprintf_filtered (file, "d = %s}\n",
+		    target_float_to_string (raw_buffer,
+		    builtin_type (gdbarch)->builtin_double, "%-24.17g").c_str());
+}
+
+
+static void
 loongarch_print_registers_info (struct gdbarch *gdbarch, struct ui_file *file,
 				struct frame_info *frame, int regnum, int all)
 {
@@ -1382,7 +1415,10 @@ loongarch_print_registers_info (struct gdbarch *gdbarch, struct ui_file *file,
 	  || *(gdbarch_register_name (gdbarch, i)) == '\0')
 	continue;
 
-      default_print_registers_info (gdbarch, file, frame, i, 0);
+      if (gdbarch_register_reggroup_p (gdbarch, i, float_reggroup))
+	loongarch_print_fp_register (file, frame, regnum);
+      else
+	default_print_registers_info (gdbarch, file, frame, i, 0);
     }
 }
 
