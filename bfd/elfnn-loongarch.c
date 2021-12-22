@@ -1444,7 +1444,6 @@ loongarch_check_offset (const Elf_Internal_Rela *rel,
   return bfd_reloc_ok;
 }
 
-
 #define LARCH_RELOC_PERFORM_3OP(op1, op2, op3)	      \
   ({						      \
     bfd_reloc_status_type ret = loongarch_pop (&op2); \
@@ -1457,53 +1456,19 @@ loongarch_check_offset (const Elf_Internal_Rela *rel,
     ret;					      \
    })
 
-#define LARCH_RELOC_UINT32_BIT_MASK(bitsize) \
-  (~((0x1U << (bitsize)) - 1))
-
 static bfd_reloc_status_type
 loongarch_reloc_rewrite_imm_insn (const Elf_Internal_Rela *rel,
 				  const asection *input_section ATTRIBUTE_UNUSED,
 				  reloc_howto_type *howto, bfd *input_bfd,
-				  bfd_byte *contents, int64_t op,
-				  bool is_signed)
+				  bfd_byte *contents, bfd_vma reloc_val)
 {
-
-  /* Check op low bits if rightshift != 0, before rightshift  */
-  if (howto->rightshift
-      && (((0x1U << howto->rightshift) - 1) & op))
-	return bfd_reloc_overflow;
-
-  uint32_t imm = (uint32_t)(int32_t)(op >> howto->rightshift);
-
-  if (is_signed)
-    {
-      if (op >= 0)
-	{
-	  if (LARCH_RELOC_UINT32_BIT_MASK (howto->bitsize - 1) & imm)
-	    return bfd_reloc_overflow;
-	}
-      else
-	{
-	  if ((LARCH_RELOC_UINT32_BIT_MASK (howto->bitsize - 1) & imm)
-	      != LARCH_RELOC_UINT32_BIT_MASK (howto->bitsize - 1))
-	    return bfd_reloc_overflow;
-	}
-    }
-  else
-    {
-      if (LARCH_RELOC_UINT32_BIT_MASK (howto->bitsize) & imm)
-	return bfd_reloc_overflow;
-    }
-
   int bits = bfd_get_reloc_size (howto) * 8;
   uint32_t insn = bfd_get (bits, input_bfd, contents + rel->r_offset);
 
-  imm = imm & ((0x1U << howto->bitsize) - 1);
-  imm <<= howto->bitpos;
-  insn = (insn & howto->src_mask)
-    | ((insn & (~(uint32_t) howto->dst_mask)) | imm);
-  bfd_put (bits, input_bfd, insn, contents + rel->r_offset);
+  if(!loongarch_reloc_insn_fill(howto, reloc_val, &insn))
+    return bfd_reloc_overflow;
 
+  bfd_put (bits, input_bfd, insn, contents + rel->r_offset);
   return bfd_reloc_ok;
 }
 
@@ -1593,107 +1558,81 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
     case R_LARCH_SOP_POP_32_S_10_16:
     case R_LARCH_SOP_POP_32_S_10_16_S2:
     case R_LARCH_SOP_POP_32_S_5_20:
-      r = loongarch_pop (&opr1);
-      if (r != bfd_reloc_ok)
-	break;
-      r = loongarch_check_offset (rel, input_section);
-      if (r != bfd_reloc_ok)
-	break;
-
-      r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
-					    howto, input_bfd,
-					    contents, opr1, true);
-      break;
-
     case R_LARCH_SOP_POP_32_U_10_12:
-      r = loongarch_pop (&opr1);
-      if (r != bfd_reloc_ok)
-	break;
-      r = loongarch_check_offset (rel, input_section);
-      if (r != bfd_reloc_ok)
-	break;
-
-      r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
-					    howto, input_bfd,
-					    contents, opr1, false);
-      break;
-
-    case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
-      {
-	r = loongarch_pop (&opr1);
-	if (r != bfd_reloc_ok)
-	  break;
-
-	if ((opr1 & 0x3) != 0)
-	  {
-	    r = bfd_reloc_overflow;
-	    break;
-	  }
-
-	uint32_t imm = opr1 >> howto->rightshift;
-	if ((imm & (~0xfffffU)) && ((imm & (~0xfffffU)) != (~0xfffffU)))
-	  {
-	    r = bfd_reloc_overflow;
-	    break;
-	  }
-
-	r = loongarch_check_offset (rel, input_section);
-	if (r != bfd_reloc_ok)
-	  break;
-
-	insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
-	insn1 = (insn1 & howto->src_mask)
-		| ((imm & 0xffffU) << 10)
-		| ((imm & 0x1f0000U) >> 16);
-	bfd_put (bits, input_bfd, insn1, contents + rel->r_offset);
-	break;
-      }
-
-    case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
-      {
-	r = loongarch_pop (&opr1);
-	if (r != bfd_reloc_ok)
-	  break;
-
-	if ((opr1 & 0x3) != 0)
-	  {
-	    r = bfd_reloc_overflow;
-	    break;
-	  }
-
-	uint32_t imm = opr1 >> howto->rightshift;
-	if ((imm & (~0x1ffffffU)) && (imm & (~0x1ffffffU)) != (~0x1ffffffU))
-	  {
-	    r = bfd_reloc_overflow;
-	    break;
-	  }
-
-	r = loongarch_check_offset (rel, input_section);
-	if (r != bfd_reloc_ok)
-	  break;
-
-	insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
-	insn1 = (insn1 & howto->src_mask)
-		| ((imm & 0xffffU) << 10)
-		| ((imm & 0x3ff0000U) >> 16);
-	bfd_put (bits, input_bfd, insn1, contents + rel->r_offset);
-	break;
-      }
-
     case R_LARCH_SOP_POP_32_U:
       r = loongarch_pop (&opr1);
       if (r != bfd_reloc_ok)
 	break;
-      if ((uint64_t)opr1 & ~(uint64_t) 0xffffffff)
-	r = bfd_reloc_overflow;
-      if (r != bfd_reloc_ok)
-	break;
       r = loongarch_check_offset (rel, input_section);
       if (r != bfd_reloc_ok)
 	break;
 
-      bfd_put (bits, input_bfd, opr1, contents + rel->r_offset);
+      r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
+					    howto, input_bfd,
+					    contents, (bfd_vma)opr1);
       break;
+
+    case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
+	{
+	  r = loongarch_pop (&opr1);
+	  if (r != bfd_reloc_ok)
+	    break;
+
+	  if ((opr1 & 0x3) != 0)
+	    {
+	      r = bfd_reloc_overflow;
+	      break;
+	    }
+
+	  uint32_t imm = opr1 >> howto->rightshift;
+	  if ((imm & (~0xfffffU)) && ((imm & (~0xfffffU)) != (~0xfffffU)))
+	    {
+	      r = bfd_reloc_overflow;
+	      break;
+	    }
+
+	  r = loongarch_check_offset (rel, input_section);
+	  if (r != bfd_reloc_ok)
+	    break;
+
+	  insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
+	  insn1 = (insn1 & howto->src_mask)
+	    | ((imm & 0xffffU) << 10)
+	    | ((imm & 0x1f0000U) >> 16);
+	  bfd_put (bits, input_bfd, insn1, contents + rel->r_offset);
+	  break;
+	}
+
+    case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
+	{
+	  r = loongarch_pop (&opr1);
+	  if (r != bfd_reloc_ok)
+	    break;
+
+	  if ((opr1 & 0x3) != 0)
+	    {
+	      r = bfd_reloc_overflow;
+	      break;
+	    }
+
+	  uint32_t imm = opr1 >> howto->rightshift;
+	  if ((imm & (~0x1ffffffU)) && (imm & (~0x1ffffffU)) != (~0x1ffffffU))
+	    {
+	      r = bfd_reloc_overflow;
+	      break;
+	    }
+
+	  r = loongarch_check_offset (rel, input_section);
+	  if (r != bfd_reloc_ok)
+	    break;
+
+	  insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
+	  insn1 = (insn1 & howto->src_mask)
+	    | ((imm & 0xffffU) << 10)
+	    | ((imm & 0x3ff0000U) >> 16);
+	  bfd_put (bits, input_bfd, insn1, contents + rel->r_offset);
+	  break;
+	}
 
     case R_LARCH_TLS_DTPREL32:
     case R_LARCH_32:

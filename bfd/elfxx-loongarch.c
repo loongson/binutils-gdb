@@ -65,7 +65,7 @@ static reloc_howto_type howto_table[] =
 	 "R_LARCH_32",			/* name */
 	 false,				/* partial_inplace */
 	 0,				/* src_mask */
-	 0xffffffff,			/* dst_mask */
+	 ALL_ONES,			/* dst_mask */
 	 false),			/* pcrel_offset */
 
   /* 64 bit relocation.  */
@@ -94,7 +94,7 @@ static reloc_howto_type howto_table[] =
 	 "R_LARCH_RELATIVE",		/* name */
 	 false,				/* partial_inplace */
 	 0,				/* src_mask */
-	 0xffffffff,			/* dst_mask */
+	 ALL_ONES,			/* dst_mask */
 	 false),			/* pcrel_offset */
 
   HOWTO (R_LARCH_COPY,			/* type (4).  */
@@ -137,7 +137,7 @@ static reloc_howto_type howto_table[] =
 	 "R_LARCH_TLS_DTPMOD32",	/* name */
 	 false,				/* partial_inplace */
 	 0,				/* src_mask */
-	 0xffffffff,			/* dst_mask */
+	 ALL_ONES,			/* dst_mask */
 	 false),			/* pcrel_offset */
 
   HOWTO (R_LARCH_TLS_DTPMOD64,		/* type (7).  */
@@ -165,7 +165,7 @@ static reloc_howto_type howto_table[] =
 	 "R_LARCH_TLS_DTPREL32",	/* name */
 	 true,				/* partial_inplace */
 	 0,				/* src_mask */
-	 0xffffffff,			/* dst_mask */
+	 ALL_ONES,			/* dst_mask */
 	 false),			/* pcrel_offset */
 
   HOWTO (R_LARCH_TLS_DTPREL64,		/* type (9).  */
@@ -193,7 +193,7 @@ static reloc_howto_type howto_table[] =
 	 "R_LARCH_TLS_TPREL32",		/* name */
 	 false,				/* partial_inplace */
 	 0,				/* src_mask */
-	 0xffffffff,			/* dst_mask */
+	 ALL_ONES,			/* dst_mask */
 	 false),			/* pcrel_offset */
 
   HOWTO (R_LARCH_TLS_TPREL64,		/* type (11).  */
@@ -221,7 +221,7 @@ static reloc_howto_type howto_table[] =
 	 "R_LARCH_IRELATIVE",		/* name */
 	 false,				/* partial_inplace */
 	 0,				/* src_mask */
-	 0xffffffff,			/* dst_mask */
+	 ALL_ONES,			/* dst_mask */
 	 false),			/* pcrel_offset */
 
   EMPTY_HOWTO(13),
@@ -270,8 +270,8 @@ static reloc_howto_type howto_table[] =
 	 bfd_elf_generic_reloc,	       		/* special_function.  */
 	 "R_LARCH_SOP_PUSH_PCREL",	    	/* name.  */
 	 false,			       		/* partial_inplace.  */
-	 0x03ffffff,			  	/* src_mask.  */
-	 0x03ffffff,			  	/* dst_mask.  */
+	 0x03ffffff,				/* src_mask.  */
+	 0x03ffffff,				/* dst_mask.  */
 	 false),			      	/* pcrel_offset.  */
 
   /* type 23-37.  */
@@ -311,7 +311,7 @@ static reloc_howto_type howto_table[] =
 	 12,				  	/* bitsize.  */
 	 false,					/* pc_relative.  */
 	 10,				   	/* bitpos.  */
-	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 complain_overflow_unsigned,	    	/* complain_on_overflow.  */
 	 bfd_elf_generic_reloc,	       		/* special_function.  */
 	 "R_LARCH_SOP_POP_32_U_10_12",	    	/* name.  */
 	 false,			       		/* partial_inplace.  */
@@ -409,12 +409,12 @@ static reloc_howto_type howto_table[] =
 	 32,				  	/* bitsize.  */
 	 false,					/* pc_relative.  */
 	 0,				   	/* bitpos.  */
-	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 complain_overflow_unsigned,	    	/* complain_on_overflow.  */
 	 bfd_elf_generic_reloc,	       		/* special_function.  */
 	 "R_LARCH_SOP_POP_32_S_U",    		/* name.  */
 	 false,			       		/* partial_inplace.  */
-	 0,					/* src_mask */
-	 0,					/* dst_mask */
+	 0xffffffff00000000,			/* src_mask */
+	 0x00000000ffffffff,			/* dst_mask */
 	 false),			      	/* pcrel_offset.  */
 
   HOWTO (R_LARCH_ADD8,	      			/* type (47).  */
@@ -428,7 +428,7 @@ static reloc_howto_type howto_table[] =
 	 "R_LARCH_ADD8",    			/* name.  */
 	 false,			       		/* partial_inplace.  */
 	 0,					/* src_mask */
-	 0xffffffff,				/* dst_mask */
+	 ALL_ONES,				/* dst_mask */
 	 false),			      	/* pcrel_offset.  */
 
   HOWTO (R_LARCH_ADD16,	      			/* type (48).  */
@@ -442,7 +442,7 @@ static reloc_howto_type howto_table[] =
 	 "R_LARCH_ADD16",    			/* name.  */
 	 false,			       		/* partial_inplace.  */
 	 0,					/* src_mask */
-	 0xffffffff,				/* dst_mask */
+	 ALL_ONES,				/* dst_mask */
 	 false),			      	/* pcrel_offset.  */
 
   HOWTO (R_LARCH_ADD24,	      			/* type (49).  */
@@ -456,7 +456,7 @@ static reloc_howto_type howto_table[] =
 	 "R_LARCH_ADD24",    			/* name.  */
 	 false,			       		/* partial_inplace.  */
 	 0,					/* src_mask */
-	 0xffffffff,				/* dst_mask */
+	 ALL_ONES,				/* dst_mask */
 	 false),			      	/* pcrel_offset.  */
 
   HOWTO (R_LARCH_ADD32,	      			/* type (50).  */
@@ -470,7 +470,7 @@ static reloc_howto_type howto_table[] =
 	 "R_LARCH_ADD32",    			/* name.  */
 	 false,			       		/* partial_inplace.  */
 	 0,					/* src_mask */
-	 0xffffffff,				/* dst_mask */
+	 ALL_ONES,				/* dst_mask */
 	 false),			      	/* pcrel_offset.  */
 
   HOWTO (R_LARCH_ADD64,	      			/* type (51).  */
@@ -498,7 +498,7 @@ static reloc_howto_type howto_table[] =
 	 "R_LARCH_SUB8",    			/* name.  */
 	 false,			       		/* partial_inplace.  */
 	 0,					/* src_mask */
-	 0xffffffff,				/* dst_mask */
+	 ALL_ONES,				/* dst_mask */
 	 false),			      	/* pcrel_offset.  */
 
   HOWTO (R_LARCH_SUB16,	      			/* type (53).  */
@@ -512,7 +512,7 @@ static reloc_howto_type howto_table[] =
 	 "R_LARCH_SUB16",    			/* name.  */
 	 false,			       		/* partial_inplace.  */
 	 0,					/* src_mask */
-	 0xffffffff,				/* dst_mask */
+	 ALL_ONES,				/* dst_mask */
 	 false),			      	/* pcrel_offset.  */
 
   HOWTO (R_LARCH_SUB24,	      			/* type (54).  */
@@ -526,7 +526,7 @@ static reloc_howto_type howto_table[] =
 	 "R_LARCH_SUB24",    			/* name.  */
 	 false,			       		/* partial_inplace.  */
 	 0,					/* src_mask */
-	 0xffffffff,				/* dst_mask */
+	 ALL_ONES,				/* dst_mask */
 	 false),			      	/* pcrel_offset.  */
 
   HOWTO (R_LARCH_SUB32,	      			/* type (55).  */
@@ -540,7 +540,7 @@ static reloc_howto_type howto_table[] =
 	 "R_LARCH_SUB32",    			/* name.  */
 	 false,			       		/* partial_inplace.  */
 	 0,					/* src_mask */
-	 0xffffffff,				/* dst_mask */
+	 ALL_ONES,				/* dst_mask */
 	 false),			      	/* pcrel_offset.  */
 
   HOWTO (R_LARCH_SUB64,	      			/* type (56).  */
@@ -658,4 +658,49 @@ loongarch_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED, const char *r_name)
       return &howto_table[i];
 
   return NULL;
+}
+
+#define LARCH_RELOC_BFD_VMA_BIT_MASK(bitsize) \
+  (~((((bfd_vma)0x1) << (bitsize)) - 1))
+
+bool loongarch_reloc_insn_fill (reloc_howto_type *howto, bfd_vma val,
+				uint32_t *pinsn)
+{
+  /* Check val low bits if rightshift != 0, before rightshift  */
+  if (howto->rightshift
+      && (((0x1UL << howto->rightshift) - 1) & val))
+    return false;
+
+  int bitsize = howto->bitsize + howto->rightshift;
+
+  if (howto->complain_on_overflow == complain_overflow_signed)
+    {
+      bfd_vma sig_bit = (val >> (bitsize - 1)) & 0x1;
+      /* If val < 0.  */
+      if (sig_bit)
+	{
+	  if ((LARCH_RELOC_BFD_VMA_BIT_MASK (bitsize - 1) & val)
+	      != LARCH_RELOC_BFD_VMA_BIT_MASK (bitsize - 1))
+	    return false;
+	}
+      else
+	{
+	  if (LARCH_RELOC_BFD_VMA_BIT_MASK (bitsize - 1) & val)
+	    return false;
+	}
+    }
+  else if (howto->complain_on_overflow == complain_overflow_unsigned)
+    {
+      if (LARCH_RELOC_BFD_VMA_BIT_MASK (bitsize) & val)
+	return false;
+    }
+  else
+    return false;
+
+  val = (val & ((0x1U << bitsize) - 1)) >> howto->rightshift;
+  val <<= howto->bitpos;
+  *pinsn = (*pinsn & (uint32_t)howto->src_mask)
+    | ((*pinsn & (~(uint32_t)howto->dst_mask)) | val);
+
+  return true;
 }
