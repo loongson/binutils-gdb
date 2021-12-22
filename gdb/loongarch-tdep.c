@@ -1416,7 +1416,7 @@ loongarch_print_registers_info (struct gdbarch *gdbarch, struct ui_file *file,
 	continue;
 
       if (gdbarch_register_reggroup_p (gdbarch, i, float_reggroup))
-	loongarch_print_fp_register (file, frame, regnum);
+	loongarch_print_fp_register (file, frame, i);
       else
 	default_print_registers_info (gdbarch, file, frame, i, 0);
     }
