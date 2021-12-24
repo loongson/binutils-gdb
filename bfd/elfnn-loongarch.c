@@ -1468,7 +1468,8 @@ loongarch_reloc_rewrite_imm_insn (const Elf_Internal_Rela *rel,
   if (!loongarch_adjust_reloc_bitsfield(howto, &reloc_val))
       return bfd_reloc_overflow;
 
-  insn |= (uint32_t)reloc_val;
+  insn = (insn & (uint32_t)howto->src_mask)
+	  | ((insn & (~(uint32_t)howto->dst_mask)) | reloc_val);
 
   bfd_put (bits, input_bfd, insn, contents + rel->r_offset);
   return bfd_reloc_ok;
