@@ -443,7 +443,7 @@ loongarch_bits_imm_needed (int64_t imm, int si)
       if (imm < 0)
 	{
 	  uint64_t uimm = (uint64_t)imm;
-	  uint64_t uimax = 0x1UL<<63;
+	  uint64_t uimax = 0x1ULL<<63;
 	  for (ret = 0; (uimm & uimax) != 0; uimm <<= 1, ret++)
 	    ;
 	  ret = 64 - ret + 1;
