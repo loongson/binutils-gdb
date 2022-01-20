@@ -967,7 +967,8 @@ assember_macro_helper (const char *const args[], void *context_ptr)
 	}
       while (0);
 
-      ret = loongarch_expand_macro (insns_buf, arg_strs, NULL, NULL);
+      ret = loongarch_expand_macro (insns_buf, arg_strs, NULL, NULL,
+                                    sizeof (args_buf));
     }
   return ret;
 }
@@ -979,6 +980,7 @@ static void
 loongarch_assemble_INSNs (char *str)
 {
   char *rest;
+  size_t len_str = strlen(str);
 
   for (rest = str; *rest != ';' && *rest != '\0'; rest++);
   if (*rest == ';')
@@ -1024,7 +1026,7 @@ loongarch_assemble_INSNs (char *str)
 	  char *c_str = loongarch_expand_macro (the_one.insn->macro,
 						the_one.arg_strs,
 						assember_macro_helper,
-						&the_one);
+						&the_one, len_str);
 	  loongarch_assemble_INSNs (c_str);
 	  free (c_str);
 	}
