@@ -1039,6 +1039,18 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
       gotplt->size += GOT_ENTRY_SIZE;
       relplt->size += sizeof (ElfNN_External_Rela);
 
+      /* If this symbol is not defined in a regular file, and we are
+	 not generating a shared library, then set the symbol to this
+	 location in the .plt.  This is required to make function
+	 pointers compare as equal between the normal executable and
+	 the shared library.  */
+      if (!bfd_link_pic(info)
+	  && !h->def_regular)
+	{
+	  h->root.u.def.section = plt;
+	  h->root.u.def.value = h->plt.offset;
+	}
+
       h->needs_plt = 1;
     }
   while (0);
@@ -1046,7 +1058,16 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
   if (!h->needs_plt)
     h->plt.offset = MINUS_ONE;
 
-  if (0 < h->got.refcount)
+  /* When generating a shared library, .hidden ifunc symbol
+     not has .got, only .got.plt.  */
+  if(h->type == STT_GNU_IFUNC
+       && ((bfd_link_pic(info)
+	       && ( h->dynindx == -1
+		   || h->forced_local))
+	   || bfd_link_pie(info))) {
+      h->got.offset = MINUS_ONE;
+    }
+  else if (0 < h->got.refcount)
     {
       asection *s;
       bool dyn;
@@ -2021,6 +2042,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 				 && (input_section->flags & SEC_ALLOC);
 
 	      outrel.r_offset += sec_addr (input_section);
+
 	      if (resolved_dynly)
 		{
 		  outrel.r_info = ELFNN_R_INFO (h->dynindx, r_type);
@@ -2297,7 +2319,8 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    {
 	      off = h->got.offset;
 
-	      if (off == MINUS_ONE)
+	      if (off == MINUS_ONE
+		  && h->type != STT_GNU_IFUNC)
 		{
 		  fatal = loongarch_reloc_is_fatal (info, input_bfd,
 			    input_section, rel, howto,
@@ -2305,6 +2328,33 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			    "Internal: GOT entry doesn't represent.");
 		  break;
 		}
+
+	     /* Hidden symbol not has .got entry, only .got.plt entry
+		so gprel is (plt - got).  */
+              if (off == MINUS_ONE
+		  && h->type == STT_GNU_IFUNC)
+                {
+                  if (h->plt.offset == (bfd_vma) -1)
+		    {
+                      abort();
+                    }
+
+		  bfd_vma plt_index = h->plt.offset / PLT_ENTRY_SIZE;
+		  off = plt_index * GOT_ENTRY_SIZE;
+
+                  if (htab->elf.splt != NULL)
+		    {
+		      /* Section .plt header is 2 times of plt entry.  */
+		      off = sec_addr(htab->elf.sgotplt) + off
+			      - sec_addr(htab->elf.sgot);
+		    }
+                  else
+                    {
+		      /* Section iplt not has plt header.  */
+		      off = sec_addr(htab->elf.igotplt) + off
+			      - sec_addr(htab->elf.sgot);
+                  }
+                }
 
 	      if (!WILL_CALL_FINISH_DYNAMIC_SYMBOL (is_dyn, is_pic, h)
 		  || (is_pic && SYMBOL_REFERENCES_LOCAL (info, h)))
@@ -2650,12 +2700,11 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
 {
   struct loongarch_elf_link_hash_table *htab = loongarch_elf_hash_table (info);
   const struct elf_backend_data *bed = get_elf_backend_data (output_bfd);
-  asection *plt = NULL;
 
   if (h->plt.offset != MINUS_ONE)
     {
       size_t i, plt_idx;
-      asection *gotplt, *relplt;
+      asection *plt, *gotplt, *relplt;
       bfd_vma got_address;
       uint32_t plt_entry[PLT_ENTRY_INSNS];
       bfd_byte *loc;
@@ -2705,7 +2754,9 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
       bfd_put_NN (output_bfd, sec_addr (plt), loc);
 
       rela.r_offset = got_address;
-      if (h->type == STT_GNU_IFUNC && SYMBOL_REFERENCES_LOCAL (info, h))
+
+      /* TRUE if this is a PLT reference to a local IFUNC.  */
+      if (PLT_LOCAL_IFUNC_P(info, h))
 	{
 	  rela.r_info = ELFNN_R_INFO (0, R_LARCH_IRELATIVE);
 	  rela.r_addend = h->root.u.def.value
@@ -2756,25 +2807,52 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
 
       rela.r_offset = sec_addr (sgot) + off;
 
-      if (h->type == STT_GNU_IFUNC)
+      if (h->def_regular
+	  && h->type == STT_GNU_IFUNC)
 	{
-	  if (elf_hash_table (info)->dynamic_sections_created
-	      && SYMBOL_REFERENCES_LOCAL (info, h))
+	  if(h->plt.offset == MINUS_ONE)
 	    {
-	      asection *sec = h->root.u.def.section;
-	      rela.r_info = ELFNN_R_INFO (0, R_LARCH_IRELATIVE);
-	      rela.r_addend = h->root.u.def.value + sec->output_section->vma
-			      + sec->output_offset;
-	      bfd_put_NN (output_bfd, 0, sgot->contents + off);
+
+	      if (htab->elf.splt == NULL)
+		  srela = htab->elf.irelplt;
+
+	      if (SYMBOL_REFERENCES_LOCAL (info, h))
+		{
+		  asection *sec = h->root.u.def.section;
+		  rela.r_info = ELFNN_R_INFO (0, R_LARCH_IRELATIVE);
+		  rela.r_addend = h->root.u.def.value + sec->output_section->vma
+				  + sec->output_offset;
+		  bfd_put_NN (output_bfd, 0, sgot->contents + off);
+		}
+	      else
+		{
+		  BFD_ASSERT ((h->got.offset & 1) == 0);
+		  BFD_ASSERT (h->dynindx != -1);
+		  rela.r_info = ELFNN_R_INFO (h->dynindx, R_LARCH_NN);
+		  rela.r_addend = 0;
+		  bfd_put_NN (output_bfd, (bfd_vma) 0, sgot->contents + off);
+		}
+	    }
+	  else if(bfd_link_pic (info))
+	    {
+	      rela.r_info = ELFNN_R_INFO (h->dynindx, R_LARCH_NN);
+	      rela.r_addend = 0;
+	      bfd_put_NN (output_bfd, rela.r_addend, sgot->contents + off);
 	    }
 	  else
 	    {
-	      BFD_ASSERT (plt);
-	      rela.r_info = ELFNN_R_INFO (
-		0, bfd_link_pic (info) ? R_LARCH_RELATIVE : R_LARCH_NONE);
-	      rela.r_addend =
-		plt->output_section->vma + plt->output_offset + h->plt.offset;
-	      bfd_put_NN (output_bfd, rela.r_addend, sgot->contents + off);
+	      asection *plt;
+
+              /* For non-shared object, we can't use .got.plt, which
+                 contains the real function address if we need pointer
+                 equality.  We load the GOT entry with the PLT entry.  */
+              plt = htab->elf.splt ? htab->elf.splt : htab->elf.iplt;
+              bfd_put_NN (output_bfd,
+			  (plt->output_section->vma
+			      + plt->output_offset
+                              + h->plt.offset),
+			  sgot->contents + off);
+              return true;
 	    }
 	}
       else if (bfd_link_pic (info) && SYMBOL_REFERENCES_LOCAL (info, h))
