@@ -2043,7 +2043,19 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      outrel.r_offset += sec_addr (input_section);
 
-	      if (resolved_dynly)
+              /* A pointer point to a local ifunc symbol.  */
+              if(h
+                  && h->type == STT_GNU_IFUNC
+                  && (h->dynindx == -1
+                      || h->forced_local
+                      || bfd_link_executable(info)))
+                {
+                  outrel.r_info = ELFNN_R_INFO (0, R_LARCH_IRELATIVE );
+                  outrel.r_addend = (h->root.u.def.value
+                                      + h->root.u.def.section->output_section->vma
+                                      + h->root.u.def.section->output_offset);
+                }
+              else if (resolved_dynly)
 		{
 		  outrel.r_info = ELFNN_R_INFO (h->dynindx, r_type);
 		  outrel.r_addend = rel->r_addend;
