@@ -1092,9 +1092,22 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 
       /* Make sure this symbol is output as a dynamic symbol.
 	 Undefined weak syms won't yet be marked as dynamic.  */
-      if (h->dynindx == -1 && !h->forced_local
-	  && !bfd_elf_link_record_dynamic_symbol (info, h))
-	return false;
+      if (h->dynindx == -1 && !h->forced_local)
+	{
+	  if (!(bfd_link_pic(info))
+	      && (!bfd_link_pie(info))
+	      && SYMBOL_REFERENCES_LOCAL (info, h)
+	      && (ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
+	      && h->start_stop)
+	    {
+	      /* The pr21964-4. do nothing.  */
+	    }
+	  else
+	    {
+	      if( !bfd_elf_link_record_dynamic_symbol (info, h))
+		return false;
+	    }
+	}
 
       s = htab->elf.sgot;
       h->got.offset = s->size;
