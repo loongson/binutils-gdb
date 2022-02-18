@@ -2072,14 +2072,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	resolved_dynly = resolved_local = defined_local = false,
 	resolved_to_const = true;
 
-      if (h && h->type == STT_GNU_IFUNC)
+      /* The ifunc without reference does not generate plt.  */
+      if (h && h->type == STT_GNU_IFUNC && h->plt.offset != MINUS_ONE)
 	{
-	  if (h->plt.offset == MINUS_ONE)
-	    info->callbacks->info ("%X%pB(%pA+0x%v): error: %s against `%s':\n"
-				   "STT_GNU_IFUNC must have PLT stub"
-				   "\n",
-				   input_bfd, input_section,
-				   (bfd_vma) rel->r_offset, howto->name, name);
 	  defined_local = true;
 	  resolved_local = true;
 	  resolved_dynly = false;
