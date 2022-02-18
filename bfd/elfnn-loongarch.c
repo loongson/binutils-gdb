@@ -634,6 +634,10 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    h = (struct elf_link_hash_entry *) h->root.u.i.link;
 	}
 
+      /* It is referenced by a non-shared object.  */
+      if (h != NULL)
+	h->ref_regular = 1;
+
       if (h && h->type == STT_GNU_IFUNC)
 	{
 	  if (htab->elf.dynobj == NULL)
@@ -750,6 +754,24 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 
 	  if (h != NULL)
 	    h->non_got_ref = 1;
+
+	  if (h != NULL
+	      && (!bfd_link_pic (info)
+	          || h->type == STT_GNU_IFUNC))
+	    {
+	      /* This reloc might not bind locally.  */
+	      h->non_got_ref = 1;
+	      h->pointer_equality_needed = 1;
+
+	      if (!h->def_regular
+	          || (sec->flags & (SEC_CODE | SEC_READONLY)) != 0)
+	        {
+	          /* We may need a .plt entry if the symbol is a function
+	             defined in a shared lib or is a function referenced
+	             from the code or read-only section.  */
+	          h->plt.refcount += 1;
+	        }
+	    }
 	  break;
 
 	case R_LARCH_GNU_VTINHERIT:
@@ -990,6 +1012,10 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
   if (h->root.type == bfd_link_hash_indirect)
     return true;
 
+  if (h->type == STT_GNU_IFUNC
+      && h->def_regular)
+    return true;
+
   eh = (struct loongarch_elf_link_hash_entry *) h;
   info = (struct bfd_link_info *) inf;
   htab = loongarch_elf_hash_table (info);
@@ -1058,16 +1084,7 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
   if (!h->needs_plt)
     h->plt.offset = MINUS_ONE;
 
-  /* When generating a shared library, .hidden ifunc symbol
-     not has .got, only .got.plt.  */
-  if(h->type == STT_GNU_IFUNC
-       && ((bfd_link_pic(info)
-	       && ( h->dynindx == -1
-		   || h->forced_local))
-	   || bfd_link_pie(info))) {
-      h->got.offset = MINUS_ONE;
-    }
-  else if (0 < h->got.refcount)
+  if (0 < h->got.refcount)
     {
       asection *s;
       bool dyn;
@@ -1148,16 +1165,60 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
   return true;
 }
 
+/* Allocate space in .plt, .got and associated reloc sections for
+   ifunc dynamic relocs.  */
+
+static bool
+elfNN_loongarch_allocate_ifunc_dynrelocs (struct elf_link_hash_entry *h,
+                                        void *inf)
+{
+  struct bfd_link_info *info;
+  /* An example of a bfd_link_hash_indirect symbol is versioned
+     symbol. For example: __gxx_personality_v0(bfd_link_hash_indirect)
+     -> __gxx_personality_v0(bfd_link_hash_defined)
+
+     There is no need to process bfd_link_hash_indirect symbols here
+     because we will also be presented with the concrete instance of
+     the symbol and loongarch_elf_copy_indirect_symbol () will have been
+     called to copy all relevant data from the generic to the concrete
+     symbol instance.  */
+  if (h->root.type == bfd_link_hash_indirect)
+    return true;
+
+  if (h->root.type == bfd_link_hash_warning)
+    h = (struct elf_link_hash_entry *) h->root.u.i.link;
+
+  info = (struct bfd_link_info *) inf;
+
+  /* Since STT_GNU_IFUNC symbol must go through PLT, we handle it
+     here if it is defined and referenced in a non-shared object.  */
+  if (h->type == STT_GNU_IFUNC
+      && h->def_regular)
+    return _bfd_elf_allocate_ifunc_dyn_relocs (info, h,
+                                               &h->dyn_relocs,
+                                               PLT_ENTRY_SIZE,
+                                               PLT_HEADER_SIZE,
+                                               GOT_ENTRY_SIZE,
+                                               false);
+  return true;
+}
+
+/* Allocate space in .plt, .got and associated reloc sections for
+   ifunc dynamic relocs.  */
+
 static bool
 elfNN_loongarch_allocate_local_dynrelocs (void **slot, void *inf)
 {
   struct elf_link_hash_entry *h = (struct elf_link_hash_entry *) *slot;
 
-  if (!h->def_regular || !h->ref_regular || !h->forced_local
+  if (h->type != STT_GNU_IFUNC
+      || !h->def_regular
+      || !h->ref_regular
+      || !h->forced_local
       || h->root.type != bfd_link_hash_defined)
     abort ();
 
-  return allocate_dynrelocs (h, inf);
+  return elfNN_loongarch_allocate_ifunc_dynrelocs (h, inf);
 }
 
 /* Set DF_TEXTREL if we find any dynamic relocs that apply to
@@ -1294,6 +1355,11 @@ loongarch_elf_size_dynamic_sections (bfd *output_bfd,
   /* Allocate global sym .plt and .got entries, and space for global
      sym dynamic relocs.  */
   elf_link_hash_traverse (&htab->elf, allocate_dynrelocs, info);
+
+  /* Allocate global ifunc sym .plt and .got entries, and space for global
+     ifunc sym dynamic relocs.  */
+  elf_link_hash_traverse (&htab->elf, elfNN_loongarch_allocate_ifunc_dynrelocs, info);
+
   /* Allocate .plt and .got entries, and space for local ifunc symbols.  */
   htab_traverse (htab->loc_hash_table,
 		 (void *) elfNN_loongarch_allocate_local_dynrelocs, info);
@@ -2054,6 +2120,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
                   outrel.r_addend = (h->root.u.def.value
                                       + h->root.u.def.section->output_section->vma
                                       + h->root.u.def.section->output_offset);
+		  sreloc = htab->elf.srelgot;
                 }
               else if (resolved_dynly)
 		{
@@ -2722,8 +2789,6 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
       bfd_byte *loc;
       Elf_Internal_Rela rela;
 
-      plt_idx = (h->plt.offset - PLT_HEADER_SIZE) / PLT_ENTRY_SIZE;
-
       /* One of '.plt' and '.iplt' represents.  */
       BFD_ASSERT (!!htab->elf.splt ^ !!htab->elf.iplt);
 
@@ -2736,6 +2801,7 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
 	  plt = htab->elf.splt;
 	  gotplt = htab->elf.sgotplt;
 	  relplt = htab->elf.srelplt;
+	  plt_idx = (h->plt.offset - PLT_HEADER_SIZE) / PLT_ENTRY_SIZE;
 	  got_address =
 	    sec_addr (gotplt) + GOTPLT_HEADER_SIZE + plt_idx * GOT_ENTRY_SIZE;
 	}
@@ -2747,6 +2813,7 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
 	  plt = htab->elf.iplt;
 	  gotplt = htab->elf.igotplt;
 	  relplt = htab->elf.irelplt;
+	  plt_idx = h->plt.offset / PLT_ENTRY_SIZE;
 	  got_address = sec_addr (gotplt) + plt_idx * GOT_ENTRY_SIZE;
 	}
 
@@ -2997,10 +3064,8 @@ loongarch_elf_finish_dynamic_sections (bfd *output_bfd,
 	return false;
     }
 
-  if ((plt = htab->elf.splt))
-    gotplt = htab->elf.sgotplt;
-  else if ((plt = htab->elf.iplt))
-    gotplt = htab->elf.igotplt;
+  plt = htab->elf.splt;
+  gotplt = htab->elf.sgotplt;
 
   if (plt && 0 < plt->size)
     {
