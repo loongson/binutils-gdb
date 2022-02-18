@@ -2675,9 +2675,19 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		    }
 		  else /* if (resolved_dynly) */
 		    {
-		      outrel.r_info =
-			ELFNN_R_INFO (h->dynindx, R_LARCH_TLS_TPRELNN);
-		      outrel.r_addend = 0;
+		      /* Static linking has no .dynsym table.  */
+		      if (!htab->elf.dynamic_sections_created)
+			{
+			  outrel.r_info =
+			    ELFNN_R_INFO (0, R_LARCH_TLS_TPRELNN);
+			  outrel.r_addend = 0;
+			}
+		      else
+			{
+			  outrel.r_info =
+			    ELFNN_R_INFO (h->dynindx, R_LARCH_TLS_TPRELNN);
+			  outrel.r_addend = 0;
+			}
 		      loongarch_elf_append_rela (output_bfd, htab->elf.srelgot,
 						 &outrel);
 		    }
