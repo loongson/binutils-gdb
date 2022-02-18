@@ -2091,7 +2091,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
       BFD_ASSERT (resolved_local + resolved_dynly + resolved_to_const == 1);
 
-      BFD_ASSERT (!resolved_dynly || (h && h->dynindx != -1));
+      /* BFD_ASSERT (!resolved_dynly || (h && h->dynindx != -1));.  */
 
       BFD_ASSERT (!resolved_local || defined_local);
 
