@@ -437,7 +437,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "R_LARCH_SOP_POP_32_S_5_20",    	  /* name.  */
 	 false,			       		  /* partial_inplace.  */
 	 0,					  /* src_mask */
-	 0x1fffe0,				  /* dst_mask */
+	 0x1ffffe0,				  /* dst_mask */
 	 false,					  /* pcrel_offset */
 	 BFD_RELOC_LARCH_SOP_POP_32_S_5_20,	  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),        /* adjust_reloc_bits */
