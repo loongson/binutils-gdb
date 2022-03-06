@@ -32,8 +32,9 @@ struct gdbarch_tdep
     int r;
     int ra;
     int sp;
-    int pc;
-    int badvaddr;
+    int orig_a0;  /* The register syscall's original ARG0.  */
+    int pc;	  /* Register csr_era.  */
+    int badvaddr; /* Register csr_badv.  */
 
     int f;
     int fcc;
