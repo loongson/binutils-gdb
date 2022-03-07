@@ -1094,9 +1094,7 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	 Undefined weak syms won't yet be marked as dynamic.  */
       if (h->dynindx == -1 && !h->forced_local)
 	{
-	  if (!(bfd_link_pic(info))
-	      && (!bfd_link_pie(info))
-	      && SYMBOL_REFERENCES_LOCAL (info, h)
+	  if (SYMBOL_REFERENCES_LOCAL (info, h)
 	      && (ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
 	      && h->start_stop)
 	    {
@@ -2490,6 +2488,28 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		    off &= ~1;
 		  else
 		    {
+		      /* The pr21964-4. Create relocate entry.  */
+		      if (is_pic && h->start_stop)
+			{
+			  asection *s;
+			  Elf_Internal_Rela outrel;
+			  /* We need to generate a R_LARCH_RELATIVE reloc
+			     for the dynamic linker.  */
+			  s = htab->elf.srelgot;
+			  if (!s)
+			    {
+			      fatal = loongarch_reloc_is_fatal (info, input_bfd,
+				    input_section, rel, howto,
+				    bfd_reloc_notsupported, is_undefweak, name,
+				    "Internal: '.rel.got' not represent");
+			      break;
+			    }
+
+			  outrel.r_offset = sec_addr (got) + off;
+			  outrel.r_info = ELFNN_R_INFO (0, R_LARCH_RELATIVE);
+			  outrel.r_addend = relocation; /* Link-time addr.  */
+			  loongarch_elf_append_rela (output_bfd, s, &outrel);
+			}
 		      bfd_put_NN (output_bfd, relocation, got->contents + off);
 		      h->got.offset |= 1;
 		    }
@@ -2816,9 +2836,6 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
       uint32_t plt_entry[PLT_ENTRY_INSNS];
       bfd_byte *loc;
       Elf_Internal_Rela rela;
-
-      /* One of '.plt' and '.iplt' represents.  */
-      BFD_ASSERT (!!htab->elf.splt ^ !!htab->elf.iplt);
 
       if (htab->elf.splt)
 	{
