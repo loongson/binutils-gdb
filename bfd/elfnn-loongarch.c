@@ -639,12 +639,6 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	  if (htab->elf.dynobj == NULL)
 	    htab->elf.dynobj = abfd;
 
-	  /* Create the ifunc sections, iplt and ipltgot, for static
-	     executables.  */
-	  if ((r_type == R_LARCH_64 || r_type == R_LARCH_32)
-	      && !_bfd_elf_create_ifunc_sections (htab->elf.dynobj, info))
-	    return false;
-
 	  if (!htab->elf.splt
 	      && !_bfd_elf_create_ifunc_sections (htab->elf.dynobj, info))
 	    /* If '.plt' not represent, create '.iplt' to deal with ifunc.  */
@@ -2124,22 +2118,12 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
                       || h->forced_local
                       || bfd_link_executable(info)))
                 {
-                  outrel.r_info = ELFNN_R_INFO (0, R_LARCH_IRELATIVE);
+                  outrel.r_info = ELFNN_R_INFO (0, R_LARCH_IRELATIVE );
                   outrel.r_addend = (h->root.u.def.value
                                       + h->root.u.def.section->output_section->vma
                                       + h->root.u.def.section->output_offset);
-
-		  /* Dynamic relocations are stored in
-		     1. .rela.ifunc section in PIC object.
-		     2. .rela.got section in dynamic executable.
-		     3. .rela.iplt section in static executable.  */
-		  if (bfd_link_pic (info))
-		    sreloc = htab->elf.irelifunc;
-		  else if (htab->elf.splt != NULL)
-		    sreloc = htab->elf.srelgot;
-		  else
-		    sreloc = htab->elf.irelplt;
-		}
+		  sreloc = htab->elf.srelgot;
+                }
               else if (resolved_dynly)
 		{
 		  outrel.r_info = ELFNN_R_INFO (h->dynindx, r_type);
