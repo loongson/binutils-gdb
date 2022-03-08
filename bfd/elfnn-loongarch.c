@@ -42,6 +42,9 @@ struct loongarch_elf_link_hash_entry
 {
   struct elf_link_hash_entry elf;
 
+  /* Track dynamic relocs copied for this symbol.  */
+  struct elf_dyn_relocs *dyn_relocs;
+
 #define GOT_UNKNOWN 0
 #define GOT_NORMAL  1
 #define GOT_TLS_GD  2
@@ -235,6 +238,7 @@ link_hash_newfunc (struct bfd_hash_entry *entry, struct bfd_hash_table *table,
       struct loongarch_elf_link_hash_entry *eh;
 
       eh = (struct loongarch_elf_link_hash_entry *) entry;
+      eh->dyn_relocs = NULL;
       eh->tls_type = GOT_UNKNOWN;
     }
 
@@ -806,7 +810,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	  /* If this is a global symbol, we count the number of
 	     relocations we need for this symbol.  */
 	  if (h != NULL)
-	    head = &h->dyn_relocs;
+	    head = &((struct loongarch_elf_link_hash_entry *) h)->dyn_relocs;
 	  else
 	    {
 	      /* Track dynamic relocs needed for local syms too.
@@ -853,7 +857,7 @@ readonly_dynrelocs (struct elf_link_hash_entry *h)
 {
   struct elf_dyn_relocs *p;
 
-  for (p = h->dyn_relocs; p != NULL; p = p->next)
+  for (p = loongarch_elf_hash_entry (h)->dyn_relocs; p != NULL; p = p->next)
     {
       asection *s = p->sec->output_section;
 
@@ -1002,6 +1006,7 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 {
   struct bfd_link_info *info;
   struct loongarch_elf_link_hash_table *htab;
+  struct loongarch_elf_link_hash_entry *eh;
   struct elf_dyn_relocs *p;
 
   if (h->root.type == bfd_link_hash_indirect)
@@ -1011,6 +1016,7 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
       && h->def_regular)
     return true;
 
+  eh = (struct loongarch_elf_link_hash_entry *) h;
   info = (struct bfd_link_info *) inf;
   htab = loongarch_elf_hash_table (info);
   BFD_ASSERT (htab != NULL);
@@ -1134,14 +1140,14 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
   else
     h->got.offset = MINUS_ONE;
 
-  if (h->dyn_relocs == NULL)
+  if (eh->dyn_relocs == NULL)
     return true;
 
   if (SYMBOL_REFERENCES_LOCAL (info, h))
     {
       struct elf_dyn_relocs **pp;
 
-      for (pp = &h->dyn_relocs; (p = *pp) != NULL;)
+      for (pp = &eh->dyn_relocs; (p = *pp) != NULL;)
 	{
 	  p->count -= p->pc_count;
 	  p->pc_count = 0;
@@ -1155,7 +1161,7 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
   if (h->root.type == bfd_link_hash_undefweak)
     {
       if (UNDEFWEAK_NO_DYNAMIC_RELOC (info, h))
-	h->dyn_relocs = NULL;
+	eh->dyn_relocs = NULL;
       else if (h->dynindx == -1 && !h->forced_local
 	/* Make sure this symbol is output as a dynamic symbol.
 	   Undefined weak syms won't yet be marked as dynamic.  */
@@ -1163,7 +1169,7 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	return false;
     }
 
-  for (p = h->dyn_relocs; p != NULL; p = p->next)
+  for (p = eh->dyn_relocs; p != NULL; p = p->next)
     {
       asection *sreloc = elf_section_data (p->sec)->sreloc;
       sreloc->size += p->count * sizeof (ElfNN_External_Rela);
@@ -3206,10 +3212,10 @@ loongarch_elf_copy_indirect_symbol (struct bfd_link_info *info,
 				    struct elf_link_hash_entry *dir,
 				    struct elf_link_hash_entry *ind)
 {
-  struct elf_link_hash_entry *edir, *eind;
+  struct loongarch_elf_link_hash_entry *edir, *eind;
 
-  edir = dir;
-  eind = ind;
+  edir = (struct loongarch_elf_link_hash_entry *) dir;
+  eind = (struct loongarch_elf_link_hash_entry *) ind;
 
   if (eind->dyn_relocs != NULL)
     {
@@ -3244,9 +3250,8 @@ loongarch_elf_copy_indirect_symbol (struct bfd_link_info *info,
 
   if (ind->root.type == bfd_link_hash_indirect && dir->got.refcount < 0)
     {
-      loongarch_elf_hash_entry(edir)->tls_type
-	= loongarch_elf_hash_entry(eind)->tls_type;
-      loongarch_elf_hash_entry(eind)->tls_type = GOT_UNKNOWN;
+      edir->tls_type = eind->tls_type;
+      eind->tls_type = GOT_UNKNOWN;
     }
   _bfd_elf_link_hash_copy_indirect (info, dir, ind);
 }
