@@ -63,10 +63,6 @@ loongarch_supply_elf_gregset (const struct regset *r,
 	regcache->raw_supply (regs->r + i, (const void *)buf);
 	}
 
-      /* Size base (orig_a0) = regsize * regs->orig_a0.  */
-      buf = (const gdb_byte*)gprs + regsize * regs->orig_a0;
-      regcache->raw_supply (regs->orig_a0, (const void *)buf);
-
       /* Size base (pc) = regsize * regs->pc.  */
       buf = (const gdb_byte*)gprs + regsize * regs->pc;
       regcache->raw_supply (regs->pc, (const void *)buf);
@@ -79,7 +75,6 @@ loongarch_supply_elf_gregset (const struct regset *r,
     regcache->raw_supply_zeroed (regno);
   else if ((regs->r < regno && regno < regs->r + 32)
 	  || (regs->pc == regno)
-	  || (regs->orig_a0 == regno)
 	  || (regs->badvaddr == regno))
     {
     /* Offset offset (regno) = regsize * (regno - regs->r).  */
@@ -105,6 +100,14 @@ loongarch_fill_elf_gregset (const struct regset *r,
 	buf = (gdb_byte *)gprs + regsize * i;
 	regcache->raw_collect (regs->r + i, (void *)buf);
 	}
+
+      /* Size base (pc) = regsize * regs->pc.  */
+      buf = (gdb_byte *)gprs + regsize * regs->pc;
+      regcache->raw_collect (regs->pc, (void *)buf);
+
+      /* Size base (badvaddr) = regsize * regs->badvaddr.  */
+      buf = (gdb_byte *)gprs + regsize * regs->badvaddr;
+      regcache->raw_collect (regs->badvaddr, (void *)buf);
     }
   else if ((regs->r <= regno && regno < regs->r + 32)
 	  ||(regs->pc == regno)

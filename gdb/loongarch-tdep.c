@@ -700,7 +700,7 @@ loongarch_frame_cache (struct frame_info *this_frame, void **this_cache)
   else
     {
       auto regs = &gdbarch_tdep (gdbarch)->regs;
-      //trad_frame_set_reg_realreg (cache, regs->ra, -2 /* TF_REG_UNKNOWN */);
+      trad_frame_set_reg_realreg (cache, regs->ra, -2 /* TF_REG_UNKNOWN */);
       trad_frame_set_reg_realreg (cache, gdbarch_pc_regnum (gdbarch),
 				  regs->ra);
 
@@ -1575,10 +1575,6 @@ loongarch_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   for (i = 0; i < 32; i++)
     valid_p &= tdesc_numbered_register (feature, tdesc_data.get (), regnum++,
 					loongarch_r_normal_name[i] + 1);
-
-  valid_p &= tdesc_numbered_register (feature, tdesc_data.get (),
-				      tdep->regs.orig_a0 = regnum++, "orig_a0");
-
   valid_p &= tdesc_numbered_register (feature, tdesc_data.get (),
 				      tdep->regs.pc = regnum++, "pc");
   valid_p
