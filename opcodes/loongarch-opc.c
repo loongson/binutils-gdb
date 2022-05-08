@@ -109,6 +109,8 @@ static struct loongarch_opcode loongarch_macro_opcodes[] =
   { 0, 0, "li.w", "r,sc", "%f", 0, 0, 0},
   { 0, 0, "li.d", "r,sc", "%f", 0, 0, 0},
   { 0, 0, "la", "r,la", "la.global %1,%2", 0, 0, 0 },
+  { 0, 0, "call.inter", "r,la", "%f", 0, 0, 0 },
+  { 0, 0, "call.sib", "r,la", "%f", 0, 0, 0 },
 
   { 0, 0, "la.global", "r,la", "la.pcrel %1,%2",
     &LARCH_opts.ase_gpcr, 0, 0 },
@@ -128,134 +130,19 @@ static struct loongarch_opcode loongarch_macro_opcodes[] =
   { 0, 0, "la.local", "r,la", "la.pcrel %1,%2", 0, 0, 0 },
   { 0, 0, "la.local", "r,r,la", "la.pcrel %1,%2,%3", 0, 0, 0 },
 
-  { 0, 0, "la.abs", "r,la",
-    "lu12i.w %1,%%abs(%2)>>12;"
-    "ori %1,%1,%%abs(%2)&0xfff;",
-    &LARCH_opts.ase_ilp32, &LARCH_opts.ase_lp64, 0 },
-  { 0, 0, "la.abs", "r,la",
-    "lu12i.w %1,%%abs(%2)<<32>>44;"
-    "ori %1,%1,%%abs(%2)&0xfff;"
-    "lu32i.d %1,%%abs(%2)<<12>>44;"
-    "lu52i.d %1,%1,%%abs(%2)>>52;",
-    &LARCH_opts.ase_lp64, 0, 0 },
-
-  { 0, 0, "la.pcrel", "r,la",
-    "pcaddu12i %1,%%pcrel(%2+0x800)<<32>>44;"
-    "addi.w %1,%1,%%pcrel(%2+4)-(%%pcrel(%2+4+0x800)>>12<<12);",
-    &LARCH_opts.ase_ilp32, &LARCH_opts.ase_lp64, 0 },
-
-  { 0, 0, "la.pcrel", "r,la",
-    "pcaddu12i %1,%%pcrel(%2+0x800)>>12;"
-    "addi.d %1,%1,%%pcrel(%2+4)-(%%pcrel(%2+4+0x800)>>12<<12);",
-    &LARCH_opts.ase_lp64, 0, 0 },
-  { 0, 0, "la.pcrel", "r,r,la",
-    "pcaddu12i %1,(%%pcrel(%3)-(%%pcrel(%3+0x80000000)>>32<<32))<<32>>44;"
-    "ori %2,$r0,(%%pcrel(%3+4)-(%%pcrel(%3+4+0x80000000)>>32<<32))&0xfff;"
-    "lu32i.d %2,%%pcrel(%3+8+0x80000000)<<12>>44;"
-    "lu52i.d %2,%2,%%pcrel(%3+12+0x80000000)>>52;"
-    "add.d %1,%1,%2;",
-    &LARCH_opts.ase_lp64, 0, 0 },
-
-  { 0, 0, "la.got", "r,l",
-    "pcaddu12i %1,(%%pcrel(_GLOBAL_OFFSET_TABLE_+0x800)+%%gprel(%2))<<32>>44;"
-    "ld.w "
-    "%1,%1,%%pcrel(_GLOBAL_OFFSET_TABLE_+4)+%%gprel(%2)-((%%pcrel(_GLOBAL_"
-    "OFFSET_TABLE_+4+0x800)+%%gprel(%2))>>12<<12);",
-    &LARCH_opts.ase_ilp32, &LARCH_opts.ase_lp64, 0 },
-
-  { 0, 0, "la.got", "r,l",
-    "pcaddu12i %1,(%%pcrel(_GLOBAL_OFFSET_TABLE_+0x800)+%%gprel(%2))>>12;"
-    "ld.d "
-    "%1,%1,%%pcrel(_GLOBAL_OFFSET_TABLE_+4)+%%gprel(%2)-((%%pcrel(_GLOBAL_"
-    "OFFSET_TABLE_+4+0x800)+%%gprel(%2))>>12<<12);",
-    &LARCH_opts.ase_lp64, 0, 0 },
-  { 0, 0, "la.got", "r,r,l",
-    "pcaddu12i "
-    "%1,(%%pcrel(_GLOBAL_OFFSET_TABLE_)+%%gprel(%3)-((%%pcrel(_GLOBAL_OFFSET_"
-    "TABLE_+0x80000000)+%%gprel(%3))>>32<<32))<<32>>44;"
-    "ori "
-    "%2,$r0,(%%pcrel(_GLOBAL_OFFSET_TABLE_+4)+%%gprel(%3)-((%%pcrel(_GLOBAL_"
-    "OFFSET_TABLE_+4+0x80000000)+%%gprel(%3))>>32<<32))&0xfff;"
-    "lu32i.d "
-    "%2,(%%pcrel(_GLOBAL_OFFSET_TABLE_+8+0x80000000)+%%gprel(%3))<<12>>44;"
-    "lu52i.d "
-    "%2,%2,(%%pcrel(_GLOBAL_OFFSET_TABLE_+12+0x80000000)+%%gprel(%3))>>52;"
-    "ldx.d %1,%1,%2;",
-    &LARCH_opts.ase_lp64, 0, 0 },
-
-  { 0, 0, "la.tls.le", "r,la",
-    "lu12i.w %1,%%tprel(%2)>>12;"
-    "ori %1,%1,%%tprel(%2)&0xfff",
-    &LARCH_opts.ase_ilp32, &LARCH_opts.ase_lp64, 0 },
-  /* { 0, 0, "la.tls.le", "r,la",
-  * "lu12i.w %1,%%tprel(%2)>>12;"
-  * "ori %1,%1,%%tprel(%2)&0xfff"
-  * , &LARCH_opts.addrwidth_is_64, 0, 0}, */
-  { 0, 0, "la.tls.le", "r,la",
-    "lu12i.w %1,%%tprel(%2)<<32>>44;"
-    "ori %1,%1,%%tprel(%2)&0xfff;"
-    "lu32i.d %1,%%tprel(%2)<<12>>44;"
-    "lu52i.d %1,%1,%%tprel(%2)>>52;",
-    &LARCH_opts.ase_lp64, 0, 0 },
-
-  { 0, 0, "la.tls.ie", "r,l",
-    "pcaddu12i %1,(%%pcrel(_GLOBAL_OFFSET_TABLE_+0x800)+%%tlsgot(%2))<<32>>44;"
-    "ld.w "
-    "%1,%1,%%pcrel(_GLOBAL_OFFSET_TABLE_+4)+%%tlsgot(%2)-((%%pcrel(_GLOBAL_"
-    "OFFSET_TABLE_+4+0x800)+%%tlsgot(%2))>>12<<12);",
-    &LARCH_opts.ase_ilp32, &LARCH_opts.ase_lp64, 0 },
-
-  { 0, 0, "la.tls.ie", "r,l",
-    "pcaddu12i %1,(%%pcrel(_GLOBAL_OFFSET_TABLE_+0x800)+%%tlsgot(%2))>>12;"
-    "ld.d "
-    "%1,%1,%%pcrel(_GLOBAL_OFFSET_TABLE_+4)+%%tlsgot(%2)-((%%pcrel(_GLOBAL_"
-    "OFFSET_TABLE_+4+0x800)+%%tlsgot(%2))>>12<<12);",
-    &LARCH_opts.ase_lp64, 0, 0 },
-  { 0, 0, "la.tls.ie", "r,r,l",
-    "pcaddu12i "
-    "%1,(%%pcrel(_GLOBAL_OFFSET_TABLE_)+%%tlsgot(%3)-((%%pcrel(_GLOBAL_OFFSET_"
-    "TABLE_+0x80000000)+%%tlsgot(%3))>>32<<32))<<32>>44;"
-    "ori "
-    "%2,$r0,(%%pcrel(_GLOBAL_OFFSET_TABLE_+4)+%%tlsgot(%3)-((%%pcrel(_GLOBAL_"
-    "OFFSET_TABLE_+4+0x80000000)+%%tlsgot(%3))>>32<<32))&0xfff;"
-    "lu32i.d "
-    "%2,(%%pcrel(_GLOBAL_OFFSET_TABLE_+8+0x80000000)+%%tlsgot(%3))<<12>>44;"
-    "lu52i.d "
-    "%2,%2,(%%pcrel(_GLOBAL_OFFSET_TABLE_+12+0x80000000)+%%tlsgot(%3))>>52;"
-    "ldx.d %1,%1,%2;",
-    &LARCH_opts.ase_lp64, 0, 0 },
-
+  { 0, 0, "la.abs", "r,la", "%f", 0, 0, 0 },
+  { 0, 0, "la.tls.le", "r,la", "%f", 0, 0, 0 },
+  { 0, 0, "la.pcrel", "r,la", "%f", 0, 0, 0 },
+  { 0, 0, "la.pcrel", "r,r,la", "%f", 0, 0, 0 },
+  { 0, 0, "la.got", "r,l", "%f", 0, 0, 0 },
+  { 0, 0, "la.got", "r,r,l", "%f", 0, 0, 0 },
+  { 0, 0, "la.tls.ie", "r,l", "%f", 0, 0, 0 },
+  { 0, 0, "la.tls.ie", "r,r,l", "%f", 0, 0, 0 },
   { 0, 0, "la.tls.ld", "r,l", "la.tls.gd %1,%2", 0, 0, 0 },
-  { 0, 0, "la.tls.ld", "r,r,l", "la.tls.gd %1,%2,%3",
-    &LARCH_opts.ase_lp64, 0, 0 },
 
-  { 0, 0, "la.tls.gd", "r,l",
-    "pcaddu12i %1,(%%pcrel(_GLOBAL_OFFSET_TABLE_+0x800)+%%tlsgd(%2))<<32>>44;"
-    "addi.w "
-    "%1,%1,%%pcrel(_GLOBAL_OFFSET_TABLE_+4)+%%tlsgd(%2)-((%%pcrel(_GLOBAL_"
-    "OFFSET_TABLE_+4+0x800)+%%tlsgd(%2))>>12<<12);",
-    &LARCH_opts.ase_ilp32, &LARCH_opts.ase_lp64, 0 },
-
-  { 0, 0, "la.tls.gd", "r,l",
-    "pcaddu12i %1,(%%pcrel(_GLOBAL_OFFSET_TABLE_+0x800)+%%tlsgd(%2))>>12;"
-    "addi.d "
-    "%1,%1,%%pcrel(_GLOBAL_OFFSET_TABLE_+4)+%%tlsgd(%2)-((%%pcrel(_GLOBAL_"
-    "OFFSET_TABLE_+4+0x800)+%%tlsgd(%2))>>12<<12);",
-    &LARCH_opts.ase_lp64, 0, 0 },
-  { 0, 0, "la.tls.gd", "r,r,l",
-    "pcaddu12i "
-    "%1,(%%pcrel(_GLOBAL_OFFSET_TABLE_)+%%tlsgd(%3)-((%%pcrel(_GLOBAL_OFFSET_"
-    "TABLE_+0x80000000)+%%tlsgd(%3))>>32<<32))<<32>>44;"
-    "ori "
-    "%2,$r0,(%%pcrel(_GLOBAL_OFFSET_TABLE_+4)+%%tlsgd(%3)-((%%pcrel(_GLOBAL_"
-    "OFFSET_TABLE_+4+0x80000000)+%%tlsgd(%3))>>32<<32))&0xfff;"
-    "lu32i.d "
-    "%2,(%%pcrel(_GLOBAL_OFFSET_TABLE_+8+0x80000000)+%%tlsgd(%3))<<12>>44;"
-    "lu52i.d "
-    "%2,%2,(%%pcrel(_GLOBAL_OFFSET_TABLE_+12+0x80000000)+%%tlsgd(%3))>>52;"
-    "add.d %1,%1,%2;",
-    &LARCH_opts.ase_lp64, 0, 0 },
-
+  { 0, 0, "la.tls.ld", "r,r,l", "la.tls.gd %1,%2,%3", 0, 0, 0 },
+  { 0, 0, "la.tls.gd", "r,l", "%f", 0, 0, 0 },
+  { 0, 0, "la.tls.gd", "r,r,l", "%f", 0, 0, 0 },
   { 0 } /* Terminate the list.  */
 };
 
@@ -728,9 +615,9 @@ static struct loongarch_opcode loongarch_double_float_load_store_opcodes[] =
 
 static struct loongarch_opcode loongarch_float_jmp_opcodes[] =
 {
-  { 0x0,	0x0,		"bceqz",	"c,la",				"bceqz %1,%%pcrel(%2)",		0, 0, 0 },
+  { 0x0,	0x0,		"bceqz",	"c,la",				"bceqz %1,%%b21(%2)",		0, 0, 0 },
   { 0x48000000, 0xfc000300,	"bceqz",	"c5:3,sb0:5|10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"bcnez",	"c,la",				"bcnez %1,%%pcrel(%2)",		0, 0, 0 },
+  { 0x0,	0x0,		"bcnez",	"c,la",				"bcnez %1,%%b21(%2)",		0, 0, 0 },
   { 0x48000100, 0xfc000300,	"bcnez",	"c5:3,sb0:5|10:16<<2",		0,				0, 0, 0 },
   { 0 } /* Terminate the list.  */
 };
@@ -738,43 +625,43 @@ static struct loongarch_opcode loongarch_float_jmp_opcodes[] =
 static struct loongarch_opcode loongarch_jmp_opcodes[] =
 {
   /* match,	mask,		name,		format,				macro,			include, exclude, pinfo.  */
-  { 0x0,	0x0,		"bltz",		"r,la",				"bltz %1,%%pcrel(%2)",		0, 0, 0 },
+  { 0x0,	0x0,		"bltz",		"r,la",				"bltz %1,%%b16(%2)",		0, 0, 0 },
   { 0x60000000, 0xfc00001f,	"bltz",		"r5:5,sb10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"bgtz",		"r,la",				"bgtz %1,%%pcrel(%2)",		0, 0, 0 },
+  { 0x0,	0x0,		"bgtz",		"r,la",				"bgtz %1,%%b16(%2)",		0, 0, 0 },
   { 0x60000000, 0xfc0003e0,	"bgtz",		"r0:5,sb10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"bgez",		"r,la",				"bgez %1,%%pcrel(%2)",		0, 0, 0 },
+  { 0x0,	0x0,		"bgez",		"r,la",				"bgez %1,%%b16(%2)",		0, 0, 0 },
   { 0x64000000, 0xfc00001f,	"bgez",		"r5:5,sb10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"blez",		"r,la",				"blez %1,%%pcrel(%2)",		0, 0, 0 },
+  { 0x0,	0x0,		"blez",		"r,la",				"blez %1,%%b16(%2)",		0, 0, 0 },
   { 0x64000000, 0xfc0003e0,	"blez",		"r0:5,sb10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"beqz",		"r,la",				"beqz %1,%%pcrel(%2)",		0, 0, 0 },
+  { 0x0,	0x0,		"beqz",		"r,la",				"beqz %1,%%b21(%2)",		0, 0, 0 },
   { 0x40000000, 0xfc000000,	"beqz",		"r5:5,sb0:5|10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"bnez",		"r,la",				"bnez %1,%%pcrel(%2)",		0, 0, 0 },
+  { 0x0,	0x0,		"bnez",		"r,la",				"bnez %1,%%21(%2)",		0, 0, 0 },
   { 0x44000000, 0xfc000000,	"bnez",		"r5:5,sb0:5|10:16<<2",		0,				0, 0, 0 },
   { 0x0,	0x0,		"jr",		"r",				"jirl $r0,%1,0",		0, 0, 0 },
   { 0x50000000, 0xfc000000,	"b",		"sb0:10|10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"b",		"la",				"b %%pcrel(%1)",		0, 0, 0 },
+  { 0x0,	0x0,		"b",		"la",				"b %%b26(%1)",		0, 0, 0 },
   { 0x4c000000, 0xfc000000,	"jirl",		"r0:5,r5:5,s10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"bl",		"la",				"bl %%pcrel(%1)",		0, 0, 0 },
+  { 0x0,	0x0,		"bl",		"la",				"bl %%b26(%1)",		0, 0, 0 },
   { 0x54000000, 0xfc000000,	"bl",		"sb0:10|10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"beq",		"r,r,la",			"beq %1,%2,%%pcrel(%3)",	0, 0, 0 },
+  { 0x0,	0x0,		"beq",		"r,r,la",			"beq %1,%2,%%b16(%3)",	0, 0, 0 },
   { 0x58000000, 0xfc000000,	"beq",		"r5:5,r0:5,sb10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"bne",		"r,r,la",			"bne %1,%2,%%pcrel(%3)",	0, 0, 0 },
+  { 0x0,	0x0,		"bne",		"r,r,la",			"bne %1,%2,%%b16(%3)",	0, 0, 0 },
   { 0x5c000000, 0xfc000000,	"bne",		"r5:5,r0:5,sb10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"blt",		"r,r,la",			"blt %1,%2,%%pcrel(%3)",	0, 0, 0 },
+  { 0x0,	0x0,		"blt",		"r,r,la",			"blt %1,%2,%%b16(%3)",	0, 0, 0 },
   { 0x60000000, 0xfc000000,	"blt",		"r5:5,r0:5,sb10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"bgt",		"r,r,la",			"bgt %1,%2,%%pcrel(%3)",	0, 0, 0 },
+  { 0x0,	0x0,		"bgt",		"r,r,la",			"bgt %1,%2,%%b16(%3)",	0, 0, 0 },
   { 0x60000000, 0xfc000000,	"bgt",		"r0:5,r5:5,sb10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"bge",		"r,r,la",			"bge %1,%2,%%pcrel(%3)",	0, 0, 0 },
+  { 0x0,	0x0,		"bge",		"r,r,la",			"bge %1,%2,%%b16(%3)",	0, 0, 0 },
   { 0x64000000, 0xfc000000,	"bge",		"r5:5,r0:5,sb10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"ble",		"r,r,la",			"ble %1,%2,%%pcrel(%3)",	0, 0, 0 },
+  { 0x0,	0x0,		"ble",		"r,r,la",			"ble %1,%2,%%b16(%3)",	0, 0, 0 },
   { 0x64000000, 0xfc000000,	"ble",		"r0:5,r5:5,sb10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"bltu",		"r,r,la",			"bltu %1,%2,%%pcrel(%3)",	0, 0, 0 },
+  { 0x0,	0x0,		"bltu",		"r,r,la",			"bltu %1,%2,%%b16(%3)",	0, 0, 0 },
   { 0x68000000, 0xfc000000,	"bltu",		"r5:5,r0:5,sb10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"bgtu",		"r,r,la",			"bgtu %1,%2,%%pcrel(%3)",	0, 0, 0 },
+  { 0x0,	0x0,		"bgtu",		"r,r,la",			"bgtu %1,%2,%%b16(%3)",	0, 0, 0 },
   { 0x68000000, 0xfc000000,	"bgtu",		"r0:5,r5:5,sb10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"bgeu",		"r,r,la",			"bgeu %1,%2,%%pcrel(%3)",	0, 0, 0 },
+  { 0x0,	0x0,		"bgeu",		"r,r,la",			"bgeu %1,%2,%%b16(%3)",	0, 0, 0 },
   { 0x6c000000, 0xfc000000,	"bgeu",		"r5:5,r0:5,sb10:16<<2",		0,				0, 0, 0 },
-  { 0x0,	0x0,		"bleu",		"r,r,la",			"bleu %1,%2,%%pcrel(%3)",	0, 0, 0 },
+  { 0x0,	0x0,		"bleu",		"r,r,la",			"bleu %1,%2,%%b16(%3)",	0, 0, 0 },
   { 0x6c000000, 0xfc000000,	"bleu",		"r0:5,r5:5,sb10:16<<2",		0,				0, 0, 0 },
   { 0 } /* Terminate the list.  */
 };

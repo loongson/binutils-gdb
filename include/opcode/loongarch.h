@@ -141,6 +141,8 @@ dec2 : [1-9][0-9]?
   extern int is_signed (const char *);
   extern int is_branch_label (const char *);
 
+#define LOONGARCH_FAKE_LABEL_NAME ".LR0"
+
   extern int loongarch_get_bit_field_width (const char *bit_field, char **end);
   extern int32_t loongarch_decode_imm (const char *bit_field, insn_t insn,
 				       int si);
