@@ -79,10 +79,19 @@ emit_const (offsetT imm)
   top++;
 }
 
+extern expressionS *fake_ep;
+
 static const char *
 my_getExpression (expressionS *ep, const char *str)
 {
   char *save_in, *ret;
+
+  if (!strcmp(str, FAKE_LABEL_NAME))
+    {
+      *ep = *fake_ep;
+      return NULL;
+    }
+
   if (*str == ':')
     {
       unsigned long j;
@@ -99,6 +108,14 @@ my_getExpression (expressionS *ep, const char *str)
   input_line_pointer = save_in;
   return ret;
 }
+
+#define SET_RELOC_TYPE_ON_TOP(key, name)	\
+else if (strcmp (op_c_str, key) == 0)		\
+  do {						\
+    top->value = id_sym_expr;			\
+    top->type = BFD_RELOC_LARCH_##name;		\
+    top++;					\
+  } while (0)
 
 static void
 reloc (const char *op_c_str, const char *id_c_str, offsetT addend)
@@ -119,48 +136,33 @@ reloc (const char *op_c_str, const char *id_c_str, offsetT addend)
       id_sym_expr.X_add_number = addend;
     }
 
-  if (strcmp (op_c_str, "abs") == 0)
-    {
-      top->value = id_sym_expr;
-      top->type = BFD_RELOC_LARCH_SOP_PUSH_ABSOLUTE;
-      top++;
-    }
-  else if (strcmp (op_c_str, "pcrel") == 0)
-    {
-      top->value = id_sym_expr;
-      top->type = BFD_RELOC_LARCH_SOP_PUSH_PCREL;
-      top++;
-    }
-  else if (strcmp (op_c_str, "gprel") == 0)
-    {
-      top->value = id_sym_expr;
-      top->type = BFD_RELOC_LARCH_SOP_PUSH_GPREL;
-      top++;
-    }
-  else if (strcmp (op_c_str, "tprel") == 0)
-    {
-      top->value = id_sym_expr;
-      top->type = BFD_RELOC_LARCH_SOP_PUSH_TLS_TPREL;
-      top++;
-    }
-  else if (strcmp (op_c_str, "tlsgot") == 0)
-    {
-      top->value = id_sym_expr;
-      top->type = BFD_RELOC_LARCH_SOP_PUSH_TLS_GOT;
-      top++;
-    }
-  else if (strcmp (op_c_str, "tlsgd") == 0)
-    {
-      top->value = id_sym_expr;
-      top->type = BFD_RELOC_LARCH_SOP_PUSH_TLS_GD;
-      top++;
-    }
-  else if (strcmp (op_c_str, "plt") == 0)
-    {
-      top->value = id_sym_expr;
-      top->type = BFD_RELOC_LARCH_SOP_PUSH_PLT_PCREL;
-      top++;
-    }
+  if (0) /* unreachable; */;
+  SET_RELOC_TYPE_ON_TOP ("plt", BL26);
+  SET_RELOC_TYPE_ON_TOP ("b16", B16);
+  SET_RELOC_TYPE_ON_TOP ("b21", B21);
+  SET_RELOC_TYPE_ON_TOP ("b26", B26);
+
+  SET_RELOC_TYPE_ON_TOP ("l_hi20", L_HI20);
+  SET_RELOC_TYPE_ON_TOP ("l_lo12", L_LO12);
+  SET_RELOC_TYPE_ON_TOP ("h_lo20", H_LO20);
+  SET_RELOC_TYPE_ON_TOP ("h_hi12", H_HI12);
+  SET_RELOC_TYPE_ON_TOP ("lel_hi20", TLSLE_L_HI20);
+  SET_RELOC_TYPE_ON_TOP ("lel_lo12", TLSLE_L_LO12);
+  SET_RELOC_TYPE_ON_TOP ("leh_lo20", TLSLE_H_LO20);
+  SET_RELOC_TYPE_ON_TOP ("leh_hi12", TLSLE_H_HI12);
+  SET_RELOC_TYPE_ON_TOP ("pcrel32_hi20", PCREL32_HI20);
+  SET_RELOC_TYPE_ON_TOP ("pcrel64_hi20", PCREL64_HI20);
+  SET_RELOC_TYPE_ON_TOP ("pcrel_lo12u", PCREL_LO12_U);
+  SET_RELOC_TYPE_ON_TOP ("pcrel_lo12s", PCREL_LO12_S);
+  SET_RELOC_TYPE_ON_TOP ("pcrel_hlo20", PCREL_H_LO20);
+  SET_RELOC_TYPE_ON_TOP ("pcrel_hhi12", PCREL_H_HI12);
+  SET_RELOC_TYPE_ON_TOP ("got32_hi20", GOT32_HI20);
+  SET_RELOC_TYPE_ON_TOP ("got64_hi20", GOT64_HI20);
+  SET_RELOC_TYPE_ON_TOP ("ie32_hi20", TLSIE32_HI20);
+  SET_RELOC_TYPE_ON_TOP ("ie64_hi20", TLSIE64_HI20);
+  SET_RELOC_TYPE_ON_TOP ("gd32_hi20", TLSGD32_HI20);
+  SET_RELOC_TYPE_ON_TOP ("gd64_hi20", TLSGD64_HI20);
+
   else
     as_fatal (_("unknown reloc hint: %s"), op_c_str);
 }
