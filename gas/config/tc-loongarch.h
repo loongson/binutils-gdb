@@ -21,8 +21,6 @@
 #ifndef TC_LOONGARCH
 #define TC_LOONGARCH
 
-#include "opcode/loongarch.h"
-
 #define TARGET_BYTES_BIG_ENDIAN 0
 #define TARGET_ARCH bfd_arch_loongarch
 
@@ -31,8 +29,6 @@ extern unsigned long loongarch_mach (void);
 
 #define WORKING_DOT_WORD 1
 #define REPEAT_CONS_EXPRESSIONS
-
-#define FAKE_LABEL_NAME LOONGARCH_FAKE_LABEL_NAME
 
 /* Early than md_begin.  */
 #define md_after_parse_args loongarch_after_parse_args
@@ -53,12 +49,7 @@ extern int loongarch_relax_frag (asection *, struct frag *, long);
 
 /* This is called to see whether a reloc against a defined symbol
    should be converted into a reloc against a section.  */
-extern int loongarch_fix_adjustable (struct fix *fix);
-#define tc_fix_adjustable(fixp) loongarch_fix_adjustable(fixp)
-
-/* This called to fix pcrel lo_relocs collected in md_apply_fix().  */
-extern int loongarch_fix_collection (void);
-#define md_fix_collection() loongarch_fix_collection()
+#define tc_fix_adjustable(fixp) 0
 
 /* Values passed to md_apply_fix don't include symbol values.  */
 #define TC_FORCE_RELOCATION_SUB_LOCAL(FIX, SEG) 1
