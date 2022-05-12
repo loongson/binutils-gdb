@@ -686,7 +686,13 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_NONE,			/* bfd_reloc_code_real_type */
 	 NULL),					/* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_B16,			/* type (42).  */
+  LOONGARCH_EMPTY_HOWTO(59),
+  LOONGARCH_EMPTY_HOWTO(60),
+  LOONGARCH_EMPTY_HOWTO(61),
+  LOONGARCH_EMPTY_HOWTO(62),
+  LOONGARCH_EMPTY_HOWTO(63),
+
+  LOONGARCH_HOWTO (R_LARCH_B16,			/* type (64).  */
 	 2,					/* rightshift.  */
 	 2,				   	/* size.  */
 	 16,				  	/* bitsize.  */
@@ -702,7 +708,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_B16,			/* bfd_reloc_code_real_type */
 	 loongarch_adjust_reloc_bits_l16),	/* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_B21,			/* type (44).  */
+  LOONGARCH_HOWTO (R_LARCH_B21,			/* type (65).  */
 	 2,					/* rightshift.  */
 	 2,					/* size.  */
 	 21,				  	/* bitsize.  */
@@ -719,7 +725,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 loongarch_adjust_reloc_bits_l16_xx5_h5),
 						/* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_B26,			/* type (45).  */
+  LOONGARCH_HOWTO (R_LARCH_B26,			/* type (66).  */
 	 2,				   	/* rightshift.  */
 	 2,				   	/* size.  */
 	 26,				  	/* bitsize.  */
@@ -735,7 +741,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_B26,			/* bfd_reloc_code_real_type */
 	 loongarch_adjust_reloc_bits_l16_h10),	/* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_BL26,		/* type (45).  */
+  LOONGARCH_HOWTO (R_LARCH_BL26,		/* type (67).  */
 	 2,				   	/* rightshift.  */
 	 2,				   	/* size.  */
 	 26,				  	/* bitsize.  */
@@ -751,7 +757,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_BL26,			/* bfd_reloc_code_real_type */
 	 loongarch_adjust_reloc_bits_l16_h10),	/* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_L_HI20,		  /* type (43).  */
+  LOONGARCH_HOWTO (R_LARCH_L_HI20,		  /* type (68).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 20,				  	  /* bitsize.  */
@@ -767,7 +773,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_L_HI20,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),        /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_L_LO12,		  /* type (39).  */
+  LOONGARCH_HOWTO (R_LARCH_L_LO12,		  /* type (69).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 12,				  	  /* bitsize.  */
@@ -783,7 +789,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_L_LO12,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),	  /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_H_LO20,		  /* type (43).  */
+  LOONGARCH_HOWTO (R_LARCH_H_LO20,		  /* type (70).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 20,				  	  /* bitsize.  */
@@ -799,7 +805,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_H_LO20,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),        /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_H_HI12,		  /* type (40).  */
+  LOONGARCH_HOWTO (R_LARCH_H_HI12,		  /* type (71).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 12,				  	  /* bitsize.  */
@@ -815,7 +821,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_H_HI12,	  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),	  /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_TLSLE_L_HI20,	  /* type (43).  */
+  LOONGARCH_HOWTO (R_LARCH_TLSLE_L_HI20,	  /* type (72).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 20,				  	  /* bitsize.  */
@@ -831,7 +837,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_TLSLE_L_HI20,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),        /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_TLSLE_L_LO12,	  /* type (39).  */
+  LOONGARCH_HOWTO (R_LARCH_TLSLE_L_LO12,	  /* type (73).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 12,				  	  /* bitsize.  */
@@ -847,7 +853,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_TLSLE_L_LO12,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),	  /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_TLSLE_H_LO20,	  /* type (43).  */
+  LOONGARCH_HOWTO (R_LARCH_TLSLE_H_LO20,	  /* type (74).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 20,				  	  /* bitsize.  */
@@ -863,7 +869,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_TLSLE_H_LO20,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),        /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_TLSLE_H_HI12,	  /* type (40).  */
+  LOONGARCH_HOWTO (R_LARCH_TLSLE_H_HI12,	  /* type (75).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 12,				  	  /* bitsize.  */
@@ -879,7 +885,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_TLSLE_H_HI12,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),	  /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_PCREL32_HI20,	  /* type (43).  */
+  LOONGARCH_HOWTO (R_LARCH_PCREL32_HI20,	  /* type (76).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 20,				  	  /* bitsize.  */
@@ -895,7 +901,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_PCREL32_HI20,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),        /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_PCREL64_HI20,	  /* type (43).  */
+  LOONGARCH_HOWTO (R_LARCH_PCREL64_HI20,	  /* type (77).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 20,				  	  /* bitsize.  */
@@ -911,7 +917,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_PCREL64_HI20,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),        /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_PCREL_LO12_S,	  /* type (40).  */
+  LOONGARCH_HOWTO (R_LARCH_PCREL_LO12_S,	  /* type (78).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 12,				  	  /* bitsize.  */
@@ -927,7 +933,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_PCREL_LO12_S,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),	  /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_PCREL_LO12_U,	  /* type (39).  */
+  LOONGARCH_HOWTO (R_LARCH_PCREL_LO12_U,	  /* type (79).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 12,				  	  /* bitsize.  */
@@ -943,7 +949,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_PCREL_LO12_U,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),	  /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_PCREL_H_LO20,	  /* type (43).  */
+  LOONGARCH_HOWTO (R_LARCH_PCREL_H_LO20,	  /* type (80).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 20,				  	  /* bitsize.  */
@@ -959,7 +965,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_PCREL_H_LO20,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),        /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_PCREL_H_HI12,	  /* type (40).  */
+  LOONGARCH_HOWTO (R_LARCH_PCREL_H_HI12,	  /* type (81).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 12,				  	  /* bitsize.  */
@@ -975,7 +981,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_PCREL_H_HI12,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),	  /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_GOT32_HI20,		  /* type (43).  */
+  LOONGARCH_HOWTO (R_LARCH_GOT32_HI20,		  /* type (82).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 20,				  	  /* bitsize.  */
@@ -991,7 +997,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_GOT32_HI20,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),        /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_GOT64_HI20,		  /* type (43).  */
+  LOONGARCH_HOWTO (R_LARCH_GOT64_HI20,		  /* type (83).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 20,				  	  /* bitsize.  */
@@ -1007,7 +1013,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_GOT64_HI20,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),        /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_TLSIE32_HI20,	  /* type (43).  */
+  LOONGARCH_HOWTO (R_LARCH_TLSIE32_HI20,	  /* type (84).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 20,				  	  /* bitsize.  */
@@ -1023,7 +1029,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_TLSIE32_HI20,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),        /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_TLSIE64_HI20,	  /* type (43).  */
+  LOONGARCH_HOWTO (R_LARCH_TLSIE64_HI20,	  /* type (85).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 20,				  	  /* bitsize.  */
@@ -1039,7 +1045,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_TLSIE64_HI20,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),        /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_TLSGD32_HI20,	  /* type (43).  */
+  LOONGARCH_HOWTO (R_LARCH_TLSGD32_HI20,	  /* type (86).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 20,				  	  /* bitsize.  */
@@ -1055,7 +1061,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_TLSGD32_HI20,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),        /* adjust_reloc_bits */
 
-  LOONGARCH_HOWTO (R_LARCH_TLSGD64_HI20,	  /* type (43).  */
+  LOONGARCH_HOWTO (R_LARCH_TLSGD64_HI20,	  /* type (87).  */
 	 0,				   	  /* rightshift.  */
 	 2,				   	  /* size.  */
 	 20,				  	  /* bitsize.  */
@@ -1082,8 +1088,6 @@ loongarch_elf_rtype_to_howto (bfd *abfd, unsigned int r_type)
 
       if (loongarch_howto_table[r_type].howto.type == r_type)
 	return (reloc_howto_type *)&loongarch_howto_table[r_type];
-
-      BFD_ASSERT (loongarch_howto_table[r_type].howto.type == r_type);
 
       for (size_t i = 0; i < ARRAY_SIZE (loongarch_howto_table); i++)
 	if (loongarch_howto_table[i].howto.type == r_type)
