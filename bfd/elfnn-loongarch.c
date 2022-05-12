@@ -678,6 +678,8 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
       only_need_pcrel = 0;
       switch (r_type)
 	{
+	case R_LARCH_GOT32_HI20:
+	case R_LARCH_GOT64_HI20:
 	case R_LARCH_SOP_PUSH_GPREL:
 	  if (!loongarch_elf_record_tls_and_got_reference (abfd, info, h,
 							   r_symndx,
@@ -685,6 +687,8 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    return false;
 	  break;
 
+	case R_LARCH_TLSGD32_HI20:
+	case R_LARCH_TLSGD64_HI20:
 	case R_LARCH_SOP_PUSH_TLS_GD:
 	  if (!loongarch_elf_record_tls_and_got_reference (abfd, info, h,
 							   r_symndx,
@@ -692,6 +696,8 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    return false;
 	  break;
 
+	case R_LARCH_TLSIE32_HI20:
+	case R_LARCH_TLSIE64_HI20:
 	case R_LARCH_SOP_PUSH_TLS_GOT:
 	  if (bfd_link_pic (info))
 	    /* May fail for lazy-bind.  */
@@ -703,6 +709,10 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    return false;
 	  break;
 
+	case R_LARCH_TLSLE_L_HI20:
+	case R_LARCH_TLSLE_L_LO12:
+	case R_LARCH_TLSLE_H_LO20:
+	case R_LARCH_TLSLE_H_HI12:
 	case R_LARCH_SOP_PUSH_TLS_TPREL:
 	  if (!bfd_link_executable (info))
 	    return false;
@@ -715,6 +725,10 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    return false;
 	  break;
 
+	case R_LARCH_L_HI20:
+	case R_LARCH_L_LO12:
+	case R_LARCH_H_LO20:
+	case R_LARCH_H_HI12:
 	case R_LARCH_SOP_PUSH_ABSOLUTE:
 	  if (h != NULL)
 	    /* If this reloc is in a read-only section, we might
@@ -726,6 +740,11 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    h->non_got_ref = 1;
 	  break;
 
+	case R_LARCH_PCREL32_HI20:
+	case R_LARCH_PCREL64_HI20:
+	case R_LARCH_B21:
+	case R_LARCH_B16:
+	case R_LARCH_B26:
 	case R_LARCH_SOP_PUSH_PCREL:
 	  if (h != NULL)
 	    {
@@ -738,6 +757,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    }
 	  break;
 
+	case R_LARCH_BL26:
 	case R_LARCH_SOP_PUSH_PLT_PCREL:
 	  /* This symbol requires a procedure linkage table entry.  We
 	     actually build the entry in adjust_dynamic_symbol,
@@ -1596,6 +1616,66 @@ loongarch_reloc_rewrite_imm_insn (const Elf_Internal_Rela *rel,
 
 /* Emplace a static relocation.  */
 
+#define RESOLVE_SIMPLE_RELOCS(fix_func)					\
+do {									\
+  opr1 = fix_func(value);						\
+  r = loongarch_check_offset (rel, input_section);			\
+  if (r != bfd_reloc_ok)						\
+    break;								\
+  r = loongarch_reloc_rewrite_imm_insn (rel, input_section,		\
+	howto, input_bfd, contents, opr1);				\
+} while (0)
+
+static inline int64_t like_pcrel32_hi20(int64_t value)
+{
+  return (value + 0x800) >> 12;
+}
+
+static inline int64_t like_pcrel64_hi20 (int64_t value)
+{
+  return (value - (((value + 0x80000000) >> 32) << 32)) >> 12;
+}
+
+static inline int64_t pcrel_lo12_u (int64_t value)
+{
+  return (value - ((value + 0x80000000) & ~0xfffffffful)) & 0xfff;
+}
+
+static inline int64_t pcrel_lo12_s (int64_t value)
+{
+  return value - ((value + 0x800) & ~0xffful);
+}
+
+static inline int64_t pcrel_h_lo20 (int64_t value)
+{
+  return ((value + 0x80000000) << 12) >> 44;
+}
+
+static inline int64_t pcrel_h_hi12 (int64_t value)
+{
+  return (value + 0x80000000) >> 52;
+}
+
+static inline int64_t like_l_hi20 (int64_t value)
+{
+  return (value << 32) >> 44;
+}
+
+static inline int64_t like_l_lo12 (int64_t value)
+{
+  return value & 0xffful;
+}
+
+static inline int64_t like_h_lo20 (int64_t value)
+{
+  return (value << 12) >> 44;
+}
+
+static inline int64_t like_h_hi12 (int64_t value)
+{
+  return value >> 52;
+}
+
 static bfd_reloc_status_type
 perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
 		    reloc_howto_type *howto, bfd_vma value,
@@ -1678,7 +1758,6 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
     case R_LARCH_SOP_POP_32_S_10_5:
     case R_LARCH_SOP_POP_32_S_10_12:
     case R_LARCH_SOP_POP_32_S_10_16:
-    case R_LARCH_SOP_POP_32_S_10_16_S2:
     case R_LARCH_SOP_POP_32_S_5_20:
     case R_LARCH_SOP_POP_32_U_10_12:
     case R_LARCH_SOP_POP_32_U:
@@ -1693,6 +1772,34 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
 					    howto, input_bfd,
 					    contents, (bfd_vma)opr1);
       break;
+
+    case R_LARCH_SOP_POP_32_S_10_16_S2:
+	{
+	  r = loongarch_pop (&opr1);
+	  if (r != bfd_reloc_ok)
+	    break;
+
+	  if ((opr1 & 0x3) != 0)
+	    {
+	      r = bfd_reloc_overflow;
+	      break;
+	    }
+
+	  uint32_t imm = opr1 >> howto->rightshift;
+	  if ((imm & (~0x7fffU)) && ((imm & (~0x7fffU)) != (~0x7fffU)))
+	    {
+	      r = bfd_reloc_overflow;
+	      break;
+	    }
+	  r = loongarch_check_offset (rel, input_section);
+	  if (r != bfd_reloc_ok)
+	    break;
+
+	  insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
+	  insn1 = (insn1 & howto->src_mask) | ((imm & 0xffffU) << 10);
+	  bfd_put (bits, input_bfd, insn1, contents + rel->r_offset);
+	  break;
+	}
 
     case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
 	{
@@ -1792,10 +1899,278 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
       bfd_put (bits, input_bfd, opr1 - value, contents + rel->r_offset);
       break;
 
+    case R_LARCH_L_HI20:
+    case R_LARCH_TLSLE_L_HI20:
+      RESOLVE_SIMPLE_RELOCS (like_l_hi20);
+      break;
+    case R_LARCH_L_LO12:
+    case R_LARCH_TLSLE_L_LO12:
+      RESOLVE_SIMPLE_RELOCS (like_l_lo12);
+      break;
+    case R_LARCH_H_LO20:
+    case R_LARCH_TLSLE_H_LO20:
+      RESOLVE_SIMPLE_RELOCS (like_h_lo20);
+      break;
+    case R_LARCH_H_HI12:
+    case R_LARCH_TLSLE_H_HI12:
+      RESOLVE_SIMPLE_RELOCS (like_h_hi12);
+      break;
+    case R_LARCH_PCREL32_HI20:
+    case R_LARCH_GOT32_HI20:
+    case R_LARCH_TLSIE32_HI20:
+    case R_LARCH_TLSGD32_HI20:
+      RESOLVE_SIMPLE_RELOCS (like_pcrel32_hi20);
+      break;
+    case R_LARCH_PCREL64_HI20:
+    case R_LARCH_GOT64_HI20:
+    case R_LARCH_TLSIE64_HI20:
+    case R_LARCH_TLSGD64_HI20:
+      RESOLVE_SIMPLE_RELOCS (like_pcrel64_hi20);
+      break;
+    case R_LARCH_PCREL_LO12_U:
+      RESOLVE_SIMPLE_RELOCS (pcrel_lo12_u);
+      break;
+    case R_LARCH_PCREL_LO12_S:
+      RESOLVE_SIMPLE_RELOCS (pcrel_lo12_s);
+      break;
+    case R_LARCH_PCREL_H_LO20:
+      RESOLVE_SIMPLE_RELOCS (pcrel_h_lo20);
+      break;
+    case R_LARCH_PCREL_H_HI12:
+      RESOLVE_SIMPLE_RELOCS (pcrel_h_hi12);
+      break;
+    case R_LARCH_B16:
+    case R_LARCH_B21:
+    case R_LARCH_B26:
+    case R_LARCH_BL26:
+      {
+	int64_t imm = (int64_t) value;
+	if (imm & 3)
+	  {
+	    r = bfd_reloc_overflow;
+	    break;
+	  }
+
+	imm >>= howto->rightshift;
+	r = loongarch_check_offset (rel, input_section);
+	if (r != bfd_reloc_ok)
+	  break;
+	insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
+
+	/* check if signed extension or not */
+	if ((ELFNN_R_TYPE (rel->r_info) == R_LARCH_B16) &&
+            (imm & (~0x7fffU)) &&
+	    ((imm & (~0x7fffU)) != (~0x7fffU)))
+	  {
+	    r = bfd_reloc_overflow;
+	    break;
+	  }
+	if ((ELFNN_R_TYPE (rel->r_info) == R_LARCH_B21) &&
+            (imm & (~0xfffffU)) &&
+	    ((imm & (~0xfffffU)) != (~0xfffffU)))
+	  {
+	    r = bfd_reloc_overflow;
+	    break;
+	  }
+	if ((ELFNN_R_TYPE (rel->r_info) == R_LARCH_B26) &&
+	    (imm & (~0x1ffffffU)) &&
+	    ((imm & (~0x1ffffffU)) != (~0x1ffffffU)))
+	  {
+	    r = bfd_reloc_overflow;
+	    break;
+	  }
+
+	r = loongarch_check_offset (rel, input_section);
+	if (r != bfd_reloc_ok)
+	  break;
+
+	insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
+	if (ELFNN_R_TYPE (rel->r_info) == R_LARCH_B16)
+	  {
+	    if ((imm & ~0x7ffful) &&
+		((imm & ~0x7ffful) != ~0x7ffful))
+	      {
+		r = bfd_reloc_overflow;
+		break;
+	      }
+	    insn1 = (insn1 & howto->src_mask) | ((imm & 0xffff) << 10);
+	  }
+	else if (ELFNN_R_TYPE (rel->r_info) == R_LARCH_B21)
+	  {
+	    if ((imm & ~0xffffful) &&
+		((imm & ~0xffffful) != ~0xffffful))
+	      {
+		r = bfd_reloc_overflow;
+		break;
+	      }
+	    insn1 = (insn1 & howto->src_mask) |
+		    ((imm & 0xffff) << 10) | ((imm >> 16) & 0x1f);
+	  }
+	else /* R_LARCH_B26 R_LARCH_BL26 */
+	  {
+	    if ((imm & ~0x1fffffful) &&
+		((imm & ~0x1fffffful) != ~0x1fffffful))
+	      {
+		r = bfd_reloc_overflow;
+		break;
+	      }
+	    insn1 = (insn1 & howto->src_mask) |
+		    ((imm & 0xffff) << 10) | ((imm >> 16) & 0x3ff);
+	  }
+
+	bfd_put (bits, input_bfd, insn1, contents + rel->r_offset);
+	break;
+      }
+
     default:
       r = bfd_reloc_notsupported;
     }
   return r;
+}
+
+/* Remember all PC-relative high-part relocs we've encountered to help us
+   later resolve the corresponding low-part relocs.  */
+typedef struct larch_pcrel_hi_reloc
+{
+  bfd_vma address;
+  bfd_vma value;
+  int type;
+} larch_pcrel_hi_reloc;
+
+typedef struct larch_pcrel_lo_reloc
+{
+  bfd_vma address;
+  const Elf_Internal_Rela *reloc;
+  asection *input_section;
+  struct bfd_link_info *info;
+  reloc_howto_type *howto;
+  bfd_byte *contents;
+  struct larch_pcrel_lo_reloc *next;
+} larch_pcrel_lo_reloc;
+
+typedef struct
+{
+  htab_t hi_relocs;
+  larch_pcrel_lo_reloc *lo_relocs;
+} larch_pcrel_relocs;
+
+static hashval_t
+larch_pcrel_reloc_hash (const void *entry)
+{
+  const larch_pcrel_hi_reloc *e = entry;
+  return (hashval_t)(e->address >> 2);
+}
+
+static int
+larch_pcrel_reloc_eq (const void *entry1, const void *entry2)
+{
+  const larch_pcrel_hi_reloc *e1 = entry1, *e2 = entry2;
+  return e1->address == e2->address;
+}
+
+static bool
+larch_init_pcrel_relocs (larch_pcrel_relocs *p)
+{
+  p->lo_relocs = NULL;
+  p->hi_relocs = htab_create (1024, larch_pcrel_reloc_hash,
+			      larch_pcrel_reloc_eq, free);
+  return p->hi_relocs != NULL;
+}
+
+static void
+larch_free_pcrel_relocs (larch_pcrel_relocs *p)
+{
+  larch_pcrel_lo_reloc *cur = p->lo_relocs;
+
+  while (cur != NULL)
+    {
+      larch_pcrel_lo_reloc *next = cur->next;
+      free (cur);
+      cur = next;
+    }
+
+  htab_delete (p->hi_relocs);
+}
+
+static bool
+larch_record_pcrel_hi_reloc (larch_pcrel_relocs *p,
+				 bfd_vma addr,
+				 bfd_vma value,
+				 int type,
+				 bool absolute)
+{
+  bfd_vma offset = absolute ? value : value - addr;
+  larch_pcrel_hi_reloc entry = { addr, offset, type };
+  larch_pcrel_hi_reloc **slot =
+    (larch_pcrel_hi_reloc **) htab_find_slot (p->hi_relocs, &entry, INSERT);
+
+  BFD_ASSERT (*slot == NULL);
+  *slot = (larch_pcrel_hi_reloc *) bfd_malloc (sizeof (larch_pcrel_hi_reloc));
+  if (*slot == NULL)
+    return false;
+  **slot = entry;
+  return true;
+}
+
+static bool
+larch_record_pcrel_lo_reloc (larch_pcrel_relocs *p,
+				 bfd_vma addr,
+				 const Elf_Internal_Rela *reloc,
+				 asection *input_section,
+				 struct bfd_link_info *info,
+				 reloc_howto_type *howto,
+				 bfd_byte *contents)
+{
+  larch_pcrel_lo_reloc *entry;
+  entry = (larch_pcrel_lo_reloc *) bfd_malloc (sizeof (larch_pcrel_lo_reloc));
+  if (entry == NULL)
+    return false;
+  *entry = (larch_pcrel_lo_reloc) {addr, reloc, input_section, info,
+                                   howto, contents, p->lo_relocs};
+  p->lo_relocs = entry;
+  return true;
+}
+
+static inline larch_pcrel_hi_reloc *find_pcrel_hi (larch_pcrel_lo_reloc *lo,
+						   larch_pcrel_relocs *p)
+{
+  larch_pcrel_hi_reloc search = { lo->address, 0, 0 };
+  larch_pcrel_hi_reloc *entry = htab_find (p->hi_relocs, &search);
+  return entry;
+}
+
+static bool
+loongarch_resolve_pcrel_lo_relocs (larch_pcrel_relocs *p)
+{
+  larch_pcrel_lo_reloc *r;
+
+  for (r = p->lo_relocs; r != NULL; r = r->next)
+    {
+      bfd *input_bfd = r->input_section->owner;
+      larch_pcrel_hi_reloc *entry = find_pcrel_hi (r, p);
+      char *string = NULL;
+      static char *err_asprintf = "anything wrong either asprintf errors";
+      if (entry == NULL)
+	{
+	  if (asprintf (&string,
+			_("missing matching pcrel_hi, searched 0x%" PRIx64),
+			r->address) == -1)
+		string = err_asprintf;
+	}
+      if (string != NULL)
+	{
+	  (*r->info->callbacks->reloc_dangerous)
+	    (r->info, string, input_bfd, r->input_section, r->reloc->r_offset);
+	  if (string != err_asprintf)
+	    free (string);
+	  return true;
+	}
+
+      perform_relocation (r->reloc, r->input_section, r->howto,
+		          entry->value, input_bfd, r->contents);
+    }
+
+  return true;
 }
 
 #define LARCH_RECENT_RELOC_QUEUE_LENGTH 72
@@ -1957,6 +2332,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 {
   Elf_Internal_Rela *rel;
   Elf_Internal_Rela *relend;
+  larch_pcrel_relocs pcrel_relocs;
   bool fatal = false;
   asection *sreloc = elf_section_data (input_section)->sreloc;
   struct loongarch_elf_link_hash_table *htab = loongarch_elf_hash_table (info);
@@ -1967,6 +2343,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
   bool is_dyn = elf_hash_table (info)->dynamic_sections_created;
   asection *plt = htab->elf.splt ? htab->elf.splt : htab->elf.iplt;
   asection *got = htab->elf.sgot;
+
+  if (!larch_init_pcrel_relocs (&pcrel_relocs))
+    return false;
 
   relend = relocs + input_section->reloc_count;
   for (rel = relocs; rel < relend; rel++)
@@ -2249,6 +2628,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	  break;
 
+	case R_LARCH_TLSLE_L_HI20 ... R_LARCH_TLSLE_H_HI12:
 	case R_LARCH_SOP_PUSH_TLS_TPREL:
 	  if (resolved_local)
 	    {
@@ -2267,6 +2647,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		      "TLS LE just can be resolved local only."));
 	  break;
 
+	case R_LARCH_L_HI20 ... R_LARCH_H_HI12:
 	case R_LARCH_SOP_PUSH_ABSOLUTE:
 	  if (is_undefweak)
 	    {
@@ -2337,6 +2718,12 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	  break;
 
+	case R_LARCH_PCREL32_HI20:
+	case R_LARCH_PCREL64_HI20:
+	case R_LARCH_B21:
+	case R_LARCH_B26:
+	case R_LARCH_B16:
+	case R_LARCH_BL26:
 	case R_LARCH_SOP_PUSH_PCREL:
 	case R_LARCH_SOP_PUSH_PLT_PCREL:
 	  unresolved_reloc = false;
@@ -2344,7 +2731,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  if (resolved_to_const)
 	    {
 	      relocation += rel->r_addend;
-	      break;
+	      goto record;
 	    }
 	  else if (is_undefweak)
 	    {
@@ -2411,8 +2798,18 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  break;
 		}
 	    }
+ record:
+	  if (r_type == R_LARCH_PCREL32_HI20 ||
+	      r_type == R_LARCH_PCREL64_HI20)
+	    {
+	      if (!larch_record_pcrel_hi_reloc (&pcrel_relocs, pc,
+					        relocation, r_type, true))
+		r = bfd_reloc_overflow;
+	    }
 	  break;
 
+	case R_LARCH_GOT32_HI20:
+	case R_LARCH_GOT64_HI20:
 	case R_LARCH_SOP_PUSH_GPREL:
 	  unresolved_reloc = false;
 
@@ -2586,11 +2983,25 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		}
 	    }
 	  relocation = off;
+	  if (r_type == R_LARCH_GOT32_HI20 ||
+	      r_type == R_LARCH_GOT64_HI20)
+	    {
+	      relocation = off + sec_addr(got) - pc;
+	      if (!larch_record_pcrel_hi_reloc (&pcrel_relocs, pc,
+					        relocation, r_type, true))
+		r = bfd_reloc_overflow;
+	    }
 	  break;
 
+	case R_LARCH_TLSIE32_HI20:
+	case R_LARCH_TLSIE64_HI20:
+	case R_LARCH_TLSGD32_HI20:
+	case R_LARCH_TLSGD64_HI20:
 	case R_LARCH_SOP_PUSH_TLS_GOT:
 	case R_LARCH_SOP_PUSH_TLS_GD:
-	  if (r_type == R_LARCH_SOP_PUSH_TLS_GOT)
+	  if (r_type == R_LARCH_SOP_PUSH_TLS_GOT ||
+	      r_type == R_LARCH_TLSIE32_HI20 ||
+	      r_type == R_LARCH_TLSIE64_HI20)
 	    is_ie = true;
 	  unresolved_reloc = false;
 
@@ -2740,6 +3151,28 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    }
 
 	  relocation = off + (is_ie ? ie_off : 0);
+	  if (r_type == R_LARCH_TLSIE32_HI20 ||
+	      r_type == R_LARCH_TLSIE64_HI20 ||
+              r_type == R_LARCH_TLSGD32_HI20 ||
+              r_type == R_LARCH_TLSGD64_HI20)
+	    {
+	      relocation += sec_addr (got) - pc;
+	      if (!larch_record_pcrel_hi_reloc (&pcrel_relocs, pc,
+					        relocation, r_type, true))
+		r = bfd_reloc_overflow;
+	    }
+	  break;
+
+	case R_LARCH_PCREL_LO12_U:
+	case R_LARCH_PCREL_LO12_S:
+	case R_LARCH_PCREL_H_LO20:
+	case R_LARCH_PCREL_H_HI12:
+	  if (larch_record_pcrel_lo_reloc (&pcrel_relocs,
+					   relocation + rel->r_addend,
+					   rel, input_section, info, howto,
+					   contents))
+	    continue;
+	  r = bfd_reloc_overflow;
 	  break;
 
 	default:
@@ -2825,9 +3258,12 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	}
 
       fatal = true;
-      break;
+      goto out;
     }
 
+  fatal = !loongarch_resolve_pcrel_lo_relocs (&pcrel_relocs);
+ out:
+  larch_free_pcrel_relocs (&pcrel_relocs);
   return !fatal;
 }
 
