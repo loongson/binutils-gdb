@@ -749,6 +749,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	case R_LARCH_PCREL32_HI20:
 	case R_LARCH_PCREL64_HI20:
 	case R_LARCH_SOP_PUSH_PCREL:
+	case R_LARCH_SOP_PUSH_PCREL_HI:
 	  if (h != NULL)
 	    {
 	      if (!bfd_link_pic (info))
@@ -759,24 +760,6 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 		h->plt.refcount = 0;
 	      h->plt.refcount++;
 	    }
-	  if (bfd_link_pic (info))
-	    need_dynreloc = 1;
-	  else
-	    non_got_reloc = 1;
-	  break;
-
-	case R_LARCH_SOP_PUSH_PCREL_HI:
-          if (h != NULL)
-	    {
-	      if (!bfd_link_pic (info))
-		h->non_got_ref = 1;
-
-	      /* We try to create PLT stub for all non-local function.  */
-	      if (h->plt.refcount < 0)
-		h->plt.refcount = 0;
-	      h->plt.refcount++;
-	    }
-
 	  if (bfd_link_pic (info))
 	    need_dynreloc = 1;
 	  else
@@ -1006,14 +989,7 @@ loongarch_elf_adjust_dynamic_symbol (struct bfd_link_info *info,
 	  h->needs_plt = 0;
 	}
       else
-//	h->needs_plt = 1;
-	{
-	  if (bfd_link_pic (info))
-	    h->needs_plt = 1;
-	  else
-	    h->needs_plt = 1;
-	}
-
+	h->needs_plt = 1;
       return true;
     }
   else
@@ -1053,28 +1029,14 @@ loongarch_elf_adjust_dynamic_symbol (struct bfd_link_info *info,
       return true;
     }
 
-#if 0
-  /* If we don't find any dynamic relocs in read-only sections, then
-     we'll be keeping the dynamic relocs and avoiding the copy reloc.  */
-  if (!readonly_dynrelocs (h))
-    {
-      h->non_got_ref = 0;
-      return true;
-    }
-#endif
-
-  if (1)
-    {
-      /* If we don't find any dynamic relocs in read-only sections, then
-	 we'll be keeping the dynamic relocs and avoiding the copy reloc.  */
-      struct loongarch_elf_link_hash_entry *eh;
-      eh = (struct loongarch_elf_link_hash_entry *) h;
-      if (!need_copy_relocation_p (eh))
-	{
-	  h->non_got_ref = 0;
-	  return true;
-	}
-    }
+    /* If we don't find any dynamic relocs in read-only sections, then
+       we'll be keeping the dynamic relocs and avoiding the copy reloc.  */
+    eh = (struct loongarch_elf_link_hash_entry *) h;
+    if (!need_copy_relocation_p (eh))
+      {
+	h->non_got_ref = 0;
+	return true;
+      }
 
   /* We must allocate the symbol in our .dynbss section, which will
      become part of the .bss section of the executable.  There will be
@@ -2509,8 +2471,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	     symbol.  And 'dynamic_undefined_weak' specify what to do when
 	     meeting undefweak.  */
 
-	  //if ((is_undefweak = h->root.type == bfd_link_hash_undefweak))
-	  if (is_undefweak = (h->root.type == bfd_link_hash_undefweak))
+	  if ((is_undefweak = h->root.type == bfd_link_hash_undefweak))
 	    {
 	      if (bfd_link_pic (info))
 		{
@@ -2549,6 +2510,14 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      defined_local = !unresolved_reloc && !ignored;
 	      resolved_local =
 		defined_local && SYMBOL_REFERENCES_LOCAL (info, h);
+	      resolved_dynly = !resolved_local;
+	      resolved_to_const = !resolved_local && !resolved_dynly;
+	    }
+
+	  if (!bfd_link_pic (info))
+	    {
+	      defined_local = true;
+	      resolved_local = true;
 	      resolved_dynly = !resolved_local;
 	      resolved_to_const = !resolved_local && !resolved_dynly;
 	    }
@@ -2595,42 +2564,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
       is_ie = false;
       switch (r_type)
 	{
-#define LARCH_ASSERT(cond, bfd_fail_state, message)                     \
-  ({if (!(cond)) {                                                      \
-    r = bfd_fail_state;                                                 \
-    switch (r) {                                                        \
-    /* 'dangerous' means we do it but can't promise it's ok             \
-       'unsupport' means out of ability of relocation type              \
-       'undefined' means we can't deal with the undefined symbol  */    \
-    case bfd_reloc_undefined:                                           \
-      info->callbacks->undefined_symbol                                 \
-        (info, name, input_bfd, input_section, rel->r_offset, true);    \
-    default:                                                            \
-      fatal = true;                                                     \
-      info->callbacks->info                                             \
-        ("%X%pB(%pA+0x%v): error: %s against %s`%s':\n"                 \
-         message "\n",                                                  \
-         input_bfd, input_section, (bfd_vma) rel->r_offset,             \
-         howto->name, is_undefweak? "[undefweak] " : "", name);         \
-      break;                                                            \
-    case bfd_reloc_dangerous:                                           \
-      info->callbacks->info                                             \
-        ("%pB(%pA+0x%v): warning: %s against %s`%s':\n"                 \
-         message "\n",                                                  \
-         input_bfd, input_section, (bfd_vma) rel->r_offset,             \
-         howto->name, is_undefweak? "[undefweak] " : "", name);         \
-      break;                                                            \
-    case bfd_reloc_ok:                                                  \
-    case bfd_reloc_continue:                                            \
-      info->callbacks->info                                             \
-        ("%pB(%pA+0x%v): message: %s against %s`%s':\n"                 \
-         message "\n",                                                  \
-         input_bfd, input_section, (bfd_vma) rel->r_offset,             \
-         howto->name, is_undefweak? "[undefweak] " : "", name);         \
-      break;                                                            \
-    }                                                                   \
-    if (fatal) break;							\
-}})
 	case R_LARCH_MARK_PCREL:
 	case R_LARCH_MARK_LA:
 	case R_LARCH_NONE:
@@ -2690,7 +2623,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  outrel.r_addend = relocation + rel->r_addend;
 		}
 
-	      if (unresolved_reloc && !is_undefweak)
+	      if (unresolved_reloc)
 		loongarch_elf_append_rela (output_bfd, sreloc, &outrel);
 	    }
 
@@ -2870,7 +2803,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  if (resolved_to_const)
 	    {
 	      relocation += rel->r_addend;
-	      LARCH_ASSERT(0, bfd_reloc_dangerous, "const error");
 	      goto record;
 	    }
 	  else if (is_undefweak)
@@ -2970,37 +2902,46 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  if (h && h->plt.offset != MINUS_ONE)
 		    i = 1, j = 2;
 		  else
-		    LARCH_ASSERT (0, bfd_reloc_dangerous,
-"Undefweak need to be resolved dynamically, but PLT stub doesn't represent.");
+		    fatal = (loongarch_reloc_is_fatal
+			     (info, input_bfd, input_section, rel, howto,
+			      bfd_reloc_dangerous, is_undefweak, name,
+			      "Undefweak need to be resolved dynamically, "
+			      "but PLT stub doesn't represent."));
 		}
 	    }
 	  else
 	    {
-	      LARCH_ASSERT
-		(defined_local || (h && h->plt.offset != MINUS_ONE),
-		 bfd_reloc_undefined,
-		 "PLT stub does not represent and symbol not defined.");
+	      if (!(defined_local || (h && h->plt.offset != MINUS_ONE)))
+		{
+		  fatal = (loongarch_reloc_is_fatal
+			   (info, input_bfd, input_section, rel, howto,
+			    bfd_reloc_undefined, is_undefweak, name,
+			    "PLT stub does not represent and "
+			    "symbol not defined."));
+		  break;
+		}
 
 	      if (resolved_local)
 		i = 0, j = 2;
 	      else /* if (resolved_dynly) */
 		{
-#if 0
-		  LARCH_ASSERT
-		    (h && h->plt.offset != MINUS_ONE, bfd_reloc_dangerous,
-"Internal: PLT stub doesn't represent. Resolve it with pcrel");
-#endif
+		  if (!(h && h->plt.offset != MINUS_ONE))
+		    fatal = (loongarch_reloc_is_fatal
+			     (info, input_bfd, input_section, rel, howto,
+			      bfd_reloc_dangerous, is_undefweak, name,
+			      "Internal: PLT stub doesn't represent.  "
+			      "Resolve it with pcrel"));
 		  i = 1, j = 3;
 		}
 	    }
+
+#define ALIGN(x) ((x) & ~ (bfd_vma) 0xfff)
+#define ALIGN_OFFSET(x) ((x) & (bfd_vma)0xfff)
 
 	  for (; i < j; i++)
 	    {
 	      if ((i & 1) == 0 && defined_local)
 		{
-#define ALIGN(x) ((x) & ~ (bfd_vma) 0xfff)
-#define ALIGN_OFFSET(x) ((x) & (bfd_vma)0xfff)
-
 		  bfd_vma uoffset = ALIGN_OFFSET (relocation + rel->r_addend);
 		  relocation = ALIGN (relocation + rel->r_addend) - ALIGN (pc);
 
@@ -3012,30 +2953,19 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  else
 		    relocation >>= 12;
 		  relocation = relocation & 0xfffff;
-
-#if 0
-		  bfd_vma tgt_pc_ofst,tgt_lo_12,tmp2;
-		  long offset;
-		  tgt_pc_ofst = relocation - pc + rel->r_addend + 0x800;
-
-		  tgt_lo_12 = (tgt_pc_ofst << 52) >> 52;
-		  if ((tgt_lo_12) >= 0x7ff)
-		    relocation = (tgt_pc_ofst + 0x7ff << 32 ) >> 44;
-		  else
-		    relocation = (tgt_pc_ofst << 32 ) >> 44;
-#endif
-
 		  break;
 		}
 
 	      if ((i & 1) && h && h->plt.offset != MINUS_ONE)
 		{
-		  LARCH_ASSERT (rel->r_addend == 0, bfd_reloc_notsupported,
-			       "PLT shouldn't be with r_addend.");
-		  //relocation = sec_addr (plt) + h->plt.offset - pc;
-
-#define ALIGN(x) ((x) & ~ (bfd_vma) 0xfff)
-#define ALIGN_OFFSET(x) ((x) & (bfd_vma)0xfff)
+		  if (rel->r_addend != 0)
+		    {
+		      fatal = (loongarch_reloc_is_fatal
+			       (info, input_bfd, input_section, rel, howto,
+				bfd_reloc_notsupported, is_undefweak, name,
+				"PLT shouldn't be with r_addend."));
+		      break;
+		    }
 
 		  bfd_vma uoffset = ALIGN_OFFSET (sec_addr (plt) + h->plt.offset);
 		  relocation = ALIGN (sec_addr (plt) + h->plt.offset) - ALIGN (pc);
@@ -3059,7 +2989,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  if (resolved_to_const)
 	    {
 	      relocation += rel->r_addend;
-	      LARCH_ASSERT(0, bfd_reloc_dangerous, "const error");
 	      break;
 	    }
 	  else if (is_undefweak)
@@ -3073,26 +3002,35 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  if (h && h->plt.offset != MINUS_ONE)
 		    i = 1, j = 2;
 		  else
-		    LARCH_ASSERT (0, bfd_reloc_dangerous,
-"Undefweak need to be resolved dynamically, but PLT stub doesn't represent.");
+		    fatal = (loongarch_reloc_is_fatal
+			     (info, input_bfd, input_section, rel, howto,
+			      bfd_reloc_dangerous, is_undefweak, name,
+			      "Undefweak need to be resolved dynamically, "
+			      "but PLT stub doesn't represent."));
 		}
 	    }
 	  else
 	    {
-	      LARCH_ASSERT
-		(defined_local || (h && h->plt.offset != MINUS_ONE),
-		 bfd_reloc_undefined,
-		 "PLT stub does not represent and symbol not defined.");
+	      if (!(defined_local || (h && h->plt.offset != MINUS_ONE)))
+		{
+		  fatal = (loongarch_reloc_is_fatal
+			   (info, input_bfd, input_section, rel, howto,
+			    bfd_reloc_undefined, is_undefweak, name,
+			    "PLT stub does not represent and "
+			    "symbol not defined."));
+		  break;
+		}
 
 	      if (resolved_local)
 		i = 0, j = 2;
 	      else /* if (resolved_dynly) */
 		{
-#if 0
-		  LARCH_ASSERT
-		    (h && h->plt.offset != MINUS_ONE, bfd_reloc_dangerous,
-"Internal: PLT stub doesn't represent. Resolve it with pcrel");
-#endif
+		  if (!(h && h->plt.offset != MINUS_ONE))
+		    fatal = (loongarch_reloc_is_fatal
+			     (info, input_bfd, input_section, rel, howto,
+			      bfd_reloc_dangerous, is_undefweak, name,
+			      "Internal: PLT stub doesn't represent.  "
+			      "Resolve it with pcrel"));
 		  i = 1, j = 3;
 		}
 	    }
@@ -3101,14 +3039,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    {
 	      if ((i & 1) == 0 && defined_local)
 		{
-		  bfd_vma tgt_lo_12,tgt_hi_52,pc_ofst,pc_hi_52;
-		  long offset;
-
-		  bfd_vma tmp;
-
-#define ALIGN(x) ((x) & ~ (bfd_vma) 0xfff)
-#define ALIGN_OFFSET(x) ((x) & (bfd_vma)0xfff)
-
 		  bfd_vma uoffset = ALIGN_OFFSET (relocation + rel->r_addend);
 
 		  if (uoffset > 0x7ff)
@@ -3117,52 +3047,24 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		    }
 		  else
 		    relocation = uoffset;
-
-		  #if 0
-                  //#define ALIGN_OFFSET(x) ((x) & (bfd_vma)0xfff)
-		  //tmp = ALIGN (relocation + rel->r_addend) - ALIGN (pc);
-		  //offset = (relocation + rel->r_addend) - tmp; //(relocation + rel->r_addend - pc);
-		  //relocation = offset << 52;
-		  //relocation >>= 52;
-		  relocation = ALIGN_OFFSET (relocation + rel->r_addend);
-		  #endif
-
-#if 0
-		  pc_ofst = relocation - pc + rel->r_addend + 0x800;
-		  pc_hi_52 = (pc >> 12) << 12;
-		  tgt_lo_12 = (pc_ofst << 52) >> 52;
-
-		  if (tgt_lo_12 >= 0x7ff) {
-		    tgt_hi_52 = pc_hi_52 + (((pc_ofst + 0x7ff) >> 12) << 12 );
-		  }
-		  else{
-		    tgt_hi_52 = pc_hi_52 + ((pc_ofst >> 12) << 12);
-		  }
-
-		  offset = relocation - tgt_hi_52;
-		  if (offset >= 0)
-		    relocation = offset + rel->r_addend;
-		  else
-		    relocation = rel->r_addend - (tgt_hi_52 - relocation);
-#endif
 		  break;
 		}
 
 	      if ((i & 1) && h && h->plt.offset != MINUS_ONE)
 		{
-		  LARCH_ASSERT (rel->r_addend == 0, bfd_reloc_notsupported,
-			       "PLT shouldn't be with r_addend.");
-		  //relocation = sec_addr (plt) + h->plt.offset - pc;
-
-#define ALIGN(x) ((x) & ~ (bfd_vma) 0xfff)
-#define ALIGN_OFFSET(x) ((x) & (bfd_vma)0xfff)
+		  if (rel->r_addend != 0)
+		    {
+		      fatal = (loongarch_reloc_is_fatal
+			       (info, input_bfd, input_section, rel, howto,
+				bfd_reloc_notsupported, is_undefweak, name,
+				"PLT shouldn't be with r_addend."));
+		      break;
+		    }
 
 		  bfd_vma uoffset = ALIGN_OFFSET ( sec_addr (plt) + h->plt.offset);
 
 		  if (uoffset > 0x7ff)
-		    {
 		      relocation = -(bfd_vma)((bfd_vma)0x1000 - uoffset);
-		    }
 		  else
 		    relocation = uoffset;
 		  break;
