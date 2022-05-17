@@ -1191,7 +1191,11 @@ bool loongarch_gen_adjust_reloc_bits (reloc_howto_type *howto, bfd_vma *fix_val)
   return true;
 }
 
-/* Reloc type R_LARCH_SOP_POP_32_S_10_16_S2.  */
+/* Reloc type :
+ * R_LARCH_SOP_POP_32_S_10_16_S2
+ * R_LARCH_B16.
+*/
+
 bool loongarch_adjust_reloc_bits_l16 (reloc_howto_type *howto,
 					bfd_vma *fix_val)
 {
@@ -1231,7 +1235,10 @@ bool loongarch_adjust_reloc_bits_l16 (reloc_howto_type *howto,
   return true;
 }
 
-/* Reloc type R_LARCH_SOP_POP_32_S_0_5_10_16_S2.  */
+/* Reloc type :
+ * R_LARCH_SOP_POP_32_S_0_5_10_16_S2
+ * R_LARCH_B21.
+*/
 bool loongarch_adjust_reloc_bits_l16_xx5_h5 (reloc_howto_type *howto,
 					     bfd_vma *fix_val)
 {
@@ -1271,7 +1278,11 @@ bool loongarch_adjust_reloc_bits_l16_xx5_h5 (reloc_howto_type *howto,
   return true;
 }
 
-/* Reloc type R_LARCH_SOP_POP_32_S_0_10_10_16_S2.  */
+/* Reloc type:
+ *  R_LARCH_SOP_POP_32_S_0_10_10_16_S2
+ *  R_LARCH_B26
+ *  R_LARCH_BL26.
+*/
 bool loongarch_adjust_reloc_bits_l16_h10 (reloc_howto_type *howto,
 					  bfd_vma *fix_val)
 {
