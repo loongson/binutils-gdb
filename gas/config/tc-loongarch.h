@@ -32,8 +32,6 @@ extern unsigned long loongarch_mach (void);
 #define WORKING_DOT_WORD 1
 #define REPEAT_CONS_EXPRESSIONS
 
-#define FAKE_LABEL_NAME LOONGARCH_FAKE_LABEL_NAME
-
 /* Early than md_begin.  */
 #define md_after_parse_args loongarch_after_parse_args
 extern void loongarch_after_parse_args (void);
