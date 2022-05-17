@@ -128,6 +128,10 @@ static struct loongarch_opcode loongarch_macro_opcodes[] =
   { 0, 0, "la.local", "r,la", "la.pcrel %1,%2", 0, 0, 0 },
   { 0, 0, "la.local", "r,r,la", "la.pcrel %1,%2,%3", 0, 0, 0 },
 
+  //{0, 0, "pcalau12i", "r,la", "pcalau12i %1,%%pcrel(%2)>>12;", 0, 0, 0},
+  //{0, 0, "pcalau12i", "r,la", "pcalau12i %1,%%pcrel(%2+0xfff)<<32>>44;", 0, 0, 0},
+  {0, 0, "pcalau12i", "r,la", "pcalau12i %1,%%pcrel_hi(%2);", 0, 0, 0},
+
   { 0, 0, "la.abs", "r,la", "%f", 0, 0, 0 },
   { 0, 0, "la.tls.le", "r,la", "%f", 0, 0, 0 },
   { 0, 0, "la.pcrel", "r,la", "%f", 0, 0, 0 },

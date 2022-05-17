@@ -638,6 +638,8 @@ loongarch_args_parser_can_match_arg_helper (char esc_ch1, char esc_ch2,
 		reloc_type = BFD_RELOC_LARCH_SOP_POP_32_S_10_16;
 	      else if (strncmp (bit_field, "10:5", strlen ("10:5")) == 0)
 		reloc_type = BFD_RELOC_LARCH_SOP_POP_32_S_10_5;
+	      else if (strncmp (bit_field, "10:14<<2", strlen ("10:14<<2")) == 0)
+		reloc_type = BFD_RELOC_LARCH_SOP_POP_32_S_10_14_S2;
 	    }
 	  if (reloc_type == BFD_RELOC_NONE)
 	    as_fatal (
@@ -1469,11 +1471,11 @@ static void fix_reloc_insn (fixS *fixP, bfd_vma reloc_val, char *buf)
 void
 md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
 {
+  insn_t insn;
   static int64_t stack_top;
   static int last_reloc_is_sop_push_pcrel_1 = 0;
   int last_reloc_is_sop_push_pcrel = last_reloc_is_sop_push_pcrel_1;
   last_reloc_is_sop_push_pcrel_1 = 0;
-  insn_t insn;
 
   if (prepare == -1)
     return;
@@ -1549,6 +1551,25 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
 	}
       break;
 
+    case BFD_RELOC_LARCH_SOP_PUSH_PCREL_HI:
+      if (fixP->fx_addsy == NULL)
+	as_bad_where (fixP->fx_file, fixP->fx_line,
+		      _("Relocation against a constant"));
+      if (fixP->fx_r_type == BFD_RELOC_LARCH_SOP_PUSH_PCREL_HI)
+	{
+	  /* 分支到内部符号的重定位尽量在这里解决。一方面是为了反汇编更好看；
+	     也是为了方便PMON的模块加载。PMON连接器的重定位类型枚举空间很小，
+	     无法实现全的重定位。编译时加入-mabiabs使得所有外部符号都有la.abs，
+	     从而有MARK_LA这个重定位，PMON连接器重定位时填4条la指令。 */
+	  last_reloc_is_sop_push_pcrel_1 = 1;
+	  if (S_GET_SEGMENT (fixP->fx_addsy) == seg)
+	    stack_top = S_GET_VALUE (fixP->fx_addsy) + fixP->fx_offset
+		      - (fixP->fx_where + fixP->fx_frag->fr_address);
+	  else
+	    stack_top = 0;
+	}
+      break;
+
     case BFD_RELOC_LARCH_SOP_POP_32_S_10_5:
     case BFD_RELOC_LARCH_SOP_POP_32_S_10_12:
     case BFD_RELOC_LARCH_SOP_POP_32_U_10_12:
@@ -1562,6 +1583,20 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
 	break;
 
       fix_reloc_insn (fixP, (bfd_vma)stack_top, buf);
+      break;
+
+    case BFD_RELOC_LARCH_SOP_POP_32_S_10_14_S2:
+      if (!last_reloc_is_sop_push_pcrel)
+	break;
+      if ((stack_top & 0x3) != 0)
+	as_warn_where (fixP->fx_file, fixP->fx_line, "Reloc overflow");
+      stack_top >>= 2;
+      if ((stack_top & ~(uint64_t)0x1fff) != 0x0
+	  && (stack_top & ~(uint64_t)0x1fff) != ~(uint64_t)0x1fff)
+	as_warn_where (fixP->fx_file, fixP->fx_line, "Reloc overflow");
+      insn = bfd_getl32 (buf);
+      insn = (insn & 0xff0003ff) | ((stack_top & 0x3fff) << 10);
+      bfd_putl32 (insn, buf);
       break;
 
     case BFD_RELOC_64:

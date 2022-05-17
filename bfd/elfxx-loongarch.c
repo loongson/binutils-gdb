@@ -686,9 +686,54 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_NONE,			/* bfd_reloc_code_real_type */
 	 NULL),					/* adjust_reloc_bits */
 
-  LOONGARCH_EMPTY_HOWTO(59),
-  LOONGARCH_EMPTY_HOWTO(60),
-  LOONGARCH_EMPTY_HOWTO(61),
+  LOONGARCH_HOWTO (R_LARCH_SOP_POP_32_S_10_14_S2,	  /* type (59).  */
+	 2,				   	  /* rightshift.  */
+	 2,				   	  /* size.  */
+	 14,				  	  /* bitsize.  */
+	 false,					  /* pc_relative.  */
+	 10,				   	  /* bitpos.  */
+	 complain_overflow_signed,	    	  /* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		  /* special_function.  */
+	 "R_LARCH_SOP_POP_32_S_10_14_S2",	  /* name.  */
+	 false,			       		  /* partial_inplace.  */
+	 0,					  /* src_mask */
+	 0xfffc00,				  /* dst_mask */
+	 false,					  /* pcrel_offset */
+	 BFD_RELOC_LARCH_SOP_POP_32_S_10_14_S2,	  /* bfd_reloc_code_real_type */
+	 loongarch_gen_adjust_reloc_bits),	  /* adjust_reloc_bits */
+
+  LOONGARCH_HOWTO (R_LARCH_SOP_PUSH_PCREL_HI,	/* type (60).  */
+	 2,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 32,				  	/* bitsize.  */
+	 true /* FIXME: somewhat use this.  */,	/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SOP_PUSH_PCREL_HI",	    	/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0x03ffffff,				/* src_mask.  */
+	 0x03ffffff,				/* dst_mask.  */
+	 false,					/* pcrel_offset */
+	 BFD_RELOC_LARCH_SOP_PUSH_PCREL_HI,	/* bfd_reloc_code_real_type */
+	 NULL),					/* adjust_reloc_bits */
+
+  LOONGARCH_HOWTO (R_LARCH_SOP_PUSH_PCREL_LO,	/* type (61).  */
+	 2,				   	/* rightshift.  */
+	 2,				   	/* size.  */
+	 32,				  	/* bitsize.  */
+	 true /* FIXME: somewhat use this.  */,	/* pc_relative.  */
+	 0,				   	/* bitpos.  */
+	 complain_overflow_signed,	    	/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,	       		/* special_function.  */
+	 "R_LARCH_SOP_PUSH_PCREL_LO",	    	/* name.  */
+	 false,			       		/* partial_inplace.  */
+	 0x03ffffff,				/* src_mask.  */
+	 0x03ffffff,				/* dst_mask.  */
+	 false,					/* pcrel_offset */
+	 BFD_RELOC_LARCH_SOP_PUSH_PCREL_LO,	/* bfd_reloc_code_real_type */
+	 NULL),					/* adjust_reloc_bits */
+
   LOONGARCH_EMPTY_HOWTO(62),
   LOONGARCH_EMPTY_HOWTO(63),
 

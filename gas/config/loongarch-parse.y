@@ -163,6 +163,18 @@ reloc (const char *op_c_str, const char *id_c_str, offsetT addend)
   SET_RELOC_TYPE_ON_TOP ("gd32_hi20", TLSGD32_HI20);
   SET_RELOC_TYPE_ON_TOP ("gd64_hi20", TLSGD64_HI20);
 
+  else if (strcmp (op_c_str, "pcrel_hi") == 0)
+    {
+      top->value = id_sym_expr;
+      top->type = BFD_RELOC_LARCH_SOP_PUSH_PCREL_HI;
+      top++;
+    }
+  else if (strcmp (op_c_str, "pcrel_lo") == 0)
+    {
+      top->value = id_sym_expr;
+      top->type = BFD_RELOC_LARCH_SOP_PUSH_PCREL_LO;
+      top++;
+    }
   else
     as_fatal (_("unknown reloc hint: %s"), op_c_str);
 }

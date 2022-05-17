@@ -3462,6 +3462,10 @@ static const char *const bfd_reloc_code_real_names[] = { "@@uninitialized@@",
   "BFD_RELOC_LARCH_SUB32",
   "BFD_RELOC_LARCH_SUB64",
 
+  "BFD_RELOC_LARCH_SOP_POP_32_S_10_14_S2",
+  "BFD_RELOC_LARCH_SOP_PUSH_PCREL_HI",
+  "BFD_RELOC_LARCH_SOP_PUSH_PCREL_LO",
+
   "BFD_RELOC_LARCH_B16",
   "BFD_RELOC_LARCH_B21",
   "BFD_RELOC_LARCH_B26",
