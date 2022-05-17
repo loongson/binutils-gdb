@@ -1758,9 +1758,6 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
     case R_LARCH_SOP_POP_32_S_10_5:
     case R_LARCH_SOP_POP_32_S_10_12:
     case R_LARCH_SOP_POP_32_S_10_16:
-    case R_LARCH_SOP_POP_32_S_10_16_S2:
-    case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
-    case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
     case R_LARCH_SOP_POP_32_S_5_20:
     case R_LARCH_SOP_POP_32_U_10_12:
     case R_LARCH_SOP_POP_32_U:
@@ -1776,18 +1773,94 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
 					    contents, (bfd_vma)opr1);
       break;
 
-    case R_LARCH_B16:
-    case R_LARCH_B21:
-    case R_LARCH_B26:
-    case R_LARCH_BL26:
-      r = loongarch_check_offset (rel, input_section);
-      if (r != bfd_reloc_ok)
-	break;
+    case R_LARCH_SOP_POP_32_S_10_16_S2:
+	{
+	  r = loongarch_pop (&opr1);
+	  if (r != bfd_reloc_ok)
+	    break;
 
-      r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
-					    howto, input_bfd,
-					    contents, value);
-      break;
+	  if ((opr1 & 0x3) != 0)
+	    {
+	      r = bfd_reloc_overflow;
+	      break;
+	    }
+
+	  uint32_t imm = opr1 >> howto->rightshift;
+	  if ((imm & (~0x7fffU)) && ((imm & (~0x7fffU)) != (~0x7fffU)))
+	    {
+	      r = bfd_reloc_overflow;
+	      break;
+	    }
+	  r = loongarch_check_offset (rel, input_section);
+	  if (r != bfd_reloc_ok)
+	    break;
+
+	  insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
+	  insn1 = (insn1 & howto->src_mask) | ((imm & 0xffffU) << 10);
+	  bfd_put (bits, input_bfd, insn1, contents + rel->r_offset);
+	  break;
+	}
+
+    case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
+	{
+	  r = loongarch_pop (&opr1);
+	  if (r != bfd_reloc_ok)
+	    break;
+
+	  if ((opr1 & 0x3) != 0)
+	    {
+	      r = bfd_reloc_overflow;
+	      break;
+	    }
+
+	  uint32_t imm = opr1 >> howto->rightshift;
+	  if ((imm & (~0xfffffU)) && ((imm & (~0xfffffU)) != (~0xfffffU)))
+	    {
+	      r = bfd_reloc_overflow;
+	      break;
+	    }
+	  r = loongarch_check_offset (rel, input_section);
+	  if (r != bfd_reloc_ok)
+	    break;
+
+	  insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
+	  insn1 = (insn1 & howto->src_mask)
+	    | ((imm & 0xffffU) << 10)
+	    | ((imm & 0x1f0000U) >> 16);
+	  bfd_put (bits, input_bfd, insn1, contents + rel->r_offset);
+	  break;
+	}
+
+    case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
+      {
+	r = loongarch_pop (&opr1);
+	if (r != bfd_reloc_ok)
+	  break;
+
+	if ((opr1 & 0x3) != 0)
+	  {
+	    r = bfd_reloc_overflow;
+	    break;
+	  }
+
+	uint32_t imm = opr1 >> howto->rightshift;
+	if ((imm & (~0x1ffffffU)) && (imm & (~0x1ffffffU)) != (~0x1ffffffU))
+	  {
+	    r = bfd_reloc_overflow;
+	    break;
+	  }
+
+	r = loongarch_check_offset (rel, input_section);
+	if (r != bfd_reloc_ok)
+	  break;
+
+	insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
+	insn1 = ((insn1 & howto->src_mask)
+		 | ((imm & 0xffffU) << 10)
+		 | ((imm & 0x3ff0000U) >> 16));
+	bfd_put (bits, input_bfd, insn1, contents + rel->r_offset);
+	break;
+      }
 
     case R_LARCH_TLS_DTPREL32:
     case R_LARCH_32:
@@ -1866,7 +1939,89 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
     case R_LARCH_PCREL_H_HI12:
       RESOLVE_SIMPLE_RELOCS (pcrel_h_hi12);
       break;
-      
+    case R_LARCH_B16:
+    case R_LARCH_B21:
+    case R_LARCH_B26:
+    case R_LARCH_BL26:
+      {
+	int64_t imm = (int64_t) value;
+	if (imm & 3)
+	  {
+	    r = bfd_reloc_overflow;
+	    break;
+	  }
+
+	imm >>= howto->rightshift;
+	r = loongarch_check_offset (rel, input_section);
+	if (r != bfd_reloc_ok)
+	  break;
+	insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
+
+	/* check if signed extension or not */
+	if ((ELFNN_R_TYPE (rel->r_info) == R_LARCH_B16) &&
+            (imm & (~0x7fffU)) &&
+	    ((imm & (~0x7fffU)) != (~0x7fffU)))
+	  {
+	    r = bfd_reloc_overflow;
+	    break;
+	  }
+	if ((ELFNN_R_TYPE (rel->r_info) == R_LARCH_B21) &&
+            (imm & (~0xfffffU)) &&
+	    ((imm & (~0xfffffU)) != (~0xfffffU)))
+	  {
+	    r = bfd_reloc_overflow;
+	    break;
+	  }
+	if ((ELFNN_R_TYPE (rel->r_info) == R_LARCH_B26) &&
+	    (imm & (~0x1ffffffU)) &&
+	    ((imm & (~0x1ffffffU)) != (~0x1ffffffU)))
+	  {
+	    r = bfd_reloc_overflow;
+	    break;
+	  }
+
+	r = loongarch_check_offset (rel, input_section);
+	if (r != bfd_reloc_ok)
+	  break;
+
+	insn1 = bfd_get (bits, input_bfd, contents + rel->r_offset);
+	if (ELFNN_R_TYPE (rel->r_info) == R_LARCH_B16)
+	  {
+	    if ((imm & ~0x7ffful) &&
+		((imm & ~0x7ffful) != ~0x7ffful))
+	      {
+		r = bfd_reloc_overflow;
+		break;
+	      }
+	    insn1 = (insn1 & howto->src_mask) | ((imm & 0xffff) << 10);
+	  }
+	else if (ELFNN_R_TYPE (rel->r_info) == R_LARCH_B21)
+	  {
+	    if ((imm & ~0xffffful) &&
+		((imm & ~0xffffful) != ~0xffffful))
+	      {
+		r = bfd_reloc_overflow;
+		break;
+	      }
+	    insn1 = (insn1 & howto->src_mask) |
+		    ((imm & 0xffff) << 10) | ((imm >> 16) & 0x1f);
+	  }
+	else /* R_LARCH_B26 R_LARCH_BL26 */
+	  {
+	    if ((imm & ~0x1fffffful) &&
+		((imm & ~0x1fffffful) != ~0x1fffffful))
+	      {
+		r = bfd_reloc_overflow;
+		break;
+	      }
+	    insn1 = (insn1 & howto->src_mask) |
+		    ((imm & 0xffff) << 10) | ((imm >> 16) & 0x3ff);
+	  }
+
+	bfd_put (bits, input_bfd, insn1, contents + rel->r_offset);
+	break;
+      }
+
     default:
       r = bfd_reloc_notsupported;
     }
