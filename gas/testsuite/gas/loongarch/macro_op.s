@@ -1,4 +1,3 @@
-.L1:
 li.w  $r4,0
 li.w  $r4,0xffffffff
 li.d  $r4,0
@@ -27,3 +26,4 @@ la.tls.ld  $r4,L1
 la.tls.ld  $r4,$r5,L1
 la.tls.gd  $r4,L1
 la.tls.gd  $r4,$r5,L1
+pcalau12i  $r4,L1

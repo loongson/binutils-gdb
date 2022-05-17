@@ -202,20 +202,21 @@ static struct loongarch_opcode loongarch_macro_opcodes[] =
   { 0, 0, "li.w", "r,sc", "%f",	0, 0, 0 },
   { 0, 0, "li.d", "r,sc", "%f",	0, 0, 0 },
 
-  { 0, 0, "la",	  "r,l", "la.global %1,%2",  0, 0, 0 },
+  { 0, 0, "pcalau12i",	"r,l",	  "pcalau12i %1,%%pcrel32_hi20(%2);", 0, 0, 0 },
 
+  { 0, 0, "la",		"r,l",	  "la.global %1,%2",	0,			0, 0 },
   { 0, 0, "la.global",	"r,l",	  "la.pcrel %1,%2",	&LARCH_opts.ase_gpcr,	0, 0 },
   { 0, 0, "la.global",	"r,r,l",  "la.pcrel %1,%2,%3",	&LARCH_opts.ase_gpcr,	0, 0 },
   { 0, 0, "la.global",	"r,l",	  "la.abs %1,%2",	&LARCH_opts.ase_gabs,	0, 0 },
   { 0, 0, "la.global",	"r,r,l",  "la.abs %1,%3",	&LARCH_opts.ase_gabs,	0, 0 },
-  { 0, 0, "la.global",	"r,l",	  "la.got %1,%2",	&LARCH_opts.ase_ilp32,	0, 0 },
+  { 0, 0, "la.global",	"r,l",	  "la.got %1,%2",	0,			0, 0 },
   { 0, 0, "la.global",	"r,r,l",  "la.got %1,%2,%3",	&LARCH_opts.ase_lp64,	0, 0 },
 
   { 0, 0, "la.local",	"r,l",	  "la.abs %1,%2",	&LARCH_opts.ase_labs,	0, 0 },
   { 0, 0, "la.local",	"r,r,l",  "la.abs %1,%3",	&LARCH_opts.ase_labs,	0, 0 },
-  { 0, 0, "la.local",	"r,l",	  "la.pcrel %1,%2",	&LARCH_opts.ase_ilp32,	0, 0 },
+  { 0, 0, "la.local",	"r,l",	  "la.pcrel %1,%2",	0,			0, 0 },
   { 0, 0, "la.local",	"r,r,l",  "la.pcrel %1,%2,%3",	&LARCH_opts.ase_lp64,	0, 0 },
-  { 0, 0, "la.tls.ld",	"r,l",	  "la.tls.gd %1,%2",	&LARCH_opts.ase_ilp32,	0, 0 },
+  { 0, 0, "la.tls.ld",	"r,l",	  "la.tls.gd %1,%2",	0,			0, 0 },
   { 0, 0, "la.tls.ld",	"r,r,l",  "la.tls.gd %1,%2,%3", &LARCH_opts.ase_lp64,	0, 0 },
 
   { 0, 0, "la.abs",	"r,l",	  INSN_LA_ABS_32,	    0 },

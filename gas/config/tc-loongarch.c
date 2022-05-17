@@ -1034,8 +1034,10 @@ loongarch_assemble_INSNs (char *str)
       append_fixp_and_insn (&the_one);
       if (the_one.insn_length == 0 && the_one.insn->macro)
 	{
-	  if (!strncmp (the_one.insn->name, "la.", 3)
+	  if ((!strncmp (the_one.insn->name, "la.", 3)
 	      && strstr (the_one.insn->macro, "(" FAKE_LABEL_NAME ")"))
+	      || (!strcmp(the_one.insn->name, "pcalau12i")
+		  && the_one.insn->macro))
 	    {
 	      fake_ep->X_add_symbol = make_internal_label ();
 	    }

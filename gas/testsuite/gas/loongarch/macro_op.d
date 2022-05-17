@@ -166,3 +166,5 @@ Disassembly of section .text:
 [ 	]+150:[ 	]+030000a5[ 	]+[ 	]+lu52i.d[ 	]+\$a1, \$a1, 0
 [ 	]+[ 	]+[ 	]+150: R_LARCH_PCREL_H_HI12[ 	]+.text\+0x144
 [ 	]+154:[ 	]+00109484[ 	]+[ 	]+add.d[ 	]+\$a0, \$a0, \$a1
+[ 	]+158:[ 	]+1a000004[ 	]+[ 	]+pcalau12i[ 	]+\$a0, 0
+[ 	]+[ 	]+[ 	]+158: R_LARCH_PCREL32_HI20[ 	]+L1
