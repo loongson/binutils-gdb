@@ -1681,7 +1681,6 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
 		    reloc_howto_type *howto, bfd_vma value,
 		    bfd *input_bfd, bfd_byte *contents)
 {
-  uint32_t insn1;
   int64_t opr1, opr2, opr3;
   bfd_reloc_status_type r = bfd_reloc_ok;
   int bits = bfd_get_reloc_size (howto) * 8;
