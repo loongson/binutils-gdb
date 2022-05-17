@@ -748,9 +748,6 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 
 	case R_LARCH_PCREL32_HI20:
 	case R_LARCH_PCREL64_HI20:
-	case R_LARCH_B21:
-	case R_LARCH_B16:
-	case R_LARCH_B26:
 	case R_LARCH_SOP_PUSH_PCREL:
 	  if (h != NULL)
 	    {
@@ -786,6 +783,9 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    non_got_reloc = 1;
 	  break;
 
+	case R_LARCH_B16:
+	case R_LARCH_B21:
+	case R_LARCH_B26:
 	case R_LARCH_BL26:
 	case R_LARCH_SOP_PUSH_PLT_PCREL:
 	  /* This symbol requires a procedure linkage table entry.  We
