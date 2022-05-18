@@ -17,7 +17,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; see the file COPYING3.  If not,
-   see <http://www.gnu.org/licenses/>.  */
+   see <http://www.gnu.org/licenses/>.	*/
 
 #include "as.h"
 #include "dw2gencfi.h"
@@ -85,7 +85,7 @@ const char comment_chars[] = "#";
 
 /* This array holds the chars that only start a comment at the beginning of
    a line.  If the line seems to have the form '# 123 filename'
-   .line and .file directives will appear in the pre-processed output.  */
+   .line and .file directives will appear in the pre-processed output.	*/
 /* Note that input_file.c hand checks for '#' at the beginning of the
    first line of the input file.  This is because the compiler outputs
    #NO_APP at the beginning of its output.  */
@@ -100,7 +100,7 @@ const char EXP_CHARS[] = "eE";
 
 /* Chars that mean this number is a floating point constant.  */
 /* As in 0f12.456.  */
-/* or    0d1.2345e12.  */
+/* or	 0d1.2345e12.  */
 const char FLT_CHARS[] = "rRsSfFdDxXpP";
 
 const char *md_shortopts = "O::g::G:";
@@ -263,7 +263,7 @@ loongarch_after_parse_args ()
   for (i = 0; i < ARRAY_SIZE (loongarch_cr_normal_name); i++)
     str_hash_insert (cr_htab, loongarch_cr_normal_name[i], (void *) (i + 1), 0);
 
-  /* Init single/double float registers names.  */
+  /* Init single/double float registers names.	*/
   if (LARCH_opts.ase_sf || LARCH_opts.ase_df)
     {
       if (!f_htab)
@@ -282,7 +282,7 @@ loongarch_after_parse_args ()
 
     }
 
-  /* Init lsx registers names.  */
+  /* Init lsx registers names.	*/
   if (LARCH_opts.ase_lsx)
     {
       if (!v_htab)
@@ -377,7 +377,7 @@ s_loongarch_align (int arg)
     s_align_ptwo (0);
 }
 
-/* Handle the .dtprelword and .dtpreldword pseudo-ops.  They generate
+/* Handle the .dtprelword and .dtpreldword pseudo-ops.	They generate
    a 32-bit or 64-bit DTP-relative relocation (BYTES says which) for
    use in DWARF debug information.  */
 
@@ -648,7 +648,7 @@ loongarch_args_parser_can_match_arg_helper (char esc_ch1, char esc_ch2,
 	  if (ip->reloc_info[0].type >= BFD_RELOC_LARCH_B16 &&
 	      ip->reloc_info[0].type <= BFD_RELOC_LARCH_TLSGD64_HI20){
 	    /* As we compact stack-relocs, it is no need for pop operation.
-               But break out until here in order to check the imm field. */
+	       But break out until here in order to check the imm field. */
 	    ip->reloc_num = 1;
 	    break;
 	  }
@@ -736,7 +736,7 @@ loongarch_args_parser_can_match_arg_helper (char esc_ch1, char esc_ch2,
 
       if ((esc_ch1 == 's' && bit_width < bits_needed_s)
 	  || (esc_ch1 != 's' && bit_width < bits_needed_u))
-	/* How to do after we detect overflow.  */
+	/* How to do after we detect overflow.	*/
 	as_fatal (_("Immediate overflow.\n"
 		    "format: %c%c%s\n"
 		    "arg: %s"),
@@ -802,7 +802,7 @@ check_this_insn_before_appending (struct loongarch_cl_insn *ip)
   int ret = 0;
 
   if (ip->insn->mask == 0xffff8000
-	   /* amswap.w  rd, rk, rj  */
+	   /* amswap.w	rd, rk, rj  */
 	   && ((ip->insn_bin & 0xfff00000) == 0x38600000
 	       /* ammax_db.wu  rd, rk, rj  */
 	       || (ip->insn_bin & 0xffff0000) == 0x38700000
@@ -827,7 +827,7 @@ check_this_insn_before_appending (struct loongarch_cl_insn *ip)
 	as_fatal (_("bstr(ins|pick).[wd] require msbd >= lsbd"));
     }
   else if (ip->insn->mask != 0 && (ip->insn_bin & 0xfe0003c0) == 0x04000000
-	   /* csrxchg  rd, rj, csr_num  */
+	   /* csrxchg  rd, rj, csr_num	*/
 	   && (strcmp ("csrxchg", ip->name) == 0))
     as_fatal (_("csrxchg require rj != $r0 && rj != $r1"));
 
@@ -983,114 +983,6 @@ assember_macro_helper (const char *const args[], void *context_ptr)
 				    sizeof (args_buf));
     }
 
-  if (!strncmp (insn->name, "la.", 3))
-    {
-      char insns_buf[200] = { 0 };
-      static const char *const elements[] =
-        {
-	  "lu12i.w %1,%%l_hi20(%2);",
-	  "ori %1,%1,%%l_lo12(%2);",
-	  "lu32i.d %1,%%h_lo20(%2);",
-	  "lu52i.d %1,%1,%%h_hi12(%2);",
-	  "lu12i.w %1,%%lel_hi20(%2);",
-	  "ori %1,%1,%%lel_lo12(%2);",
-	  "lu32i.d %1,%%leh_lo20(%2);",
-	  "lu52i.d %1,%1,%%leh_hi12(%2);",
-	  "pcaddu12i %1,%%pcrel32_hi20(%2);",
-	  "pcaddu12i %1,%%pcrel64_hi20(%3);",
-	  "addi.d %1,%1,%%pcrel_lo12s(" FAKE_LABEL_NAME ");",
-	  "ld.d %1,%1,%%pcrel_lo12s(" FAKE_LABEL_NAME ");",
-	  "ori %2,$r0,%%pcrel_lo12u(" FAKE_LABEL_NAME ");",
-	  "lu32i.d %2,%%pcrel_hlo20(" FAKE_LABEL_NAME ");",
-	  "lu52i.d %2,%2,%%pcrel_hhi12(" FAKE_LABEL_NAME ");",
-	  "pcaddu12i %1,%%got32_hi20(%2);",
-	  "pcaddu12i %1,%%got64_hi20(%3);",
-	  "pcaddu12i %1,%%ie32_hi20(%2);",
-	  "pcaddu12i %1,%%ie64_hi20(%3);",
-	  "pcaddu12i %1,%%gd32_hi20(%2);",
-	  "pcaddu12i %1,%%gd64_hi20(%3);",
-	  "add.d %1,%1,%2;",
-	  "ldx.d %1,%1,%2;",
-	};
-      if (!strcmp (insn->name, "la.abs"))
-	{
-	  strcat (insns_buf, elements[0]);
-	  strcat (insns_buf, elements[1]);
-	  strcat (insns_buf, elements[2]);
-	  strcat (insns_buf, elements[3]);
-	}
-      else if (!strcmp (insn->name, "la.tls.le"))
-	{
-	  strcat (insns_buf, elements[4]);
-	  strcat (insns_buf, elements[5]);
-	  strcat (insns_buf, elements[6]);
-	  strcat (insns_buf, elements[7]);
-	}
-      else
-	{
-	  fake_ep->X_add_symbol = make_internal_label ();
-	  if (args[2])
-            {
-	      if (!strcmp (insn->name, "la.pcrel"))
-		{
-		  strcat (insns_buf, elements[9]);
-		  strcat (insns_buf, elements[12]);
-		  strcat (insns_buf, elements[13]);
-		  strcat (insns_buf, elements[14]);
-		  strcat (insns_buf, elements[21]);
-		}
-	      else if (!strcmp (insn->name, "la.got"))
-		{
-		  strcat (insns_buf, elements[16]);
-		  strcat (insns_buf, elements[12]);
-		  strcat (insns_buf, elements[13]);
-		  strcat (insns_buf, elements[14]);
-		  strcat (insns_buf, elements[22]);
-		}
-	      else if (!strcmp (insn->name, "la.tls.ie"))
-		{
-		  strcat (insns_buf, elements[18]);
-		  strcat (insns_buf, elements[12]);
-		  strcat (insns_buf, elements[13]);
-		  strcat (insns_buf, elements[14]);
-		  strcat (insns_buf, elements[22]);
-		}
-	      else
-		{
-		  strcat (insns_buf, elements[20]);
-		  strcat (insns_buf, elements[12]);
-		  strcat (insns_buf, elements[13]);
-		  strcat (insns_buf, elements[14]);
-		  strcat (insns_buf, elements[21]);
-		}
-	    }
-          else
-	    {
-	      if (!strcmp (insn->name, "la.pcrel"))
-		{
-		  strcat (insns_buf, elements[8]);
-		  strcat (insns_buf, elements[10]);
-		}
-	      else if (!strcmp (insn->name, "la.got"))
-		{
-		  strcat (insns_buf, elements[15]);
-		  strcat (insns_buf, elements[11]);
-		}
-	      else if (!strcmp (insn->name, "la.tls.ie"))
-		{
-		  strcat (insns_buf, elements[17]);
-		  strcat (insns_buf, elements[11]);
-		}
-	      else
-		{
-		  strcat (insns_buf, elements[19]);
-		  strcat (insns_buf, elements[10]);
-		}
-	    }
-	}
-      ret = loongarch_expand_macro (insns_buf, args, NULL, NULL, 200);
-    }
-
   return ret;
 }
 
@@ -1144,6 +1036,11 @@ loongarch_assemble_INSNs (char *str)
       append_fixp_and_insn (&the_one);
       if (the_one.insn_length == 0 && the_one.insn->macro)
 	{
+	  if (!strncmp (the_one.insn->name, "la.", 3)
+	      && strstr (the_one.insn->macro, "(" FAKE_LABEL_NAME ")"))
+	    {
+	      fake_ep->X_add_symbol = make_internal_label ();
+	    }
 	  char *c_str = loongarch_expand_macro (the_one.insn->macro,
 						the_one.arg_strs,
 						assember_macro_helper,
@@ -1402,7 +1299,7 @@ apply_fix_b26_bl26(int64_t sym, int64_t addend, int64_t pc, insn_t *insn)
       (imm & ~0x1fffffful) != ~0x1fffffful)
     return -1;
   *insn = (*insn & ~0x3ffffff) |
-          ((imm & 0xffff) << 10) | ((imm >> 16) & 0x3ff);
+	  ((imm & 0xffff) << 10) | ((imm >> 16) & 0x3ff);
   return 0;
 }
 
@@ -1690,7 +1587,7 @@ loongarch_fix_collection (void)
 
       larch_pcrel_hi_reloc *hi = find_pcrel_hi (lo->address);
       if (!hi)
-        {
+	{
 	  as_fatal (_ ("Collect cannot find pcrel_hi 0x%lx"),  lo->address);
 	  return -1;
 	}
