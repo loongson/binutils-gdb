@@ -126,19 +126,15 @@ reloc (const char *op_c_str, const char *id_c_str, offsetT addend)
   {
     expressionS *fake;
     if (!strcmp(op_c_str, "pcrel32_hi20")
-	|| !strcmp(op_c_str, "got32_hi20")
-	|| !strcmp(op_c_str, "lel_hi20")
 	|| !strcmp(op_c_str, "ie32_hi20")
 	|| !strcmp(op_c_str, "gd32_hi20")
-	|| !strcmp(op_c_str, "b16")
-	|| !strcmp(op_c_str, "b21")
-	|| !strcmp(op_c_str, "b26")
-	|| !strcmp(op_c_str, "plt"))
+	|| !strcmp(op_c_str, "got32_hi20"))
     {
       make_fake_lable (id_c_str);
       my_getExpression (&id_sym_expr, id_c_str);
     }
-    else if ((fake = fake_lable_find (id_c_str)))
+    else if (!strncmp(op_c_str, "pcrel_", 6)
+	     && (fake = fake_lable_find (id_c_str)))
     {
       id_sym_expr = *fake;
     }
