@@ -117,35 +117,35 @@ const char *const loongarch_x_normal_name[32] =
 
 #define INSN_LA_PCREL_32			      \
   "pcaddu12i %1,%%pcrel32_hi20(%2);"		      \
-  "addi.w %1,%1,%%pcrel_lo12s(" FAKE_LABEL_NAME ");", \
+  "addi.w %1,%1,%%pcrel_lo12s(%2);", \
   &LARCH_opts.ase_ilp32,			      \
   &LARCH_opts.ase_lp64
 #define INSN_LA_PCREL_64			      \
   "pcaddu12i %1,%%pcrel32_hi20(%2);"		      \
-  "addi.d %1,%1,%%pcrel_lo12s(" FAKE_LABEL_NAME ");", \
+  "addi.d %1,%1,%%pcrel_lo12s(%2);", \
   &LARCH_opts.ase_lp64, 0
 #define INSN_LA_PCREL_64_LARGE			      \
   "pcaddu12i %1,%%pcrel64_hi20(%3);"		      \
-  "ori %2,$r0,%%pcrel_lo12u(" FAKE_LABEL_NAME ");"    \
-  "lu32i.d %2,%%pcrel_hlo20(" FAKE_LABEL_NAME ");"    \
-  "lu52i.d %2,%2,%%pcrel_hhi12(" FAKE_LABEL_NAME ");" \
+  "ori %2,$r0,%%pcrel_lo12u(%3);"    \
+  "lu32i.d %2,%%pcrel_hlo20(%3);"    \
+  "lu52i.d %2,%2,%%pcrel_hhi12(%3);" \
   "add.d %1,%1,%2;",				      \
   &LARCH_opts.ase_lp64, 0
 
 #define INSN_LA_GOT_32				      \
   "pcaddu12i %1,%%got32_hi20(%2);"		      \
-  "ld.w %1,%1,%%pcrel_lo12s(" FAKE_LABEL_NAME ");",   \
+  "ld.w %1,%1,%%pcrel_lo12s(%2);",   \
   &LARCH_opts.ase_ilp32,			      \
   &LARCH_opts.ase_lp64
 #define INSN_LA_GOT_64				      \
   "pcaddu12i %1,%%got32_hi20(%2);"		      \
-  "ld.d %1,%1,%%pcrel_lo12s(" FAKE_LABEL_NAME ");",   \
+  "ld.d %1,%1,%%pcrel_lo12s(%2);",   \
   &LARCH_opts.ase_lp64, 0
 #define INSN_LA_GOT_64_LARGE			      \
   "pcaddu12i %1,%%got64_hi20(%3);"		      \
-  "ori %2,$r0,%%pcrel_lo12u(" FAKE_LABEL_NAME ");"    \
-  "lu32i.d %2,%%pcrel_hlo20(" FAKE_LABEL_NAME ");"    \
-  "lu52i.d %2,%2,%%pcrel_hhi12(" FAKE_LABEL_NAME ");" \
+  "ori %2,$r0,%%pcrel_lo12u(%3);"    \
+  "lu32i.d %2,%%pcrel_hlo20(%3);"    \
+  "lu52i.d %2,%2,%%pcrel_hhi12(%3);" \
   "ldx.d %1,%1,%2;",				      \
   &LARCH_opts.ase_lp64, 0
 
@@ -163,35 +163,35 @@ const char *const loongarch_x_normal_name[32] =
 
 #define INSN_LA_TLS_IE_32			      \
   "pcaddu12i %1,%%ie32_hi20(%2);"		      \
-  "ld.w %1,%1,%%pcrel_lo12s(" FAKE_LABEL_NAME ");",   \
+  "ld.w %1,%1,%%pcrel_lo12s(%2);",   \
   &LARCH_opts.ase_ilp32,			      \
   &LARCH_opts.ase_lp64
 #define INSN_LA_TLS_IE_64			      \
   "pcaddu12i %1,%%ie32_hi20(%2);"		      \
-  "ld.d %1,%1,%%pcrel_lo12s(" FAKE_LABEL_NAME ");",   \
+  "ld.d %1,%1,%%pcrel_lo12s(%2);",   \
   &LARCH_opts.ase_lp64, 0
 #define INSN_LA_TLS_IE_64_LARGE			      \
   "pcaddu12i %1,%%ie64_hi20(%3);"		      \
-  "ori %2,$r0,%%pcrel_lo12u(" FAKE_LABEL_NAME ");"    \
-  "lu32i.d %2,%%pcrel_hlo20(" FAKE_LABEL_NAME ");"    \
-  "lu52i.d %2,%2,%%pcrel_hhi12(" FAKE_LABEL_NAME ");" \
+  "ori %2,$r0,%%pcrel_lo12u(%3);"    \
+  "lu32i.d %2,%%pcrel_hlo20(%3);"    \
+  "lu52i.d %2,%2,%%pcrel_hhi12(%3);" \
   "ldx.d %1,%1,%2;",				      \
   &LARCH_opts.ase_lp64, 0
 
 #define INSN_LA_TLS_GD_32			      \
   "pcaddu12i %1,%%gd32_hi20(%2);"		      \
-  "addi.w %1,%1,%%pcrel_lo12s(" FAKE_LABEL_NAME ");", \
+  "addi.w %1,%1,%%pcrel_lo12s(%2);", \
   &LARCH_opts.ase_ilp32,			      \
   &LARCH_opts.ase_lp64
 #define INSN_LA_TLS_GD_64			      \
   "pcaddu12i %1,%%gd32_hi20(%2);"		      \
-  "addi.d %1,%1,%%pcrel_lo12s(" FAKE_LABEL_NAME ");", \
+  "addi.d %1,%1,%%pcrel_lo12s(%2);", \
   &LARCH_opts.ase_lp64, 0
 #define INSN_LA_TLS_GD_64_LARGE			      \
   "pcaddu12i %1,%%gd64_hi20(%3);"		      \
-  "ori %2,$r0,%%pcrel_lo12u(" FAKE_LABEL_NAME ");"    \
-  "lu32i.d %2,%%pcrel_hlo20(" FAKE_LABEL_NAME ");"    \
-  "lu52i.d %2,%2,%%pcrel_hhi12(" FAKE_LABEL_NAME ");" \
+  "ori %2,$r0,%%pcrel_lo12u(%3);"    \
+  "lu32i.d %2,%%pcrel_hlo20(%3);"    \
+  "lu52i.d %2,%2,%%pcrel_hhi12(%3);" \
   "add.d %1,%1,%2;",				      \
   &LARCH_opts.ase_lp64, 0
 
