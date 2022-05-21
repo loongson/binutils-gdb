@@ -1,4 +1,4 @@
-..L1:
+.L1:
 	li.w  $r4, 0
 	li.w  $r4, 0xffffffff
 	li.w  $r4, 0
