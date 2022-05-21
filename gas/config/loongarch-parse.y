@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; see the file COPYING3.  If not,
-   see <http://www.gnu.org/licenses/>.  */
+   see <http://www.gnu.org/licenses/>.	*/
 %{
 #include "as.h"
 #include "loongarch-lex.h"
@@ -79,18 +79,10 @@ emit_const (offsetT imm)
   top++;
 }
 
-extern expressionS *fake_ep;
-
 static const char *
 my_getExpression (expressionS *ep, const char *str)
 {
   char *save_in, *ret;
-
-  if (!strcmp(str, FAKE_LABEL_NAME))
-    {
-      *ep = *fake_ep;
-      return NULL;
-    }
 
   if (*str == ':')
     {
@@ -109,6 +101,11 @@ my_getExpression (expressionS *ep, const char *str)
   return ret;
 }
 
+expressionS *
+fake_lable_find(const char *la);
+void
+make_fake_lable (const char *lable);
+
 #define SET_RELOC_TYPE_ON_TOP(key, name)	\
 else if (strcmp (op_c_str, key) == 0)		\
   do {						\
@@ -126,10 +123,22 @@ reloc (const char *op_c_str, const char *id_c_str, offsetT addend)
     as_fatal (_("expr too huge"));
 
   if (id_c_str)
+  {
+    expressionS *fake;
+    if (!strcmp(op_c_str, "pcrel32_hi20")
+	|| !strcmp(op_c_str, "got32_hi20"))
     {
+      make_fake_lable (id_c_str);
       my_getExpression (&id_sym_expr, id_c_str);
-      id_sym_expr.X_add_number += addend;
     }
+    else if ((fake = fake_lable_find (id_c_str)))
+    {
+      id_sym_expr = *fake;
+    }
+    else
+      my_getExpression (&id_sym_expr, id_c_str);
+    id_sym_expr.X_add_number += addend;
+  }
   else
     {
       id_sym_expr.X_op = O_constant;

@@ -3461,12 +3461,10 @@ static const char *const bfd_reloc_code_real_names[] = { "@@uninitialized@@",
   "BFD_RELOC_LARCH_SUB24",
   "BFD_RELOC_LARCH_SUB32",
   "BFD_RELOC_LARCH_SUB64",
-
   "BFD_RELOC_LARCH_B16",
   "BFD_RELOC_LARCH_B21",
   "BFD_RELOC_LARCH_B26",
   "BFD_RELOC_LARCH_BL26",
-
   "BFD_RELOC_LARCH_L_HI20",
   "BFD_RELOC_LARCH_L_LO12",
   "BFD_RELOC_LARCH_H_LO20",
@@ -3487,7 +3485,8 @@ static const char *const bfd_reloc_code_real_names[] = { "@@uninitialized@@",
   "BFD_RELOC_LARCH_TLSIE64_HI20",
   "BFD_RELOC_LARCH_TLSGD32_HI20",
   "BFD_RELOC_LARCH_TLSGD64_HI20",
-
+  "BFD_RELOC_LARCH_PCALA32_HI20",
+  "BFD_RELOC_LARCH_PCALA_LO12",
  "@@overflow: BFD_RELOC_UNUSED@@",
 };
 #endif

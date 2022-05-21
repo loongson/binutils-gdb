@@ -31,8 +31,12 @@
 #include <stdio.h>
 #include <assert.h>
 
-expressionS __fake_ep = { .X_op = O_symbol, .X_add_number = 0, };
-expressionS *fake_ep = &__fake_ep;
+typedef struct loongarch_fake_lable
+{
+  expressionS exp;
+  char *lable;
+  bool valid;
+}fake_lable;
 
 /* All information about an instruction during assemble.  */
 struct loongarch_cl_insn
@@ -331,6 +335,7 @@ loongarch_target_format ()
   return LARCH_opts.ase_lp64 ? "elf64-loongarch" : "elf32-loongarch";
 }
 
+static struct htab *fake_htab = NULL;
 void
 md_begin ()
 {
@@ -355,6 +360,7 @@ md_begin ()
   /* FIXME: expressionS use 'offsetT' as constant,
    * we want this is 64-bit type.  */
   assert (8 <= sizeof (offsetT));
+  fake_htab = str_htab_create ();
 }
 
 unsigned long
@@ -897,6 +903,26 @@ make_internal_label (void)
 					  frag_now_fix());
 }
 
+void
+make_fake_lable (const char *lable);
+void
+make_fake_lable (const char *lable)
+{
+  fake_lable *fake;
+  fake = str_hash_find (fake_htab, lable);
+  if (!fake)
+    {
+      fake = XNEW(fake_lable);
+      fake->lable = strdup(lable);
+    }
+  fake->exp.X_op = O_symbol;
+  fake->exp.X_add_number = 0;
+  fake->exp.X_add_symbol = make_internal_label ();
+
+  str_hash_insert (fake_htab, fake->lable, fake, 1);
+
+}
+
 /* Ask helper for returning a malloced c_str or NULL.  */
 static char *
 assember_macro_helper (const char *const args[], void *context_ptr)
@@ -984,6 +1010,15 @@ assember_macro_helper (const char *const args[], void *context_ptr)
   return ret;
 }
 
+expressionS *
+fake_lable_find(const char *la);
+
+expressionS *
+fake_lable_find(const char *la)
+{
+  return (expressionS*)str_hash_find (fake_htab, la);
+}
+
 /* Accept instructions separated by ';'
  * assuming 'not starting with space and not ending with space' or pass in
  * empty c_str.  */
@@ -1034,13 +1069,6 @@ loongarch_assemble_INSNs (char *str)
       append_fixp_and_insn (&the_one);
       if (the_one.insn_length == 0 && the_one.insn->macro)
 	{
-	  if ((!strncmp (the_one.insn->name, "la.", 3)
-	      && strstr (the_one.insn->macro, "(" FAKE_LABEL_NAME ")"))
-	      || (!strcmp(the_one.insn->name, "pcalau12i")
-		  && the_one.insn->macro))
-	    {
-	      fake_ep->X_add_symbol = make_internal_label ();
-	    }
 	  char *c_str = loongarch_expand_macro (the_one.insn->macro,
 						the_one.arg_strs,
 						assember_macro_helper,
