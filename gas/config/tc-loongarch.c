@@ -480,7 +480,8 @@ get_internal_label (expressionS *label_expr, unsigned long label,
 extern int loongarch_parse_expr (const char *expr,
 				 struct reloc_info *reloc_stack_top,
 				 size_t max_reloc_num, size_t *reloc_num,
-				 offsetT *imm_if_no_reloc);
+				 offsetT *imm_if_no_reloc,
+				 offsetT *addend);
 
 static int
 is_internal_label (const char *c_str)
@@ -565,7 +566,7 @@ loongarch_args_parser_can_match_arg_helper (char esc_ch1, char esc_ch2,
 					    const char *arg, void *context)
 {
   struct loongarch_cl_insn *ip = context;
-  offsetT imm, ret = 0;
+  offsetT imm, ret,addend = 0;
   size_t reloc_num_we_have = MAX_RELOC_NUMBER_A_INSN - ip->reloc_num;
   size_t reloc_num = 0;
 
@@ -591,7 +592,7 @@ loongarch_args_parser_can_match_arg_helper (char esc_ch1, char esc_ch2,
     case 'u':
       ip->match_now =
 	loongarch_parse_expr (arg, ip->reloc_info + ip->reloc_num,
-			      reloc_num_we_have, &reloc_num, &imm) == 0;
+			      reloc_num_we_have, &reloc_num, &imm, &addend) == 0;
 
       if (!ip->match_now)
 	break;
@@ -724,6 +725,9 @@ loongarch_args_parser_can_match_arg_helper (char esc_ch1, char esc_ch2,
 	break;
 
       imm = ret;
+      /* New reloc type only.  */
+      if (addend)
+	imm = addend;
       if (t[0] == '<' && t[1] == '<')
 	{
 	  int i = strtol (t += 2, &t, 10), j;
