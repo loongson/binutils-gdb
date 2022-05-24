@@ -31,4 +31,5 @@ loongarch_parse_expr (const char *expr,
 		      struct reloc_info *reloc_stack_top,
 		      size_t max_reloc_num,
 		      size_t *reloc_num,
-		      offsetT *imm);
+		      offsetT *imm,
+		      offsetT *addend);

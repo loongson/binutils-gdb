@@ -46,7 +46,8 @@ loongarch_parse_expr (const char *expr,
 		      struct reloc_info *reloc_stack_top,
 		      size_t max_reloc_num,
 		      size_t *reloc_num,
-		      offsetT *imm)
+		      offsetT *imm,
+		      offsetT *addend)
 {
   int ret;
   struct yy_buffer_state *buffstate;
@@ -64,6 +65,15 @@ loongarch_parse_expr (const char *expr,
       *reloc_num = top - reloc_stack_top;
     }
   yy_delete_buffer (buffstate);
+
+
+  if (*reloc_num == 1
+      && (top - 1)->type >= BFD_RELOC_LARCH_B16
+      && (top - 1)->type <= BFD_RELOC_LARCH_TLSGD64_HI20)
+  {
+    *addend = (top - 1)->value.X_add_number;
+    (top - 1)->value.X_add_number = 0;
+  }
 
   return ret;
 }
