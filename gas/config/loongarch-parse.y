@@ -126,6 +126,7 @@ reloc (const char *op_c_str, const char *id_c_str, offsetT addend)
   {
     expressionS *fake;
     if (!strcmp(op_c_str, "pcrel32_hi20")
+	|| !strcmp(op_c_str, "pcala32_hi20")
 	|| !strcmp(op_c_str, "ie32_hi20")
 	|| !strcmp(op_c_str, "gd32_hi20")
 	|| !strcmp(op_c_str, "got32_hi20"))
@@ -174,6 +175,8 @@ reloc (const char *op_c_str, const char *id_c_str, offsetT addend)
   SET_RELOC_TYPE_ON_TOP ("ie64_hi20", TLSIE64_HI20);
   SET_RELOC_TYPE_ON_TOP ("gd32_hi20", TLSGD32_HI20);
   SET_RELOC_TYPE_ON_TOP ("gd64_hi20", TLSGD64_HI20);
+  SET_RELOC_TYPE_ON_TOP ("pcala32_hi20", PCALA32_HI20);
+  SET_RELOC_TYPE_ON_TOP ("pcala_lo12", PCALA_LO12);
 
   else
     as_fatal (_("unknown reloc hint: %s"), op_c_str);
