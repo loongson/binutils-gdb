@@ -470,8 +470,8 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 bfd_elf_generic_reloc,			/* special_function.  */
 	 "R_LARCH_SOP_POP_32_S_0_10_10_16_S2",	/* name.  */
 	 false,					/* partial_inplace.  */
-	 0,					/* src_mask */
-	 0x03ffffff,				/* dst_mask */
+	 0xfc000000,				/* src_mask */
+	 0xfc000000,				/* dst_mask */
 	 false,					/* pcrel_offset */
 	 BFD_RELOC_LARCH_SOP_POP_32_S_0_10_10_16_S2,
 						/* bfd_reloc_code_real_type */
@@ -734,8 +734,8 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 bfd_elf_generic_reloc,			/* special_function.  */
 	 "R_LARCH_B26",				/* name.  */
 	 false,					/* partial_inplace.  */
-	 0,					/* src_mask */
-	 0x03ffffff,				/* dst_mask */
+	 0xfc000000,				/* src_mask */
+	 0xfc000000,				/* dst_mask */
 	 false,					/* pcrel_offset */
 	 BFD_RELOC_LARCH_B26,			/* bfd_reloc_code_real_type */
 	 loongarch_adjust_reloc_bits_l16_h10),	/* adjust_reloc_bits */
@@ -748,10 +748,10 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 0,					/* bitpos.  */
 	 complain_overflow_signed,		/* complain_on_overflow.  */
 	 bfd_elf_generic_reloc,			/* special_function.  */
-	 "R_LARCH_BL26",			/* name.  */
+	 "R_LARCH_BL26",				/* name.  */
 	 false,					/* partial_inplace.  */
-	 0,					/* src_mask */
-	 0x03ffffff,				/* dst_mask */
+	 0xfc000000,				/* src_mask */
+	 0xfc000000,				/* dst_mask */
 	 false,					/* pcrel_offset */
 	 BFD_RELOC_LARCH_BL26,			/* bfd_reloc_code_real_type */
 	 loongarch_adjust_reloc_bits_l16_h10),	/* adjust_reloc_bits */
