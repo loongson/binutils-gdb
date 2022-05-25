@@ -1255,10 +1255,38 @@ loongarch_dwarf2_addr_size (void)
   return LARCH_opts.ase_lp64 ? 8 : 4;
 }
 
-void
-tc_loongarch_parse_to_dw2regnum (expressionS *exp)
+int
+tc_loongarch_regname_to_dw2regnum (char *regname)
 {
-  expression_and_evaluate (exp);
+  if (*regname != '$')
+    {
+      as_bad (_("unknown register `%s'"), regname);
+      return -1;
+    }
+
+  void *t = NULL;
+  // mark_f is used to output float regno.
+  int mark_f = 0;
+  if (*(regname + 1) == 'f' && *(regname + 2) != 'p')
+    {
+      mark_f = 1;
+      t = str_hash_find (f_htab, regname);
+    }
+  else
+    t = str_hash_find (r_htab, regname);
+
+  if (t != NULL)
+    {
+      if (mark_f == 1)
+        return (offsetT) t - 1 + 32;
+      else
+        return (offsetT) t - 1;
+    }
+  else
+    {
+      as_bad (_("unknown register `%s'"), regname);
+      return -1;
+    }
 }
 
 void

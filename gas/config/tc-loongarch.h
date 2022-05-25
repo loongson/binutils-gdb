@@ -68,8 +68,10 @@ extern int loongarch_dwarf2_addr_size (void);
   loongarch_cfi_frame_initial_instructions
 extern void loongarch_cfi_frame_initial_instructions (void);
 
-#define tc_parse_to_dw2regnum tc_loongarch_parse_to_dw2regnum
-extern void tc_loongarch_parse_to_dw2regnum (expressionS *);
+//#define tc_parse_to_dw2regnum tc_loongarch_parse_to_dw2regnum
+//extern void tc_loongarch_parse_to_dw2regnum (expressionS *);
+#define tc_regname_to_dw2regnum    tc_loongarch_regname_to_dw2regnum
+extern int tc_loongarch_regname_to_dw2regnum (char *regname);
 
 /* A enumerated values to specific how to deal with align in '.text'.
    Now we want to fill 'andi $r0,$r0,0x0'.
