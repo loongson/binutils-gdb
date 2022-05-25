@@ -740,6 +740,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    h->non_got_ref = 1;
 	  break;
 
+	case R_LARCH_PCALA32_HI20:
 	case R_LARCH_PCREL32_HI20:
 	case R_LARCH_PCREL64_HI20:
 	case R_LARCH_B21:
@@ -1841,6 +1842,18 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
     case R_LARCH_TLSLE_H_HI12:
       RESOLVE_SIMPLE_RELOCS (like_h_hi12);
       break;
+    case R_LARCH_PCALA_LO12:
+      r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
+					    howto, input_bfd,
+					    contents, value);
+      break;
+
+    case R_LARCH_PCALA32_HI20:
+      r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
+					    howto, input_bfd,
+					    contents, value);
+      break;
+
     case R_LARCH_PCREL32_HI20:
     case R_LARCH_GOT32_HI20:
     case R_LARCH_TLSIE32_HI20:
@@ -2562,6 +2575,11 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	  break;
 
+	case R_LARCH_PCALA_LO12:
+	  relocation += rel->r_addend;
+	  relocation &= 0xfff;
+	  break;
+	case R_LARCH_PCALA32_HI20:
 	case R_LARCH_PCREL32_HI20:
 	case R_LARCH_PCREL64_HI20:
 	case R_LARCH_B21:
@@ -2571,6 +2589,15 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_SOP_PUSH_PCREL:
 	case R_LARCH_SOP_PUSH_PLT_PCREL:
 	  unresolved_reloc = false;
+	  if (r_type == R_LARCH_PCALA32_HI20)
+	    {
+	      bfd_vma rehi = relocation & (~(bfd_vma)0xfff);
+	      bfd_vma pclo = pc & (~(bfd_vma)0xfff);
+	      //bfd_vma lo = (relocation - pc) & ((bfd_vma)0xfff);
+	      //if ((relocation - pc > 0x7ff) && (relocation - (hi + lo) > 0x7ff))
+	      if (rehi != pclo)
+		relocation += 0x1000;
+	    }
 
 	  if (resolved_to_const)
 	    {

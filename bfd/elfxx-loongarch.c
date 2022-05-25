@@ -56,6 +56,9 @@ bool loongarch_adjust_reloc_bits_l16_xx5_h5 (reloc_howto_type *howto,
 					     bfd_vma *fix_val);
 bool loongarch_adjust_reloc_bits_l16_h10 (reloc_howto_type *howto,
 					  bfd_vma *val);
+bool loongarch_pcala32_hi20_reloc_bits (reloc_howto_type *howto, bfd_vma *fix_val);
+bool loongarch_pcala_lo12_reloc_bits (reloc_howto_type *howto, bfd_vma
+				      *fix_val);
 
 /* This does not include any relocation information, but should be
    good enough for GDB or objdump to read the file.  */
@@ -1076,6 +1079,38 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 BFD_RELOC_LARCH_TLSGD64_HI20,		  /* bfd_reloc_code_real_type */
 	 loongarch_gen_adjust_reloc_bits),	  /* adjust_reloc_bits */
 
+  LOONGARCH_HOWTO (R_LARCH_PCALA32_HI20,	  /* type (88).  */
+	 12,					  /* rightshift.  */
+	 2,					  /* size.  */
+	 20,					  /* bitsize.  */
+	 false,					  /* pc_relative.  */
+	 5,					  /* bitpos.  */
+	 complain_overflow_signed,		  /* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,			  /* special_function.	*/
+	 "R_LARCH_PCALA32_HI20",		  /* name.  */
+	 false,					  /* partial_inplace.  */
+	 0,					  /* src_mask */
+	 0x1ffffe0,				  /* dst_mask */
+	 false,					  /* pcrel_offset */
+	 BFD_RELOC_LARCH_PCALA32_HI20,		  /* bfd_reloc_code_real_type */
+	 loongarch_pcala32_hi20_reloc_bits),	  /* adjust_reloc_bits */
+
+  LOONGARCH_HOWTO (R_LARCH_PCALA_LO12,		  /* type (89).  */
+	 0,					  /* rightshift.  */
+	 2,					  /* size.  */
+	 12,					  /* bitsize.  */
+	 false,					  /* pc_relative.  */
+	 10,					  /* bitpos.  */
+	 complain_overflow_unsigned,		  /* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,			  /* special_function.	*/
+	 "R_LARCH_PCALA_LO12",			  /* name.  */
+	 false,					  /* partial_inplace.  */
+	 0,					  /* src_mask */
+	 0x3ffc00,				  /* dst_mask */
+	 false,					  /* pcrel_offset */
+	 BFD_RELOC_LARCH_PCALA_LO12,		  /* bfd_reloc_code_real_type */
+	 loongarch_pcala_lo12_reloc_bits),	  /* adjust_reloc_bits */
+
 };
 
 reloc_howto_type *
@@ -1316,6 +1351,64 @@ bool loongarch_adjust_reloc_bits_l16_h10 (reloc_howto_type *howto,
 
   /* Perform insn bits field. 25:16>>16, 15:0<<10 */
   val = ((val & 0xffff) << 10) | ((val >> 16) & 0x3ff);
+
+  *fix_val = val;
+
+  return true;
+}
+
+bool loongarch_pcala32_hi20_reloc_bits (reloc_howto_type *howto, bfd_vma *fix_val)
+{
+  bfd_vma val = *fix_val;
+  /* Check val low bits if rightshift != 0, before rightshift  */
+
+  /* Return false if overflow.	*/
+  bfd_vma sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
+  /* If val < 0.  */
+  if (sig_bit)
+    {
+      if ((LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1) & val)
+	  != LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1))
+	return false;
+    }
+  else
+    {
+      if (LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize) & val)
+	return false;
+    }
+
+  /* Perform insn bits field.  */
+  val = (val & ((0x1U << howto->bitsize) - 1)) >> howto->rightshift;
+  val <<= howto->bitpos;
+
+  *fix_val = val;
+
+  return true;
+}
+
+bool loongarch_pcala_lo12_reloc_bits (reloc_howto_type *howto, bfd_vma *fix_val)
+{
+  bfd_vma val = *fix_val;
+  /* Check val low bits if rightshift != 0, before rightshift  */
+
+  /* Return false if overflow.	*/
+  bfd_vma sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
+  /* If val < 0.  */
+  if (sig_bit)
+    {
+//      if ((LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1) & val)
+//	  != LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1))
+//	return false;
+    }
+  else
+    {
+      if (LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize) & val)
+	return false;
+    }
+
+  /* Perform insn bits field.  */
+  val = (val & ((0x1U << howto->bitsize) - 1)) >> howto->rightshift;
+  val <<= howto->bitpos;
 
   *fix_val = val;
 

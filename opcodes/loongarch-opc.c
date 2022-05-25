@@ -121,8 +121,8 @@ const char *const loongarch_x_normal_name[32] =
   &LARCH_opts.ase_ilp32,			      \
   &LARCH_opts.ase_lp64
 #define INSN_LA_PCREL_64			      \
-  "pcaddu12i %1,%%pcrel32_hi20(%2);"		      \
-  "addi.d %1,%1,%%pcrel_lo12s(%2);", \
+  "pcalau12i %1,%%pcala32_hi20(%2);"		      \
+  "addi.d %1,%1,%%pcala_lo12(%2);", \
   &LARCH_opts.ase_lp64, 0
 #define INSN_LA_PCREL_64_LARGE			      \
   "pcaddu12i %1,%%pcrel64_hi20(%3);"		      \
