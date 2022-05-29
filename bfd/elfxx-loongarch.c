@@ -1360,9 +1360,12 @@ bool loongarch_adjust_reloc_bits_l16_h10 (reloc_howto_type *howto,
 bool loongarch_pcala32_hi20_reloc_bits (reloc_howto_type *howto, bfd_vma *fix_val)
 {
   bfd_vma val = *fix_val;
-  /* Check val low bits if rightshift != 0, before rightshift  */
 
-  /* Return false if overflow.	*/
+  /* Signed extend.  */
+  bfd_vma sign = 1u << (howto->bitsize - 1);
+  val = (val ^ sign) - sign;
+
+    /* Return false if overflow.	*/
   bfd_vma sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
   /* If val < 0.  */
   if (sig_bit)
@@ -1396,7 +1399,7 @@ bool loongarch_pcala_lo12_reloc_bits (reloc_howto_type *howto, bfd_vma *fix_val)
   /* If val < 0.  */
   if (sig_bit)
     {
-//      if ((LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1) & val)
+//	if ((LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1) & val)
 //	  != LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1))
 //	return false;
     }
