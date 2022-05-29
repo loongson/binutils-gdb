@@ -2591,12 +2591,13 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  unresolved_reloc = false;
 	  if (r_type == R_LARCH_PCALA32_HI20)
 	    {
-	      bfd_vma rehi = relocation & (~(bfd_vma)0xfff);
-	      bfd_vma pclo = pc & (~(bfd_vma)0xfff);
-	      //bfd_vma lo = (relocation - pc) & ((bfd_vma)0xfff);
-	      //if ((relocation - pc > 0x7ff) && (relocation - (hi + lo) > 0x7ff))
-	      if (rehi != pclo)
-		relocation += 0x1000;
+	      bfd_vma lo = (relocation + rel->r_addend) & ((bfd_vma)0xfff);
+	      pc = pc & (~(bfd_vma)0xfff);
+	      if (lo > 0x7ff)
+		{
+		  relocation += 0x1000;
+		}
+	      relocation &= ~(bfd_vma)0xfff;
 	    }
 
 	  if (resolved_to_const)
