@@ -138,8 +138,8 @@ const char *const loongarch_x_normal_name[32] =
   &LARCH_opts.ase_ilp32,			      \
   &LARCH_opts.ase_lp64
 #define INSN_LA_GOT_64				      \
-  "pcaddu12i %1,%%got32_hi20(%2);"		      \
-  "ld.d %1,%1,%%pcrel_lo12s(%2);",   \
+  "pcalau12i %1,%%pgot32_hi20(%2);"		      \
+  "ld.d %1,%1,%%pgot32_lo12(%2);",   \
   &LARCH_opts.ase_lp64, 0
 #define INSN_LA_GOT_64_LARGE			      \
   "pcaddu12i %1,%%got64_hi20(%3);"		      \
