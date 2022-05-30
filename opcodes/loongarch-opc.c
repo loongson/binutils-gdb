@@ -167,8 +167,8 @@ const char *const loongarch_x_normal_name[32] =
   &LARCH_opts.ase_ilp32,			      \
   &LARCH_opts.ase_lp64
 #define INSN_LA_TLS_IE_64			      \
-  "pcaddu12i %1,%%ie32_hi20(%2);"		      \
-  "ld.d %1,%1,%%pcrel_lo12s(%2);",   \
+  "pcalau12i %1,%%pie32_hi20(%2);"		      \
+  "ld.d %1,%1,%%pie32_lo12(%2);",   \
   &LARCH_opts.ase_lp64, 0
 #define INSN_LA_TLS_IE_64_LARGE			      \
   "pcaddu12i %1,%%ie64_hi20(%3);"		      \
@@ -184,8 +184,8 @@ const char *const loongarch_x_normal_name[32] =
   &LARCH_opts.ase_ilp32,			      \
   &LARCH_opts.ase_lp64
 #define INSN_LA_TLS_GD_64			      \
-  "pcaddu12i %1,%%gd32_hi20(%2);"		      \
-  "addi.d %1,%1,%%pcrel_lo12s(%2);", \
+  "pcalau12i %1,%%pgd32_hi20(%2);"		      \
+  "addi.d %1,%1,%%pgd32_lo12(%2);", \
   &LARCH_opts.ase_lp64, 0
 #define INSN_LA_TLS_GD_64_LARGE			      \
   "pcaddu12i %1,%%gd64_hi20(%3);"		      \

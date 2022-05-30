@@ -651,7 +651,7 @@ loongarch_args_parser_can_match_arg_helper (char esc_ch1, char esc_ch2,
 		      esc_ch1, esc_ch2, bit_field, arg);
 	  if (ip->reloc_info[0].type >= BFD_RELOC_LARCH_B16 &&
 	       // ip->reloc_info[0].type <= BFD_RELOC_LARCH_TLSGD64_HI20){
-	      ip->reloc_info[0].type <= BFD_RELOC_LARCH_PGOT32_LO12){
+	      ip->reloc_info[0].type <= BFD_RELOC_LARCH_PGD32_LO12){
 	    /* As we compact stack-relocs, it is no need for pop operation.
 	       But break out until here in order to check the imm field. */
 	    ip->reloc_num = 1;
@@ -1441,6 +1441,10 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
     case BFD_RELOC_LARCH_SOP_PUSH_TLS_GOT:
     case BFD_RELOC_LARCH_SOP_PUSH_PCREL:
     case BFD_RELOC_LARCH_SOP_PUSH_PLT_PCREL:
+    case BFD_RELOC_LARCH_PIE32_HI20:
+    case BFD_RELOC_LARCH_PIE32_LO12:
+    case BFD_RELOC_LARCH_PGD32_HI20:
+    case BFD_RELOC_LARCH_PGD32_LO12:
     case BFD_RELOC_LARCH_TLSIE32_HI20:
     case BFD_RELOC_LARCH_TLSIE64_HI20:
     case BFD_RELOC_LARCH_TLSGD32_HI20:
@@ -1456,6 +1460,10 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
       if (fixP->fx_r_type == BFD_RELOC_LARCH_SOP_PUSH_TLS_TPREL
 	  || fixP->fx_r_type == BFD_RELOC_LARCH_SOP_PUSH_TLS_GD
 	  || fixP->fx_r_type == BFD_RELOC_LARCH_SOP_PUSH_TLS_GOT
+    || BFD_RELOC_LARCH_PIE32_HI20
+    || BFD_RELOC_LARCH_PIE32_LO12
+    || BFD_RELOC_LARCH_PGD32_HI20
+    || BFD_RELOC_LARCH_PGD32_LO12
 	  || fixP->fx_r_type == BFD_RELOC_LARCH_TLSIE32_HI20
 	  || fixP->fx_r_type == BFD_RELOC_LARCH_TLSIE64_HI20
 	  || fixP->fx_r_type == BFD_RELOC_LARCH_TLSGD32_HI20
