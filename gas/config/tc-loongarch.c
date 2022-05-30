@@ -651,7 +651,7 @@ loongarch_args_parser_can_match_arg_helper (char esc_ch1, char esc_ch2,
 		      esc_ch1, esc_ch2, bit_field, arg);
 	  if (ip->reloc_info[0].type >= BFD_RELOC_LARCH_B16 &&
 	       // ip->reloc_info[0].type <= BFD_RELOC_LARCH_TLSGD64_HI20){
-	      ip->reloc_info[0].type <= BFD_RELOC_LARCH_PCALA_LO12){
+	      ip->reloc_info[0].type <= BFD_RELOC_LARCH_PGOT32_LO12){
 	    /* As we compact stack-relocs, it is no need for pop operation.
 	       But break out until here in order to check the imm field. */
 	    ip->reloc_num = 1;

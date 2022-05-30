@@ -678,6 +678,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
       only_need_pcrel = 0;
       switch (r_type)
 	{
+	case R_LARCH_PGOT32_HI20:
 	case R_LARCH_GOT32_HI20:
 	case R_LARCH_GOT64_HI20:
 	case R_LARCH_SOP_PUSH_GPREL:
@@ -1842,13 +1843,11 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
     case R_LARCH_TLSLE_H_HI12:
       RESOLVE_SIMPLE_RELOCS (like_h_hi12);
       break;
-    case R_LARCH_PCALA_LO12:
-      r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
-					    howto, input_bfd,
-					    contents, value);
-      break;
 
+    case R_LARCH_PCALA_LO12:
     case R_LARCH_PCALA32_HI20:
+    case R_LARCH_PGOT32_HI20:
+    case R_LARCH_PGOT32_LO12:
       r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
 					    howto, input_bfd,
 					    contents, value);
@@ -2576,9 +2575,10 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  break;
 
 	case R_LARCH_PCALA_LO12:
-	  relocation += rel->r_addend;
-	  relocation &= 0xfff;
-	  break;
+	      relocation += rel->r_addend;
+	      relocation &= 0xfff;
+	      break;
+
 	case R_LARCH_PCALA32_HI20:
 	case R_LARCH_PCREL32_HI20:
 	case R_LARCH_PCREL64_HI20:
@@ -2681,6 +2681,8 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  break;
 
 	case R_LARCH_GOT32_HI20:
+	case R_LARCH_PGOT32_HI20:
+	case R_LARCH_PGOT32_LO12:
 	case R_LARCH_GOT64_HI20:
 	case R_LARCH_SOP_PUSH_GPREL:
 	  unresolved_reloc = false;
@@ -2862,6 +2864,24 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      if (!larch_record_pcrel_hi_reloc (&pcrel_relocs, pc,
 					        relocation, r_type, true))
 		r = bfd_reloc_overflow;
+	    }
+	  else if (r_type == R_LARCH_PGOT32_HI20)
+	    {
+	      relocation = off + sec_addr(got);
+	      bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
+	      pc = pc & (~(bfd_vma)0xfff);
+	      if (lo > 0x7ff)
+		{
+		  relocation += 0x1000;
+		}
+	      relocation &= ~(bfd_vma)0xfff;
+
+	      relocation -= pc;
+	    }
+	  else if (r_type == R_LARCH_PGOT32_LO12)
+	    {
+	      relocation = off + sec_addr(got);
+	      relocation &= (bfd_vma)0xfff;
 	    }
 	  break;
 

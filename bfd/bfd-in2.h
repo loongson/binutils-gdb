@@ -6331,6 +6331,8 @@ assembler and not (currently) written to any object files.  */
   BFD_RELOC_LARCH_TLSGD64_HI20,
   BFD_RELOC_LARCH_PCALA32_HI20,
   BFD_RELOC_LARCH_PCALA_LO12,
+  BFD_RELOC_LARCH_PGOT32_HI20,
+  BFD_RELOC_LARCH_PGOT32_LO12,
   BFD_RELOC_UNUSED };
 
 typedef enum bfd_reloc_code_real bfd_reloc_code_real_type;
