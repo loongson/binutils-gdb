@@ -1457,25 +1457,6 @@ bool loongarch_pcala32_hi20_reloc_bits (reloc_howto_type *howto, bfd_vma *fix_va
 {
   bfd_vma val = *fix_val;
 
-  /* Signed extend.  */
-  bfd_vma sign = 1u << (howto->bitsize - 1);
-  val = (val ^ sign) - sign;
-
-    /* Return false if overflow.	*/
-  bfd_vma sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
-  /* If val < 0.  */
-  if (sig_bit)
-    {
-      if ((LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1) & val)
-	  != LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1))
-	return false;
-    }
-  else
-    {
-      if (LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize) & val)
-	return false;
-    }
-
   /* Perform insn bits field.  */
   val = (val & ((0x1U << howto->bitsize) - 1)) >> howto->rightshift;
   val <<= howto->bitpos;
