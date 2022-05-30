@@ -179,6 +179,10 @@ reloc (const char *op_c_str, const char *id_c_str, offsetT addend)
   SET_RELOC_TYPE_ON_TOP ("pcala_lo12", PCALA_LO12);
   SET_RELOC_TYPE_ON_TOP ("pgot32_hi20", PGOT32_HI20);
   SET_RELOC_TYPE_ON_TOP ("pgot32_lo12", PGOT32_LO12);
+  SET_RELOC_TYPE_ON_TOP ("pie32_hi20", PIE32_HI20);
+  SET_RELOC_TYPE_ON_TOP ("pie32_lo12", PIE32_LO12);
+  SET_RELOC_TYPE_ON_TOP ("pgd32_hi20", PGD32_HI20);
+  SET_RELOC_TYPE_ON_TOP ("pgd32_lo12", PGD32_LO12);
 
   else
     as_fatal (_("unknown reloc hint: %s"), op_c_str);

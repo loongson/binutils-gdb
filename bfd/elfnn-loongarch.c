@@ -697,6 +697,8 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    return false;
 	  break;
 
+	case R_LARCH_PIE32_HI20:
+	case R_LARCH_PGD32_HI20:
 	case R_LARCH_TLSIE32_HI20:
 	case R_LARCH_TLSIE64_HI20:
 	case R_LARCH_SOP_PUSH_TLS_GOT:
@@ -1847,6 +1849,10 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
     case R_LARCH_PCALA_LO12:
     case R_LARCH_PCALA32_HI20:
     case R_LARCH_PGOT32_HI20:
+    case R_LARCH_PIE32_HI20:
+    case R_LARCH_PIE32_LO12:
+    case R_LARCH_PGD32_HI20:
+    case R_LARCH_PGD32_LO12:
     case R_LARCH_PGOT32_LO12:
       r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
 					    howto, input_bfd,
@@ -2885,6 +2891,10 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    }
 	  break;
 
+	case R_LARCH_PIE32_HI20:
+	case R_LARCH_PIE32_LO12:
+	case R_LARCH_PGD32_HI20:
+	case R_LARCH_PGD32_LO12:
 	case R_LARCH_TLSIE32_HI20:
 	case R_LARCH_TLSIE64_HI20:
 	case R_LARCH_TLSGD32_HI20:
@@ -2893,6 +2903,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_SOP_PUSH_TLS_GD:
 	  if (r_type == R_LARCH_SOP_PUSH_TLS_GOT ||
 	      r_type == R_LARCH_TLSIE32_HI20 ||
+	      r_type == R_LARCH_PIE32_HI20 ||
 	      r_type == R_LARCH_TLSIE64_HI20)
 	    is_ie = true;
 	  unresolved_reloc = false;
@@ -3052,6 +3063,26 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      if (!larch_record_pcrel_hi_reloc (&pcrel_relocs, pc,
 					        relocation, r_type, true))
 		r = bfd_reloc_overflow;
+	    }
+	  else if (r_type == R_LARCH_PIE32_HI20
+	  || r_type == R_LARCH_PGD32_HI20)
+	    {
+	      relocation += sec_addr (got);
+	      bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
+	      pc = pc & (~(bfd_vma)0xfff);
+	      if (lo > 0x7ff)
+		{
+		  relocation += 0x1000;
+		}
+	      relocation &= ~(bfd_vma)0xfff;
+
+	      relocation -= pc;
+	    }
+	  else if (r_type == R_LARCH_PIE32_LO12
+	  || r_type == R_LARCH_PGD32_LO12)
+	    {
+	      relocation = off + sec_addr(got);
+	      relocation &= (bfd_vma)0xfff;
 	    }
 	  break;
 
