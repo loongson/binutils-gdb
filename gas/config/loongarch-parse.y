@@ -129,6 +129,7 @@ reloc (const char *op_c_str, const char *id_c_str, offsetT addend)
 	|| !strcmp(op_c_str, "pcala32_hi20")
 	|| !strcmp(op_c_str, "ie32_hi20")
 	|| !strcmp(op_c_str, "gd32_hi20")
+	|| !strcmp(op_c_str, "got64_hi20")
 	|| !strcmp(op_c_str, "got32_hi20"))
     {
       make_fake_lable (id_c_str);
