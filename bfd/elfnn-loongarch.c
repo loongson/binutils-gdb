@@ -2586,7 +2586,18 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      break;
 
 	case R_LARCH_PCALA32_HI20:
-	case R_LARCH_PCREL32_HI20:
+	    {
+	      bfd_vma lo = (relocation + rel->r_addend) & ((bfd_vma)0xfff);
+	      pc = pc & (~(bfd_vma)0xfff);
+	      if (lo > 0x7ff)
+		{
+		  relocation += 0x1000;
+		}
+	      relocation += rel->r_addend;
+	      relocation &= ~(bfd_vma)0xfff;
+	      relocation -= pc;
+	    }
+	  break;
 	case R_LARCH_PCREL64_HI20:
 	case R_LARCH_B21:
 	case R_LARCH_B26:
@@ -2595,16 +2606,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_SOP_PUSH_PCREL:
 	case R_LARCH_SOP_PUSH_PLT_PCREL:
 	  unresolved_reloc = false;
-	  if (r_type == R_LARCH_PCALA32_HI20)
-	    {
-	      bfd_vma lo = (relocation + rel->r_addend) & ((bfd_vma)0xfff);
-	      pc = pc & (~(bfd_vma)0xfff);
-	      if (lo > 0x7ff)
-		{
-		  relocation += 0x1000;
-		}
-	      relocation &= ~(bfd_vma)0xfff;
-	    }
 
 	  if (resolved_to_const)
 	    {
