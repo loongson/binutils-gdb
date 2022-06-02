@@ -688,6 +688,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    return false;
 	  break;
 
+	case R_LARCH_PGD32_HI20:
 	case R_LARCH_TLSGD32_HI20:
 	case R_LARCH_TLSGD64_HI20:
 	case R_LARCH_SOP_PUSH_TLS_GD:
@@ -698,7 +699,6 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	  break;
 
 	case R_LARCH_PIE32_HI20:
-	case R_LARCH_PGD32_HI20:
 	case R_LARCH_TLSIE32_HI20:
 	case R_LARCH_TLSIE64_HI20:
 	case R_LARCH_SOP_PUSH_TLS_GOT:
