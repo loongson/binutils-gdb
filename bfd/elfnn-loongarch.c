@@ -744,6 +744,9 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	  break;
 
 	case R_LARCH_PCALA32_HI20:
+	  if (h != NULL)
+	      h->non_got_ref = 1;
+	      break;
 	case R_LARCH_PCREL32_HI20:
 	case R_LARCH_PCREL64_HI20:
 	case R_LARCH_B21:
@@ -986,20 +989,21 @@ loongarch_elf_adjust_dynamic_symbol (struct bfd_link_info *info,
     return true;
 
   /* If there are no references to this symbol that do not use the
-     GOT, we don't need to generate a copy reloc.  */
-  if (!h->non_got_ref)
+     GOT with pic, we don't need to generate a copy reloc.  */
+  if (!h->non_got_ref && bfd_link_pic (info))
     return true;
 
-  /* If -z nocopyreloc was given, we won't generate them either.  */
-  if (info->nocopyreloc)
+  /* If -z nocopyreloc was given and link with nopic,
+   * we won't generate them either.  */
+  if (info->nocopyreloc && !bfd_link_pic (info))
     {
       h->non_got_ref = 0;
       return true;
     }
 
-  /* If we don't find any dynamic relocs in read-only sections, then
+  /* If we don't find any dynamic relocs in read-only sections with pic, then
      we'll be keeping the dynamic relocs and avoiding the copy reloc.  */
-  if (!readonly_dynrelocs (h))
+  if (!readonly_dynrelocs (h) && bfd_link_pic (info))
     {
       h->non_got_ref = 0;
       return true;
