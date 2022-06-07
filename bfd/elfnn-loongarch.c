@@ -122,14 +122,17 @@ struct loongarch_elf_link_hash_table
 
 #define elf_backend_plt_readonly 1
 
-#define elf_backend_want_plt_sym 0
+#define elf_backend_want_plt_sym 1
 #define elf_backend_plt_alignment 4
 #define elf_backend_can_gc_sections 1
+#define elf_backend_can_refcount 1
 #define elf_backend_want_got_sym 1
 
 #define elf_backend_got_header_size (GOT_ENTRY_SIZE * 1)
 
 #define elf_backend_want_dynrelro 1
+#define elf_backend_rela_normal	1
+#define elf_backend_default_execstack 0
 
 /* Generate a PLT header.  */
 
@@ -607,9 +610,6 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
       struct elf_link_hash_entry *h;
       Elf_Internal_Sym *isym = NULL;
 
-      int need_dynreloc;
-      int only_need_pcrel;
-
       r_symndx = ELFNN_R_SYM (rel->r_info);
       r_type = ELFNN_R_TYPE (rel->r_info);
 
@@ -674,8 +674,10 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	  elf_tdata (info->output_bfd)->has_gnu_osabi |= elf_gnu_osabi_ifunc;
 	}
 
-      need_dynreloc = 0;
-      only_need_pcrel = 0;
+      int need_dynreloc = 0;
+      int non_got_reloc = 0;
+      int only_need_pcrel = 0;
+
       switch (r_type)
 	{
 	case R_LARCH_PGOT32_HI20:
@@ -746,7 +748,13 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	case R_LARCH_PCALA32_HI20:
 	  if (h != NULL)
 	      h->non_got_ref = 1;
-	      break;
+
+	  if (bfd_link_pic (info))
+	    need_dynreloc = 1;
+	  else
+	    non_got_reloc = 1;
+
+	  break;
 	case R_LARCH_PCREL32_HI20:
 	case R_LARCH_PCREL64_HI20:
 	case R_LARCH_B21:
@@ -755,6 +763,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	case R_LARCH_SOP_PUSH_PCREL:
 	  if (h != NULL)
 	    {
+	      if (!bfd_link_pic(info))
 	      h->non_got_ref = 1;
 
 	      /* We try to create PLT stub for all non-local function.  */
@@ -762,6 +771,12 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 		h->plt.refcount = 0;
 	      h->plt.refcount++;
 	    }
+
+	  if (bfd_link_pic (info))
+	    need_dynreloc = 1;
+	  else
+	    non_got_reloc = 1;
+
 	  break;
 
 	case R_LARCH_BL26:
@@ -838,7 +853,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	}
 
       /* Record some info for sizing and allocating dynamic entry.  */
-      if (need_dynreloc && (sec->flags & SEC_ALLOC))
+      if ((need_dynreloc || non_got_reloc) && (sec->flags & SEC_ALLOC))
 	{
 	  /* When creating a shared object, we must copy these
 	     relocs into the output file.  We create a reloc
@@ -897,6 +912,31 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
     }
 
   return true;
+}
+
+/* Return true if we need copy relocation against EH.  */
+
+static bool
+need_copy_relocation_p (struct loongarch_elf_link_hash_entry *eh)
+{
+  struct elf_dyn_relocs *p;
+  asection *s;
+
+  for (p = eh->elf.dyn_relocs; p != NULL; p = p->next)
+    {
+      /* If there is any pc-relative reference, we need to keep copy relocation
+	 to avoid propagating the relocation into runtime that current glibc
+	 does not support.  */
+      if (p->pc_count)
+	return true;
+
+      s = p->sec->output_section;
+      /* Need copy relocation if it's against read-only section.  */
+      if (s != NULL && (s->flags & SEC_READONLY) != 0)
+	return true;
+    }
+
+  return false;
 }
 
 /* Find dynamic relocs for H that apply to read-only sections.  */
@@ -989,21 +1029,27 @@ loongarch_elf_adjust_dynamic_symbol (struct bfd_link_info *info,
     return true;
 
   /* If there are no references to this symbol that do not use the
-     GOT with pic, we don't need to generate a copy reloc.  */
-  if (!h->non_got_ref && bfd_link_pic (info))
+     GOT, we don't need to generate a copy reloc.  */
+  if (!h->non_got_ref)
     return true;
 
   /* If -z nocopyreloc was given and link with nopic,
    * we won't generate them either.  */
-  if (info->nocopyreloc && !bfd_link_pic (info))
+//  if (info->nocopyreloc)
+//    {
+//      h->non_got_ref = 0;
+//      return true;
+//    }
+
+  /* If we don't find any dynamic relocs in read-only sections with pic, then
+     we'll be keeping the dynamic relocs and avoiding the copy reloc.  */
+  if (!readonly_dynrelocs (h))
     {
       h->non_got_ref = 0;
       return true;
     }
 
-  /* If we don't find any dynamic relocs in read-only sections with pic, then
-     we'll be keeping the dynamic relocs and avoiding the copy reloc.  */
-  if (!readonly_dynrelocs (h) && bfd_link_pic (info))
+  if (!need_copy_relocation_p ((struct loongarch_elf_link_hash_entry*)h))
     {
       h->non_got_ref = 0;
       return true;
