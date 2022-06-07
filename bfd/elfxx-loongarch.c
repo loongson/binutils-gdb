@@ -1458,7 +1458,7 @@ bool loongarch_pcala32_hi20_reloc_bits (reloc_howto_type *howto, bfd_vma *fix_va
   bfd_vma val = *fix_val;
 
   /* Perform insn bits field.  */
-  val = (val & ((0x1U << howto->bitsize) - 1)) >> howto->rightshift;
+  val = (val >> howto->rightshift) & ((0x1U << howto->bitsize) - 1);
   val <<= howto->bitpos;
 
   *fix_val = val;
