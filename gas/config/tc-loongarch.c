@@ -1650,7 +1650,9 @@ int
 loongarch_fix_adjustable (fixS *fix)
 {
   /* Prevent all adjustments to global symbols */
-  if (S_IS_EXTERNAL (fix->fx_addsy) || S_IS_WEAK (fix->fx_addsy))
+  if (S_IS_EXTERNAL (fix->fx_addsy)
+      || S_IS_WEAK (fix->fx_addsy)
+      || S_FORCE_RELOC (fix->fx_addsy, true))
     return 0;
 
   return 1;
