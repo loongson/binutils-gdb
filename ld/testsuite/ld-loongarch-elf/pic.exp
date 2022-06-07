@@ -21,7 +21,7 @@
 
 
 global verbose
-set verbose 3
+#set verbose 3
 
 
 set testname "nopic link test pre build"
