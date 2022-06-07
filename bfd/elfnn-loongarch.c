@@ -2311,7 +2311,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  resolved_to_const = false;
 	  if (bfd_link_relocatable (info)
 	      && ELF_ST_TYPE (sym->st_info) == STT_SECTION)
-	    rel->r_addend += sec->output_offset;
+	    continue;
 	}
       else
 	{
