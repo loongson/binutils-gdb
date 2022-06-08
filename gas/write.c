@@ -1145,9 +1145,6 @@ fixup_segment (fixS *fixP, segT this_segment)
       print_fixup (fixP);
 #endif
     }				/* For each fixS in this segment.  */
-#ifdef md_fix_collection
-  md_fix_collection ();
-#endif
 }
 
 static void

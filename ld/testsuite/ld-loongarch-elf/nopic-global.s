@@ -23,8 +23,8 @@ main:
 	addi.d	$r22,$r3,16
 	.cfi_def_cfa 22, 0
 	.loc 1 8 15
-	pcalau12i	$r12,%pcala32_hi20(g_nopic)
-	addi.d	$r12,$r12,%pcala_lo12(g_nopic)
+	pcalau12i	$r12,%pcala_hi20_pa(g_nopic)
+	addi.d	$r12,$r12,%l_lo12_pa(g_nopic)
 	ldptr.w	$r12,$r12,0
 	.loc 1 8 6
 	or	$r13,$r12,$r0
@@ -32,12 +32,12 @@ main:
 	ori	$r12,$r12,1656
 	bne	$r13,$r12,.L2
 	.loc 1 9 5
-	pcalau12i	$r12,%pcala32_hi20(g_nopic)
-	addi.d	$r12,$r12,%pcala_lo12(g_nopic)
+	pcalau12i	$r12,%pcala_hi20_pa(g_nopic)
+	addi.d	$r12,$r12,%l_lo12_pa(g_nopic)
 	ldptr.w	$r12,$r12,0
 	or	$r5,$r12,$r0
-	pcalau12i	$r4,%pcala32_hi20(.LC0)
-	addi.d	$r4,$r4,%pcala_lo12(.LC0)
+	pcalau12i	$r4,%pcala_hi20_pa(.LC0)
+	addi.d	$r4,$r4,%l_lo12_pa(.LC0)
 	bl	%plt(printf)
 	b	.L5
 .L2:

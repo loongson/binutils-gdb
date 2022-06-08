@@ -103,97 +103,163 @@ const char *const loongarch_x_normal_name[32] =
   "$xr24", "$xr25", "$xr26", "$xr27", "$xr28", "$xr29", "$xr30", "$xr31",
 };
 
-#define INSN_LA_ABS_32	      \
-  "lu12i.w %1,%%l_hi20(%2);"  \
-  "ori %1,%1,%%l_lo12(%2);",  \
-  &LARCH_opts.ase_ilp32,      \
+/* Can not use xx_pa for abs.  */
+
+/* For LoongArch32 abs.  */
+#define INSN_LA_ABS32		    \
+  "lu12i.w %1,%%abs_hi20(%2);"	    \
+  "ori %1,%1,%%abs_lo12(%2);",	    \
+  &LARCH_opts.ase_ilp32,	    \
   &LARCH_opts.ase_lp64
-#define INSN_LA_ABS_64		\
-  "lu12i.w %1,%%l_hi20(%2);"	\
-  "ori %1,%1,%%l_lo12(%2);"	\
-  "lu32i.d %1,%%h_lo20(%2);"	\
-  "lu52i.d %1,%1,%%h_hi12(%2);",\
+#define INSN_LA_ABS64		    \
+  "lu12i.w %1,%%abs_hi20(%2);"	    \
+  "ori %1,%1,%%abs_lo12(%2);"	    \
+  "lu32i.d %1,%%abs64_lo20(%2);"    \
+  "lu52i.d %1,%1,%%abs64_hi12(%2);",\
   &LARCH_opts.ase_lp64, 0
 
-#define INSN_LA_PCREL_32			      \
-  "pcaddu12i %1,%%pcrel32_hi20(%2);"		      \
-  "addi.w %1,%1,%%pcrel_lo12s(%2);", \
-  &LARCH_opts.ase_ilp32,			      \
+#define INSN_LA_PCREL32		    \
+  "pcalau12i %1,%%pc_hi20(%2);"	    \
+  "addi.w %1,%1,%%pc_lo12(%2);",    \
+  &LARCH_opts.ase_ilp32,	    \
   &LARCH_opts.ase_lp64
-#define INSN_LA_PCREL_64			      \
-  "pcalau12i %1,%%pcala32_hi20(%2);"		      \
-  "addi.d %1,%1,%%pcala_lo12(%2);", \
+#define INSN_LA_PCREL64		    \
+  "pcalau12i %1,%%pc_hi20(%2);"	    \
+  "addi.d %1,%1,%%pc_lo12(%2);",    \
   &LARCH_opts.ase_lp64, 0
-#define INSN_LA_PCREL_64_LARGE			      \
-  "pcaddu12i %1,%%pcrel64_hi20(%3);"		      \
-  "ori %2,$r0,%%pcrel_lo12u(%3);"    \
-  "lu32i.d %2,%%pcrel_hlo20(%3);"    \
-  "lu52i.d %2,%2,%%pcrel_hhi12(%3);" \
-  "add.d %1,%1,%2;",				      \
+#define INSN_LA_PCREL64_LARGE	    \
+  "pcalau12i %1,%%pc_hi20(%3);"	    \
+  "addi.d %2,$r0,%%pc_lo12(%3);"    \
+  "lu32i.d %2,%%pc64_lo20(%3);"	    \
+  "lu52i.d %2,%2,%%pc64_hi12(%3);"  \
+  /* %2(pc) - 0x100000000 in ld.  */\
+  "add.d %1,%1,%2;",		    \
   &LARCH_opts.ase_lp64, 0
 
-#define INSN_LA_GOT_32				      \
-  "pcaddu12i %1,%%got32_hi20(%2);"		      \
-  "ld.w %1,%1,%%pcrel_lo12s(%2);",   \
-  &LARCH_opts.ase_ilp32,			      \
+#define INSN_LA_GOT32		    \
+  "pcalau12i %1,%%got_pc_hi20(%2);" \
+  "ld.w %1,%1,%%got_pc_lo12(%2);",  \
+  &LARCH_opts.ase_ilp32,	    \
   &LARCH_opts.ase_lp64
-#define INSN_LA_GOT_64				      \
-  "pcalau12i %1,%%pgot32_hi20(%2);"		      \
-  "ld.d %1,%1,%%pgot32_lo12(%2);",   \
+#define INSN_LA_GOT64		    \
+  "pcalau12i %1,%%got_pc_hi20(%2);" \
+  "ld.d %1,%1,%%got_pc_lo12(%2);",  \
   &LARCH_opts.ase_lp64, 0
-#define INSN_LA_GOT_64_LARGE			      \
-  "pcaddu12i %1,%%got64_hi20(%3);"		      \
-  "ori %2,$r0,%%pcrel_lo12u(%3);"    \
-  "lu32i.d %2,%%pcrel_hlo20(%3);"    \
-  "lu52i.d %2,%2,%%pcrel_hhi12(%3);" \
-  "ldx.d %1,%1,%2;",				      \
+/* got64 abs.  */
+#define INSN_LA_GOT64_LARGE_ABS	    \
+  "lu12i.w %1,%%got64_hi20(%2);"    \
+  "ori %1,%1,%%got64_lo12(%2);"	    \
+  "lu32i.d %1,%%got64_lo20(%2);"    \
+  "lu52i.d %1,%1,%%got64_hi12(%2);" \
+  "ld.d %1,%1,0",		    \
+  &LARCH_opts.ase_lp64,		    \
+  &LARCH_opts.ase_gpcr
+/* got64 pic.  */
+#define INSN_LA_GOT64_LARGE_PCREL     \
+  "pcalau12i %1,%%got_pc_hi20(%3);"   \
+  "addi.d %2,$r0,%%pc_lo12(%3);"      \
+  "lu32i.d %2,%%got64_pc_lo20(%3);"   \
+  "lu52i.d %2,%2,%%got64_pc_hi12(%3);"\
+  /* %2(pc) - 0x100000000 in ld.  */  \
+  "ldx.d %1,%1,%2;",		      \
+  &LARCH_opts.ase_lp64,		      \
+  &LARCH_opts.ase_gabs
+
+/* For LoongArch32/64 cmode=normal.  */
+#define INSN_LA_TLS_LE		    \
+  "lu12i.w %1,%%le_hi20(%2);"	    \
+  "ori %1,%1,%%le_lo12(%2);",	    \
+  &LARCH_opts.ase_ilp32, 0
+/* For LoongArch64 cmode=large.  */
+#define INSN_LA_TLS_LE64_LARGE	    \
+  "lu12i.w %1,%%le_hi20(%2);"	    \
+  "ori %1,%1,%%le_lo12(%2);"	    \
+  "lu32i.d %1,%%le64_lo20(%2);"	    \
+  "lu52i.d %1,%1,%%le64_hi12(%2);", \
   &LARCH_opts.ase_lp64, 0
 
-#define INSN_LA_TLS_LE_32	\
-  "lu12i.w %1,%%lel_hi20(%2);"	\
-  "ori %1,%1,%%lel_lo12(%2);",	\
-  &LARCH_opts.ase_ilp32,	\
+#define INSN_LA_TLS_IE32	    \
+  "pcalau12i %1,%%ie_pc_hi20(%2);"  \
+  "ld.w %1,%1,%%got_pc_lo12(%2);",  \
+  &LARCH_opts.ase_ilp32,	    \
   &LARCH_opts.ase_lp64
-#define INSN_LA_TLS_LE_64	  \
-  "lu12i.w %1,%%lel_hi20(%2);"	  \
-  "ori %1,%1,%%lel_lo12(%2);"	  \
-  "lu32i.d %1,%%leh_lo20(%2);"	  \
-  "lu52i.d %1,%1,%%leh_hi12(%2);",\
+
+#define INSN_LA_TLS_IE64	    \
+  "pcalau12i %1,%%ie_pc_hi20(%2);"  \
+  "ld.d %1,%1,%%got_pc_lo12(%2);",  \
   &LARCH_opts.ase_lp64, 0
 
-#define INSN_LA_TLS_IE_32			      \
-  "pcaddu12i %1,%%ie32_hi20(%2);"		      \
-  "ld.w %1,%1,%%pcrel_lo12s(%2);",   \
-  &LARCH_opts.ase_ilp32,			      \
-  &LARCH_opts.ase_lp64
-#define INSN_LA_TLS_IE_64			      \
-  "pcalau12i %1,%%pie32_hi20(%2);"		      \
-  "ld.d %1,%1,%%pie32_lo12(%2);",   \
-  &LARCH_opts.ase_lp64, 0
-#define INSN_LA_TLS_IE_64_LARGE			      \
-  "pcaddu12i %1,%%ie64_hi20(%3);"		      \
-  "ori %2,$r0,%%pcrel_lo12u(%3);"    \
-  "lu32i.d %2,%%pcrel_hlo20(%3);"    \
-  "lu52i.d %2,%2,%%pcrel_hhi12(%3);" \
-  "ldx.d %1,%1,%2;",				      \
-  &LARCH_opts.ase_lp64, 0
+/* For ie64 abs.  */
+#define INSN_LA_TLS_IE64_LARGE_ABS  \
+  "lu12i.w %1,%%ie64_hi20(%2);"	    \
+  "ori %1,%1,%%got64_lo12(%2);"	    \
+  "lu32i.d %1,%%got64_lo20(%2);"    \
+  "lu52i.d %1,%1,%%got64_hi12(%2);" \
+  "ld.d %1,%1,0",		    \
+  &LARCH_opts.ase_lp64,		    \
+  &LARCH_opts.ase_gpcr
+/* For ie64 pic.  */
+#define INSN_LA_TLS_IE64_LARGE_PCREL  \
+  "pcalau12i %1,%%ie_pc_hi20(%3);"    \
+  "addi.d %2,$r0,%%pc_lo12(%3);"      \
+  "lu32i.d %2,%%got64_pc_lo20(%3);"   \
+  "lu52i.d %2,%2,%%got64_pc_hi12(%3);"\
+  "ldx.d %1,%1,%2;",		      \
+  &LARCH_opts.ase_lp64,		      \
+  &LARCH_opts.ase_gabs
 
-#define INSN_LA_TLS_GD_32			      \
-  "pcaddu12i %1,%%gd32_hi20(%2);"		      \
-  "addi.w %1,%1,%%pcrel_lo12s(%2);", \
-  &LARCH_opts.ase_ilp32,			      \
+/* For LoongArch32/64 cmode=normal.  */
+#define INSN_LA_TLS_LD32	      \
+  "pcalau12i %1,%%ld_pc_hi20(%2);"    \
+  "addi.w %1,%1,%%got_pc_lo12(%2);",  \
+  &LARCH_opts.ase_ilp32,	      \
   &LARCH_opts.ase_lp64
-#define INSN_LA_TLS_GD_64			      \
-  "pcalau12i %1,%%pgd32_hi20(%2);"		      \
-  "addi.d %1,%1,%%pgd32_lo12(%2);", \
+#define INSN_LA_TLS_LD64	      \
+  "pcalau12i %1,%%ld_pc_hi20(%2);"    \
+  "addi.d %1,%1,%%got_pc_lo12(%2);",  \
   &LARCH_opts.ase_lp64, 0
-#define INSN_LA_TLS_GD_64_LARGE			      \
-  "pcaddu12i %1,%%gd64_hi20(%3);"		      \
-  "ori %2,$r0,%%pcrel_lo12u(%3);"    \
-  "lu32i.d %2,%%pcrel_hlo20(%3);"    \
-  "lu52i.d %2,%2,%%pcrel_hhi12(%3);" \
-  "add.d %1,%1,%2;",				      \
+#define INSN_LA_TLS_LD64_LARGE_ABS    \
+  "lu12i.w %1,%%ld64_hi20(%2);"	      \
+  "ori %1,%1,%%got64_lo12(%2);"	      \
+  "lu32i.d %1,%%got64_lo20(%2);"      \
+  "lu52i.d %1,%1,%%got64_hi12(%2);",  \
+  &LARCH_opts.ase_lp64,		      \
+  &LARCH_opts.ase_gpcr
+#define INSN_LA_TLS_LD64_LARGE_PCREL  \
+  "pcalau12i %1,%%ld_pc_hi20(%3);"    \
+  "addi.d %2,$r0,%%got_lo12(%3);"     \
+  "lu32i.d %2,%%got64_lo20(%3);"      \
+  "lu52i.d %2,%2,%%got64_hi12(%3);"   \
+  /* %2(pc) - 0x100000000 in ld.  */  \
+  "add.d %1,%1,%2;",		      \
+  &LARCH_opts.ase_lp64,		      \
+  &LARCH_opts.ase_gabs
+
+#define INSN_LA_TLS_GD32	      \
+  "pcalau12i %1,%%gd_pc_hi20(%2);"    \
+  "addi.w %1,%1,%%got_pc_lo12(%2);",  \
+  &LARCH_opts.ase_ilp32,	      \
+  &LARCH_opts.ase_lp64
+#define INSN_LA_TLS_GD64	      \
+  "pcalau12i %1,%%gd_pc_hi20(%2);"    \
+  "addi.d %1,%1,%%got_pc_lo12(%2);",  \
   &LARCH_opts.ase_lp64, 0
+#define INSN_LA_TLS_GD64_LARGE_ABS    \
+  "lu12i.w %1,%%gd64_hi20(%2);"	      \
+  "ori %1,%1,%%got64_lo12(%2);"	      \
+  "lu32i.d %1,%%got64_lo20(%2);"      \
+  "lu52i.d %1,%1,%%got64_hi12(%2);",  \
+  &LARCH_opts.ase_lp64,		      \
+  &LARCH_opts.ase_gpcr
+#define INSN_LA_TLS_GD64_LARGE_PCREL  \
+  "pcalau12i %1,%%gd_pc_hi20(%3);"    \
+  "addi.d %2,$r0,%%got64_pc_lo12(%3);"\
+  "lu32i.d %2,%%got64_pc_lo20(%3);"   \
+  "lu52i.d %2,%2,%%got64_pc_hi12(%3);"\
+  /* %2(pc) - 0x100000000 in ld.  */  \
+  "add.d %1,%1,%2;",		      \
+  &LARCH_opts.ase_lp64,		      \
+  &LARCH_opts.ase_gabs
 
 
 static struct loongarch_opcode loongarch_macro_opcodes[] =
@@ -214,25 +280,30 @@ static struct loongarch_opcode loongarch_macro_opcodes[] =
   { 0, 0, "la.local",	"r,r,l",  "la.abs %1,%3",	&LARCH_opts.ase_labs,	0, 0 },
   { 0, 0, "la.local",	"r,l",	  "la.pcrel %1,%2",	0,			0, 0 },
   { 0, 0, "la.local",	"r,r,l",  "la.pcrel %1,%2,%3",	&LARCH_opts.ase_lp64,	0, 0 },
-  { 0, 0, "la.tls.ld",	"r,l",	  "la.tls.gd %1,%2",	0,			0, 0 },
-  { 0, 0, "la.tls.ld",	"r,r,l",  "la.tls.gd %1,%2,%3", &LARCH_opts.ase_lp64,	0, 0 },
 
-  { 0, 0, "la.abs",	"r,l",	  INSN_LA_ABS_32,	    0 },
-  { 0, 0, "la.abs",	"r,l",	  INSN_LA_ABS_64,	    0 },
-  { 0, 0, "la.pcrel",	"r,l",	  INSN_LA_PCREL_32,	    0 },
-  { 0, 0, "la.pcrel",	"r,l",	  INSN_LA_PCREL_64,	    0 },
-  { 0, 0, "la.pcrel",	"r,r,l",  INSN_LA_PCREL_64_LARGE,   0 },
-  { 0, 0, "la.got",	"r,l",	  INSN_LA_GOT_32,	    0 },
-  { 0, 0, "la.got",	"r,l",	  INSN_LA_GOT_64,	    0 },
-  { 0, 0, "la.got",	"r,r,l",  INSN_LA_GOT_64_LARGE,	    0 },
-  { 0, 0, "la.tls.le",	"r,l",	  INSN_LA_TLS_LE_32,	    0 },
-  { 0, 0, "la.tls.le",	"r,l",	  INSN_LA_TLS_LE_64,	    0 },
-  { 0, 0, "la.tls.ie",	"r,l",	  INSN_LA_TLS_IE_32,	    0 },
-  { 0, 0, "la.tls.ie",	"r,l",	  INSN_LA_TLS_IE_64,	    0 },
-  { 0, 0, "la.tls.ie",	"r,r,l",  INSN_LA_TLS_IE_64_LARGE,  0 },
-  { 0, 0, "la.tls.gd",	"r,l",	  INSN_LA_TLS_GD_32,	    0 },
-  { 0, 0, "la.tls.gd",	"r,l",	  INSN_LA_TLS_GD_64,	    0 },
-  { 0, 0, "la.tls.gd",	"r,r,l",  INSN_LA_TLS_GD_64_LARGE,  0 },
+  { 0, 0, "la.abs",	"r,l",	  INSN_LA_ABS32,		0 },
+  { 0, 0, "la.abs",	"r,l",	  INSN_LA_ABS64,	      	0 },
+  { 0, 0, "la.pcrel",	"r,l",	  INSN_LA_PCREL32,	      	0 },
+  { 0, 0, "la.pcrel",	"r,l",	  INSN_LA_PCREL64,	      	0 },
+  { 0, 0, "la.pcrel",	"r,r,l",  INSN_LA_PCREL64_LARGE,      	0 },
+  { 0, 0, "la.got",	"r,l",	  INSN_LA_GOT32,	      	0 },
+  { 0, 0, "la.got",	"r,l",	  INSN_LA_GOT64,	      	0 },
+  { 0, 0, "la.got",	"r,l",	  INSN_LA_GOT64_LARGE_ABS,    	0 },
+  { 0, 0, "la.got",	"r,r,l",  INSN_LA_GOT64_LARGE_PCREL,  	0 },
+  { 0, 0, "la.tls.le",	"r,l",	  INSN_LA_TLS_LE,	      	0 },
+  { 0, 0, "la.tls.le",	"r,l",	  INSN_LA_TLS_LE64_LARGE,     	0 },
+  { 0, 0, "la.tls.ie",	"r,l",	  INSN_LA_TLS_IE32,	      	0 },
+  { 0, 0, "la.tls.ie",	"r,l",	  INSN_LA_TLS_IE64,	      	0 },
+  { 0, 0, "la.tls.ie",	"r,l",	  INSN_LA_TLS_IE64_LARGE_ABS, 	0 },
+  { 0, 0, "la.tls.ie",	"r,r,l",  INSN_LA_TLS_IE64_LARGE_PCREL,	0 },
+  { 0, 0, "la.tls.ld",	"r,l",	  INSN_LA_TLS_LD32,		0 },
+  { 0, 0, "la.tls.ld",	"r,l",	  INSN_LA_TLS_LD64,		0 },
+  { 0, 0, "la.tls.ld",	"r,l",	  INSN_LA_TLS_LD64_LARGE_ABS, 	0 },
+  { 0, 0, "la.tls.ld",	"r,r,l",  INSN_LA_TLS_LD64_LARGE_PCREL,	0 },
+  { 0, 0, "la.tls.gd",	"r,l",	  INSN_LA_TLS_GD32,		0 },
+  { 0, 0, "la.tls.gd",	"r,l",	  INSN_LA_TLS_GD64,		0 },
+  { 0, 0, "la.tls.gd",	"r,l",	  INSN_LA_TLS_GD64_LARGE_ABS, 	0 },
+  { 0, 0, "la.tls.gd",	"r,r,l",  INSN_LA_TLS_GD64_LARGE_PCREL,	0 },
 
   { 0 } /* Terminate the list.	*/
 };

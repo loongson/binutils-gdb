@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; see the file COPYING3.  If not,
-   see <http://www.gnu.org/licenses/>.  */
+   see <http://www.gnu.org/licenses/>.	*/
 
 #include "ansidecl.h"
 #include "sysdep.h"
@@ -84,7 +84,7 @@ struct loongarch_elf_link_hash_table
   /* Short-cuts to get to dynamic linker sections.  */
   asection *sdyntdata;
 
-  /* Small local sym to section mapping cache.  */
+  /* Small local sym to section mapping cache.	*/
   struct sym_cache sym_cache;
 
   /* Used by local STT_GNU_IFUNC symbols.  */
@@ -95,7 +95,7 @@ struct loongarch_elf_link_hash_table
   bfd_vma max_alignment;
 };
 
-/* Get the LoongArch ELF linker hash table from a link_info structure.  */
+/* Get the LoongArch ELF linker hash table from a link_info structure.	*/
 #define loongarch_elf_hash_table(p)					\
   (elf_hash_table_id (elf_hash_table (p)) == LARCH_ELF_DATA		\
    ? ((struct loongarch_elf_link_hash_table *) ((p)->hash))		\
@@ -152,13 +152,13 @@ loongarch_make_plt_header (bfd_vma got_plt_addr, bfd_vma plt_header_addr,
   hi = ((pcrel + 0x800) >> 12) & 0xfffff;
   lo = pcrel & 0xfff;
 
-  /* pcaddu12i  $t2, %hi(%pcrel(.got.plt))
-     sub.[wd]   $t1, $t1, $t3
-     ld.[wd]    $t3, $t2, %lo(%pcrel(.got.plt)) # _dl_runtime_resolve
-     addi.[wd]  $t1, $t1, -(PLT_HEADER_SIZE + 12)
-     addi.[wd]  $t0, $t2, %lo(%pcrel(.got.plt))
-     srli.[wd]  $t1, $t1, log2(16 / GOT_ENTRY_SIZE)
-     ld.[wd]    $t0, $t0, GOT_ENTRY_SIZE
+  /* pcaddu12i	$t2, %hi(%pcrel(.got.plt))
+     sub.[wd]	$t1, $t1, $t3
+     ld.[wd]	$t3, $t2, %lo(%pcrel(.got.plt)) # _dl_runtime_resolve
+     addi.[wd]	$t1, $t1, -(PLT_HEADER_SIZE + 12)
+     addi.[wd]	$t0, $t2, %lo(%pcrel(.got.plt))
+     srli.[wd]	$t1, $t1, log2(16 / GOT_ENTRY_SIZE)
+     ld.[wd]	$t0, $t0, GOT_ENTRY_SIZE
      jirl   $r0, $t3, 0 */
 
   if (GOT_ENTRY_SIZE == 8)
@@ -222,7 +222,7 @@ link_hash_newfunc (struct bfd_hash_entry *entry, struct bfd_hash_table *table,
   struct loongarch_elf_link_hash_entry *eh;
 
   /* Allocate the structure if it has not already been allocated by a
-     subclass.  */
+     subclass.	*/
   if (entry == NULL)
     {
       entry = bfd_hash_allocate (table, sizeof (*eh));
@@ -253,7 +253,7 @@ elfNN_loongarch_local_htab_hash (const void *ptr)
   return ELF_LOCAL_SYMBOL_HASH (h->indx, h->dynstr_index);
 }
 
-/* Compare local hash entries.  */
+/* Compare local hash entries.	*/
 
 static int
 elfNN_loongarch_local_htab_eq (const void *ptr1, const void *ptr2)
@@ -313,7 +313,7 @@ elfNN_loongarch_get_local_sym_hash (struct loongarch_elf_link_hash_table *htab,
   return &ret->elf;
 }
 
-/* Destroy an LoongArch elf linker hash table.  */
+/* Destroy an LoongArch elf linker hash table.	*/
 
 static void
 elfNN_loongarch_link_hash_table_free (bfd *obfd)
@@ -490,7 +490,7 @@ loongarch_elf_create_got_section (bfd *abfd, struct bfd_link_info *info)
 
 /* Create .plt, .rela.plt, .got, .got.plt, .rela.got, .dynbss, and
    .rela.bss sections in DYNOBJ, and set up shortcuts to them in our
-   hash table.  */
+   hash table.	*/
 
 static bool
 loongarch_elf_create_dynamic_sections (bfd *dynobj, struct bfd_link_info *info)
@@ -655,12 +655,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	  if (htab->elf.dynobj == NULL)
 	    htab->elf.dynobj = abfd;
 
-	  /* Dynamic relocations are stored in
-	     1. .rel[a].ifunc section in PIC object.
-	     2. .rel[a].got section in dynamic executable.
-	     3. .rel[a].iplt section in static executable.	*/
-
-	  /* Create 'irelifunc' in PIC object.  */
+	  /* Create 'irelifunc' in PIC object.	*/
 	  if (bfd_link_pic (info)
 	      && !_bfd_elf_create_ifunc_sections (htab->elf.dynobj, info))
 	    return false;
@@ -688,9 +683,9 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 
       switch (r_type)
 	{
-	case R_LARCH_PGOT32_HI20:
-	case R_LARCH_GOT32_HI20:
+	case R_LARCH_GOT_HI20:
 	case R_LARCH_GOT64_HI20:
+	case R_LARCH_GOT64_PC_HI20:
 	case R_LARCH_SOP_PUSH_GPREL:
 	  if (!loongarch_elf_record_tls_and_got_reference (abfd, info, h,
 							   r_symndx,
@@ -698,9 +693,10 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    return false;
 	  break;
 
-	case R_LARCH_PGD32_HI20:
-	case R_LARCH_TLSGD32_HI20:
-	case R_LARCH_TLSGD64_HI20:
+	case R_LARCH_TLS_LD_PC_HI20:
+	case R_LARCH_TLS_LD64_HI20:
+	case R_LARCH_TLS_GD_PC_HI20:
+	case R_LARCH_TLS_GD64_HI20:
 	case R_LARCH_SOP_PUSH_TLS_GD:
 	  if (!loongarch_elf_record_tls_and_got_reference (abfd, info, h,
 							   r_symndx,
@@ -708,12 +704,11 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    return false;
 	  break;
 
-	case R_LARCH_PIE32_HI20:
-	case R_LARCH_TLSIE32_HI20:
-	case R_LARCH_TLSIE64_HI20:
+	case R_LARCH_TLS_IE_PC_HI20:
+	case R_LARCH_TLS_IE64_HI20:
 	case R_LARCH_SOP_PUSH_TLS_GOT:
 	  if (bfd_link_pic (info))
-	    /* May fail for lazy-bind.  */
+	    /* May fail for lazy-bind.	*/
 	    info->flags |= DF_STATIC_TLS;
 
 	  if (!loongarch_elf_record_tls_and_got_reference (abfd, info, h,
@@ -722,10 +717,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    return false;
 	  break;
 
-	case R_LARCH_TLSLE_L_HI20:
-	case R_LARCH_TLSLE_L_LO12:
-	case R_LARCH_TLSLE_H_LO20:
-	case R_LARCH_TLSLE_H_HI12:
+	case R_LARCH_TLS_LE_HI20:
 	case R_LARCH_SOP_PUSH_TLS_TPREL:
 	  if (!bfd_link_executable (info))
 	    return false;
@@ -738,10 +730,6 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    return false;
 	  break;
 
-	case R_LARCH_L_HI20:
-	case R_LARCH_L_LO12:
-	case R_LARCH_H_LO20:
-	case R_LARCH_H_HI12:
 	case R_LARCH_SOP_PUSH_ABSOLUTE:
 	  if (h != NULL)
 	    /* If this reloc is in a read-only section, we might
@@ -753,7 +741,8 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    h->non_got_ref = 1;
 	  break;
 
-	case R_LARCH_PCALA32_HI20:
+	case R_LARCH_ABS_HI20:
+	case R_LARCH_PCALA_HI20:
 	  if (h != NULL)
 	    {
 	      h->non_got_ref = 1;
@@ -764,20 +753,36 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    need_dynreloc = 1;
 	  else
 	    non_got_reloc = 1;
-
 	  break;
-	case R_LARCH_PCREL32_HI20:
-	case R_LARCH_PCREL64_HI20:
+
 	case R_LARCH_B21:
 	case R_LARCH_B16:
 	case R_LARCH_B26:
+	  if (h != NULL)
+	    {
+	      h->needs_plt = 1;
+	      if (!bfd_link_pic(info))
+		h->non_got_ref = 1;
+
+	      /* We try to create PLT stub for all non-local function.	*/
+	      if (h->plt.refcount < 0)
+		h->plt.refcount = 0;
+	      h->plt.refcount++;
+	    }
+
+	  if (bfd_link_pic (info))
+	    need_dynreloc = 1;
+	  else
+	    non_got_reloc = 1;
+	  break;
+
 	case R_LARCH_SOP_PUSH_PCREL:
 	  if (h != NULL)
 	    {
 	      if (!bfd_link_pic(info))
 		h->non_got_ref = 1;
 
-	      /* We try to create PLT stub for all non-local function.  */
+	      /* We try to create PLT stub for all non-local function.	*/
 	      if (h->plt.refcount < 0)
 		h->plt.refcount = 0;
 	      h->plt.refcount++;
@@ -791,7 +796,6 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 
 	  break;
 
-	case R_LARCH_BL26:
 	case R_LARCH_SOP_PUSH_PLT_PCREL:
 	  /* This symbol requires a procedure linkage table entry.  We
 	     actually build the entry in adjust_dynamic_symbol,
@@ -951,7 +955,7 @@ need_copy_relocation_p (struct loongarch_elf_link_hash_entry *eh)
   return false;
 }
 
-/* Find dynamic relocs for H that apply to read-only sections.  */
+/* Find dynamic relocs for H that apply to read-only sections.	*/
 
 static asection *
 readonly_dynrelocs (struct elf_link_hash_entry *h)
@@ -972,7 +976,7 @@ readonly_dynrelocs (struct elf_link_hash_entry *h)
    regular object.  The current definition is in some section of the
    dynamic object, but we're not including those sections.  We have to
    change the definition to something the rest of the link can
-   understand.  */
+   understand.	*/
 static bool
 loongarch_elf_adjust_dynamic_symbol (struct bfd_link_info *info,
 				     struct elf_link_hash_entry *h)
@@ -1036,7 +1040,7 @@ loongarch_elf_adjust_dynamic_symbol (struct bfd_link_info *info,
   /* If we are creating a shared library, we must presume that the
      only references to the symbol are via the global offset table.
      For such cases we need not do anything here; the relocations will
-     be handled correctly by relocate_section.  */
+     be handled correctly by relocate_section.	*/
   if (bfd_link_dll (info))
     return true;
 
@@ -1049,8 +1053,8 @@ loongarch_elf_adjust_dynamic_symbol (struct bfd_link_info *info,
    * we won't generate them either.  */
 //  if (info->nocopyreloc)
 //    {
-//      h->non_got_ref = 0;
-//      return true;
+//	h->non_got_ref = 0;
+//	return true;
 //    }
 
   /* If we don't find any dynamic relocs in read-only sections with pic, then
@@ -1173,7 +1177,7 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 
       /* If this symbol is not defined in a regular file, and we are
 	 not generating a shared library, then set the symbol to this
-	 location in the .plt.  This is required to make function
+	 location in the .plt.	This is required to make function
 	 pointers compare as equal between the normal executable and
 	 the shared library.  */
       if (!bfd_link_pic(info)
@@ -1282,11 +1286,261 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
   return true;
 }
 
+/* For local def and ref ifunc,
+   dynamic relocations are stored in
+   1. .rel[a].irelifunc section in PIC object.
+   2. .rel[a].srelgot section in dynamic executable.
+   3. .rel[a].isrelplt section in static executable.
+   Change .gotplt reloc info to .srelgot,
+   remove R_LARCH_IRELACTIVE from rela lazy in ld.so.  */
+static bool
+local_allocate_ifunc_dyn_relocs (struct bfd_link_info *info,
+				    struct elf_link_hash_entry *h,
+				    struct elf_dyn_relocs **head,
+				    unsigned int plt_entry_size,
+				    unsigned int plt_header_size,
+				    unsigned int got_entry_size,
+				    bool avoid_plt)
+{
+  asection *plt, *gotplt, *relplt;
+  struct elf_dyn_relocs *p;
+  unsigned int sizeof_reloc;
+  const struct elf_backend_data *bed;
+  struct elf_link_hash_table *htab;
+  /* If AVOID_PLT is TRUE, don't use PLT if possible.  */
+  bool use_plt = !avoid_plt || h->plt.refcount > 0;
+  bool need_dynreloc = !use_plt || bfd_link_pic (info);
+
+  /* When a PIC object references a STT_GNU_IFUNC symbol defined
+     in executable or it isn't referenced via PLT, the address of
+     the resolved function may be used.  But in non-PIC executable,
+     the address of its .plt slot may be used.	Pointer equality may
+     not work correctly.  PIE or non-PLT reference should be used if
+     pointer equality is required here.
+
+     If STT_GNU_IFUNC symbol is defined in position-dependent executable,
+     backend should change it to the normal function and set its address
+     to its PLT entry which should be resolved by R_*_IRELATIVE at
+     run-time.	All external references should be resolved to its PLT in
+     executable.  */
+  if (!need_dynreloc
+      && !(bfd_link_pde (info) && h->def_regular)
+      && (h->dynindx != -1
+	  || info->export_dynamic)
+      && h->pointer_equality_needed)
+    {
+      info->callbacks->einfo
+	/* xgettext:c-format */
+	(_("%F%P: dynamic STT_GNU_IFUNC symbol `%s' with pointer "
+	   "equality in `%pB' can not be used when making an "
+	   "executable; recompile with -fPIE and relink with -pie\n"),
+	 h->root.root.string,
+	 h->root.u.def.section->owner);
+      bfd_set_error (bfd_error_bad_value);
+      return false;
+    }
+
+  htab = elf_hash_table (info);
+
+  /* When the symbol is marked with regular reference, if PLT isn't used
+     or we are building a PIC object, we must keep dynamic relocation
+     if there is non-GOT reference and use PLT if there is PC-relative
+     reference.  */
+  if (need_dynreloc && h->ref_regular)
+    {
+      bool keep = false;
+      for (p = *head; p != NULL; p = p->next)
+	if (p->count)
+	  {
+	    h->non_got_ref = 1;
+	    /* Need dynamic relocations for non-GOT reference.	*/
+	    keep = true;
+	    if (p->pc_count)
+	      {
+		/* Must use PLT for PC-relative reference.  */
+		use_plt = true;
+		need_dynreloc = bfd_link_pic (info);
+		break;
+	      }
+	  }
+      if (keep)
+	goto keep;
+    }
+
+  /* Support garbage collection against STT_GNU_IFUNC symbols.	*/
+  if (h->plt.refcount <= 0 && h->got.refcount <= 0)
+    {
+      h->got = htab->init_got_offset;
+      h->plt = htab->init_plt_offset;
+      *head = NULL;
+      return true;
+    }
+
+  /* Return and discard space for dynamic relocations against it if
+     it is never referenced.  */
+  if (!h->ref_regular)
+    {
+      if (h->plt.refcount > 0
+	  || h->got.refcount > 0)
+	abort ();
+      h->got = htab->init_got_offset;
+      h->plt = htab->init_plt_offset;
+      *head = NULL;
+      return true;
+    }
+
+ keep:
+  bed = get_elf_backend_data (info->output_bfd);
+  if (bed->rela_plts_and_copies_p)
+    sizeof_reloc = bed->s->sizeof_rela;
+  else
+    sizeof_reloc = bed->s->sizeof_rel;
+
+  /* When building a static executable, use .iplt, .igot.plt and
+     .rel[a].iplt sections for STT_GNU_IFUNC symbols.  */
+  if (htab->splt != NULL)
+    {
+      plt = htab->splt;
+      gotplt = htab->sgotplt;
+      relplt = htab->srelgot;
+
+      /* If this is the first .plt entry and PLT is used, make room for
+	 the special first entry.  */
+      if (plt->size == 0 && use_plt)
+	plt->size += plt_header_size;
+    }
+  else
+    {
+      plt = htab->iplt;
+      gotplt = htab->igotplt;
+      relplt = htab->irelplt;
+    }
+
+  if (use_plt)
+    {
+      /* Don't update value of STT_GNU_IFUNC symbol to PLT.  We need
+	 the original value for R_*_IRELATIVE.	*/
+      h->plt.offset = plt->size;
+
+      /* Make room for this entry in the .plt/.iplt section.  */
+      plt->size += plt_entry_size;
+
+      /* We also need to make an entry in the .got.plt/.got.iplt section,
+	 which will be placed in the .got section by the linker script.  */
+      gotplt->size += got_entry_size;
+    }
+
+  /* We also need to make an entry in the .rel[a].plt/.rel[a].iplt
+     section for GOTPLT relocation if PLT is used.  */
+  if (use_plt)
+    {
+      relplt->size += sizeof_reloc;
+      relplt->reloc_count++;
+    }
+
+  /* We need dynamic relocation for STT_GNU_IFUNC symbol only when
+     there is a non-GOT reference in a PIC object or PLT isn't used.  */
+  if (!need_dynreloc || !h->non_got_ref)
+    *head = NULL;
+
+  /* Finally, allocate space.  */
+  p = *head;
+  if (p != NULL)
+    {
+      bfd_size_type count = 0;
+      do
+	{
+	  count += p->count;
+	  p = p->next;
+	}
+      while (p != NULL);
+
+      htab->ifunc_resolvers = count != 0;
+
+      /* Dynamic relocations are stored in
+	 1. .rel[a].srelgot section in PIC object.
+	 2. .rel[a].srelgot section in dynamic executable.
+	 3. .rel[a].irelplt section in static executable.  */
+      if (htab->splt != NULL)
+	htab->srelgot->size += count * sizeof_reloc;
+      else
+	{
+	  relplt->size += count * sizeof_reloc;
+	  relplt->reloc_count += count;
+	}
+    }
+
+  /* For STT_GNU_IFUNC symbol, .got.plt has the real function address
+     and .got has the PLT entry adddress.  We will load the GOT entry
+     with the PLT entry in finish_dynamic_symbol if it is used.  For
+     branch, it uses .got.plt.	For symbol value, if PLT is used,
+     1. Use .got.plt in a PIC object if it is forced local or not
+     dynamic.
+     2. Use .got.plt in a non-PIC object if pointer equality isn't
+     needed.
+     3. Use .got.plt in PIE.
+     4. Use .got.plt if .got isn't used.
+     5. Otherwise use .got so that it can be shared among different
+     objects at run-time.
+     If PLT isn't used, always use .got for symbol value.
+     We only need to relocate .got entry in PIC object or in dynamic
+     executable without PLT.  */
+  if (use_plt
+      && (h->got.refcount <= 0
+	  || (bfd_link_pic (info)
+	      && (h->dynindx == -1
+		  || h->forced_local))
+	  || (!bfd_link_pic (info)
+	      && !h->pointer_equality_needed)
+	  || bfd_link_pie (info)
+	  || htab->sgot == NULL))
+    {
+      /* Use .got.plt.	*/
+      h->got.offset = (bfd_vma) -1;
+    }
+  else
+    {
+      if (!use_plt)
+	{
+	  /* PLT isn't used.  */
+	  h->plt.offset = (bfd_vma) -1;
+	}
+      if (h->got.refcount <= 0)
+	{
+	  /* GOT isn't need when there are only relocations for static
+	     pointers.	*/
+	  h->got.offset = (bfd_vma) -1;
+	}
+      else
+	{
+	  h->got.offset = htab->sgot->size;
+	  htab->sgot->size += got_entry_size;
+	  /* Need to relocate the GOT entry in a PIC object or PLT isn't
+	     used.  Otherwise, the GOT entry will be filled with the PLT
+	     entry and dynamic GOT relocation isn't needed.  */
+	  if (need_dynreloc)
+	    {
+	      /* For non-static executable, dynamic GOT relocation is in
+		 .rel[a].got section, but for static executable, it is
+		 in .rel[a].iplt section.  */
+	      if (htab->splt != NULL)
+		htab->srelgot->size += sizeof_reloc;
+	      else
+		{
+		  relplt->size += sizeof_reloc;
+		  relplt->reloc_count++;
+		}
+	    }
+	}
+    }
+
+  return true;
+}
+
 /* Allocate space in .plt, .got and associated reloc sections for
    ifunc dynamic relocs.  */
-
 static bool
-elfNN_loongarch_allocate_ifunc_dynrelocs (struct elf_link_hash_entry *h,
+elfNN_allocate_ifunc_dynrelocs (struct elf_link_hash_entry *h,
 					  void *inf)
 {
   struct bfd_link_info *info;
@@ -1309,22 +1563,32 @@ elfNN_loongarch_allocate_ifunc_dynrelocs (struct elf_link_hash_entry *h,
 
   /* Since STT_GNU_IFUNC symbol must go through PLT, we handle it
      here if it is defined and referenced in a non-shared object.  */
-  if (h->type == STT_GNU_IFUNC
-      && h->def_regular)
-    return _bfd_elf_allocate_ifunc_dyn_relocs (info, h,
+  if (h->type == STT_GNU_IFUNC && h->def_regular)
+    {
+      if (SYMBOL_REFERENCES_LOCAL(info, h))
+	return local_allocate_ifunc_dyn_relocs (info, h,
 					       &h->dyn_relocs,
 					       PLT_ENTRY_SIZE,
 					       PLT_HEADER_SIZE,
 					       GOT_ENTRY_SIZE,
 					       false);
+      else
+	return _bfd_elf_allocate_ifunc_dyn_relocs (info, h,
+					       &h->dyn_relocs,
+					       PLT_ENTRY_SIZE,
+					       PLT_HEADER_SIZE,
+					       GOT_ENTRY_SIZE,
+					       false);
+
+    }
+
   return true;
 }
 
 /* Allocate space in .plt, .got and associated reloc sections for
    ifunc dynamic relocs.  */
-
 static bool
-elfNN_loongarch_allocate_local_dynrelocs (void **slot, void *inf)
+elfNN_allocate_local_ifunc_dynrelocs (void **slot, void *inf)
 {
   struct elf_link_hash_entry *h = (struct elf_link_hash_entry *) *slot;
 
@@ -1335,11 +1599,11 @@ elfNN_loongarch_allocate_local_dynrelocs (void **slot, void *inf)
       || h->root.type != bfd_link_hash_defined)
     abort ();
 
-  return elfNN_loongarch_allocate_ifunc_dynrelocs (h, inf);
+  return elfNN_allocate_ifunc_dynrelocs (h, inf);
 }
 
 /* Set DF_TEXTREL if we find any dynamic relocs that apply to
-   read-only sections.  */
+   read-only sections.	*/
 
 static bool
 maybe_set_textrel (struct elf_link_hash_entry *h, void *info_p)
@@ -1474,12 +1738,12 @@ loongarch_elf_size_dynamic_sections (bfd *output_bfd,
   elf_link_hash_traverse (&htab->elf, allocate_dynrelocs, info);
 
   /* Allocate global ifunc sym .plt and .got entries, and space for global
-     ifunc sym dynamic relocs.  */
-  elf_link_hash_traverse (&htab->elf, elfNN_loongarch_allocate_ifunc_dynrelocs, info);
+     ifunc sym dynamic relocs.	*/
+  elf_link_hash_traverse (&htab->elf, elfNN_allocate_ifunc_dynrelocs, info);
 
   /* Allocate .plt and .got entries, and space for local ifunc symbols.  */
   htab_traverse (htab->loc_hash_table,
-		 (void *) elfNN_loongarch_allocate_local_dynrelocs, info);
+		 (void *) elfNN_allocate_local_ifunc_dynrelocs, info);
 
   /* Don't allocate .got.plt section if there are no PLT.  */
   if (htab->elf.sgotplt && htab->elf.sgotplt->size == GOTPLT_HEADER_SIZE
@@ -1523,7 +1787,7 @@ loongarch_elf_size_dynamic_sections (bfd *output_bfd,
 	     .rela.plt.  We must create both sections in
 	     create_dynamic_sections, because they must be created
 	     before the linker maps input sections to output
-	     sections.  The linker does that before
+	     sections.	The linker does that before
 	     adjust_dynamic_symbol is called, and it is that
 	     function which decides whether anything needs to go
 	     into these sections.  */
@@ -1547,7 +1811,7 @@ loongarch_elf_size_dynamic_sections (bfd *output_bfd,
       /* Add some entries to the .dynamic section.  We fill in the
 	 values later, in loongarch_elf_finish_dynamic_sections, but we
 	 must add the entries now so that we get the correct size for
-	 the .dynamic section.  The DT_DEBUG entry is filled in by the
+	 the .dynamic section.	The DT_DEBUG entry is filled in by the
 	 dynamic linker and used by the debugger.  */
 #define add_dynamic_entry(TAG, VAL) _bfd_elf_add_dynamic_entry (info, TAG, VAL)
 
@@ -1582,7 +1846,7 @@ loongarch_elf_size_dynamic_sections (bfd *output_bfd,
 	    return false;
 	  /* Clear the DF_TEXTREL flag.  It will be set again if we
 	     write out an actual text relocation; we may not, because
-	     at this point we do not know whether e.g.  any .eh_frame
+	     at this point we do not know whether e.g.	any .eh_frame
 	     absolute relocations have been converted to PC-relative.  */
 	  info->flags &= ~DF_TEXTREL;
 	}
@@ -1678,68 +1942,6 @@ loongarch_reloc_rewrite_imm_insn (const Elf_Internal_Rela *rel,
   bfd_put (bits, input_bfd, insn, contents + rel->r_offset);
 
   return bfd_reloc_ok;
-}
-
-/* Emplace a static relocation.  */
-
-#define RESOLVE_SIMPLE_RELOCS(fix_func)					\
-do {									\
-  opr1 = fix_func(value);						\
-  r = loongarch_check_offset (rel, input_section);			\
-  if (r != bfd_reloc_ok)						\
-    break;								\
-  r = loongarch_reloc_rewrite_imm_insn (rel, input_section,		\
-	howto, input_bfd, contents, opr1);				\
-} while (0)
-
-static inline int64_t like_pcrel32_hi20(int64_t value)
-{
-  return (value + 0x800) >> 12;
-}
-
-static inline int64_t like_pcrel64_hi20 (int64_t value)
-{
-  return (value - (((value + 0x80000000) >> 32) << 32)) >> 12;
-}
-
-static inline int64_t pcrel_lo12_u (int64_t value)
-{
-  return (value - ((value + 0x80000000) & ~0xfffffffful)) & 0xfff;
-}
-
-static inline int64_t pcrel_lo12_s (int64_t value)
-{
-  return value - ((value + 0x800) & ~0xffful);
-}
-
-static inline int64_t pcrel_h_lo20 (int64_t value)
-{
-  return ((value + 0x80000000) << 12) >> 44;
-}
-
-static inline int64_t pcrel_h_hi12 (int64_t value)
-{
-  return (value + 0x80000000) >> 52;
-}
-
-static inline int64_t like_l_hi20 (int64_t value)
-{
-  return (value << 32) >> 44;
-}
-
-static inline int64_t like_l_lo12 (int64_t value)
-{
-  return value & 0xffful;
-}
-
-static inline int64_t like_h_lo20 (int64_t value)
-{
-  return (value << 12) >> 44;
-}
-
-static inline int64_t like_h_hi12 (int64_t value)
-{
-  return value >> 52;
 }
 
 static bfd_reloc_status_type
@@ -1841,19 +2043,6 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
 					    contents, (bfd_vma)opr1);
       break;
 
-    case R_LARCH_B16:
-    case R_LARCH_B21:
-    case R_LARCH_B26:
-    case R_LARCH_BL26:
-      r = loongarch_check_offset (rel, input_section);
-      if (r != bfd_reloc_ok)
-	break;
-
-      r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
-					    howto, input_bfd,
-					    contents, value);
-      break;
-
     case R_LARCH_TLS_DTPREL32:
     case R_LARCH_32:
     case R_LARCH_TLS_DTPREL64:
@@ -1891,210 +2080,50 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
       bfd_put (bits, input_bfd, opr1 - value, contents + rel->r_offset);
       break;
 
-    case R_LARCH_L_HI20:
-    case R_LARCH_TLSLE_L_HI20:
-      RESOLVE_SIMPLE_RELOCS (like_l_hi20);
-      break;
-    case R_LARCH_L_LO12:
-    case R_LARCH_TLSLE_L_LO12:
-      RESOLVE_SIMPLE_RELOCS (like_l_lo12);
-      break;
-    case R_LARCH_H_LO20:
-    case R_LARCH_TLSLE_H_LO20:
-      RESOLVE_SIMPLE_RELOCS (like_h_lo20);
-      break;
-    case R_LARCH_H_HI12:
-    case R_LARCH_TLSLE_H_HI12:
-      RESOLVE_SIMPLE_RELOCS (like_h_hi12);
-      break;
-
+    /* All new reloc type.
+       R_LARCH_B16 ~ R_LARCH_TLS_GD64_HI20.  */
+    case R_LARCH_B16:
+    case R_LARCH_B21:
+    case R_LARCH_B26:
+    case R_LARCH_ABS_HI20:
+    case R_LARCH_ABS_LO12:
+    case R_LARCH_ABS64_LO20:
+    case R_LARCH_ABS64_HI12:
+    case R_LARCH_PCALA_HI20:
     case R_LARCH_PCALA_LO12:
-    case R_LARCH_PCALA32_HI20:
-    case R_LARCH_PGOT32_HI20:
-    case R_LARCH_PIE32_HI20:
-    case R_LARCH_PIE32_LO12:
-    case R_LARCH_PGD32_HI20:
-    case R_LARCH_PGD32_LO12:
-    case R_LARCH_PGOT32_LO12:
+    case R_LARCH_GOT_HI20:
+    case R_LARCH_GOT_LO12:
+    case R_LARCH_GOT64_HI20:
+    case R_LARCH_GOT64_LO12:
+    case R_LARCH_GOT64_LO20:
+    case R_LARCH_GOT64_HI12:
+    case R_LARCH_GOT64_PC_HI20:
+    case R_LARCH_GOT64_PC_LO12:
+    case R_LARCH_GOT64_PC_LO20:
+    case R_LARCH_GOT64_PC_HI12:
+    case R_LARCH_TLS_LE_HI20:
+    case R_LARCH_TLS_LE_LO12:
+    case R_LARCH_TLS_LE64_LO20:
+    case R_LARCH_TLS_LE64_HI12:
+    case R_LARCH_TLS_IE_PC_HI20:
+    case R_LARCH_TLS_IE64_HI20:
+    case R_LARCH_TLS_LD_PC_HI20:
+    case R_LARCH_TLS_LD64_HI20:
+    case R_LARCH_TLS_GD_PC_HI20:
+    case R_LARCH_TLS_GD64_HI20:
+      r = loongarch_check_offset (rel, input_section);
+      if (r != bfd_reloc_ok)
+	break;
+
       r = loongarch_reloc_rewrite_imm_insn (rel, input_section,
 					    howto, input_bfd,
 					    contents, value);
-      break;
-
-    case R_LARCH_PCREL32_HI20:
-    case R_LARCH_GOT32_HI20:
-    case R_LARCH_TLSIE32_HI20:
-    case R_LARCH_TLSGD32_HI20:
-      RESOLVE_SIMPLE_RELOCS (like_pcrel32_hi20);
-      break;
-    case R_LARCH_PCREL64_HI20:
-    case R_LARCH_GOT64_HI20:
-    case R_LARCH_TLSIE64_HI20:
-    case R_LARCH_TLSGD64_HI20:
-      RESOLVE_SIMPLE_RELOCS (like_pcrel64_hi20);
-      break;
-    case R_LARCH_PCREL_LO12_U:
-      RESOLVE_SIMPLE_RELOCS (pcrel_lo12_u);
-      break;
-    case R_LARCH_PCREL_LO12_S:
-      RESOLVE_SIMPLE_RELOCS (pcrel_lo12_s);
-      break;
-    case R_LARCH_PCREL_H_LO20:
-      RESOLVE_SIMPLE_RELOCS (pcrel_h_lo20);
-      break;
-    case R_LARCH_PCREL_H_HI12:
-      RESOLVE_SIMPLE_RELOCS (pcrel_h_hi12);
       break;
       
     default:
       r = bfd_reloc_notsupported;
     }
   return r;
-}
-
-/* Remember all PC-relative high-part relocs we've encountered to help us
-   later resolve the corresponding low-part relocs.  */
-typedef struct larch_pcrel_hi_reloc
-{
-  bfd_vma address;
-  bfd_vma value;
-  int type;
-} larch_pcrel_hi_reloc;
-
-typedef struct larch_pcrel_lo_reloc
-{
-  bfd_vma address;
-  const Elf_Internal_Rela *reloc;
-  asection *input_section;
-  struct bfd_link_info *info;
-  reloc_howto_type *howto;
-  bfd_byte *contents;
-  struct larch_pcrel_lo_reloc *next;
-} larch_pcrel_lo_reloc;
-
-typedef struct
-{
-  htab_t hi_relocs;
-  larch_pcrel_lo_reloc *lo_relocs;
-} larch_pcrel_relocs;
-
-static hashval_t
-larch_pcrel_reloc_hash (const void *entry)
-{
-  const larch_pcrel_hi_reloc *e = entry;
-  return (hashval_t)(e->address >> 2);
-}
-
-static int
-larch_pcrel_reloc_eq (const void *entry1, const void *entry2)
-{
-  const larch_pcrel_hi_reloc *e1 = entry1, *e2 = entry2;
-  return e1->address == e2->address;
-}
-
-static bool
-larch_init_pcrel_relocs (larch_pcrel_relocs *p)
-{
-  p->lo_relocs = NULL;
-  p->hi_relocs = htab_create (1024, larch_pcrel_reloc_hash,
-			      larch_pcrel_reloc_eq, free);
-  return p->hi_relocs != NULL;
-}
-
-static void
-larch_free_pcrel_relocs (larch_pcrel_relocs *p)
-{
-  larch_pcrel_lo_reloc *cur = p->lo_relocs;
-
-  while (cur != NULL)
-    {
-      larch_pcrel_lo_reloc *next = cur->next;
-      free (cur);
-      cur = next;
-    }
-
-  htab_delete (p->hi_relocs);
-}
-
-static bool
-larch_record_pcrel_hi_reloc (larch_pcrel_relocs *p,
-				 bfd_vma addr,
-				 bfd_vma value,
-				 int type,
-				 bool absolute)
-{
-  bfd_vma offset = absolute ? value : value - addr;
-  larch_pcrel_hi_reloc entry = { addr, offset, type };
-  larch_pcrel_hi_reloc **slot =
-    (larch_pcrel_hi_reloc **) htab_find_slot (p->hi_relocs, &entry, INSERT);
-
-  BFD_ASSERT (*slot == NULL);
-  *slot = (larch_pcrel_hi_reloc *) bfd_malloc (sizeof (larch_pcrel_hi_reloc));
-  if (*slot == NULL)
-    return false;
-  **slot = entry;
-  return true;
-}
-
-static bool
-larch_record_pcrel_lo_reloc (larch_pcrel_relocs *p,
-				 bfd_vma addr,
-				 const Elf_Internal_Rela *reloc,
-				 asection *input_section,
-				 struct bfd_link_info *info,
-				 reloc_howto_type *howto,
-				 bfd_byte *contents)
-{
-  larch_pcrel_lo_reloc *entry;
-  entry = (larch_pcrel_lo_reloc *) bfd_malloc (sizeof (larch_pcrel_lo_reloc));
-  if (entry == NULL)
-    return false;
-  *entry = (larch_pcrel_lo_reloc) {addr, reloc, input_section, info,
-                                   howto, contents, p->lo_relocs};
-  p->lo_relocs = entry;
-  return true;
-}
-
-static inline larch_pcrel_hi_reloc *find_pcrel_hi (larch_pcrel_lo_reloc *lo,
-						   larch_pcrel_relocs *p)
-{
-  larch_pcrel_hi_reloc search = { lo->address, 0, 0 };
-  larch_pcrel_hi_reloc *entry = htab_find (p->hi_relocs, &search);
-  return entry;
-}
-
-static bool
-loongarch_resolve_pcrel_lo_relocs (larch_pcrel_relocs *p)
-{
-  larch_pcrel_lo_reloc *r;
-
-  for (r = p->lo_relocs; r != NULL; r = r->next)
-    {
-      bfd *input_bfd = r->input_section->owner;
-      larch_pcrel_hi_reloc *entry = find_pcrel_hi (r, p);
-      char *string = NULL;
-      static char *err_asprintf = "anything wrong either asprintf errors";
-      if (entry == NULL)
-	{
-	  if (asprintf (&string,
-			_("missing matching pcrel_hi, searched 0x%" PRIx64),
-			r->address) == -1)
-		string = err_asprintf;
-	}
-      if (string != NULL)
-	{
-	  (*r->info->callbacks->reloc_dangerous)
-	    (r->info, string, input_bfd, r->input_section, r->reloc->r_offset);
-	  if (string != err_asprintf)
-	    free (string);
-	  return true;
-	}
-
-      perform_relocation (r->reloc, r->input_section, r->howto,
-		          entry->value, input_bfd, r->contents);
-    }
-
-  return true;
 }
 
 #define LARCH_RECENT_RELOC_QUEUE_LENGTH 72
@@ -2256,7 +2285,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 {
   Elf_Internal_Rela *rel;
   Elf_Internal_Rela *relend;
-  larch_pcrel_relocs pcrel_relocs;
   bool fatal = false;
   asection *sreloc = elf_section_data (input_section)->sreloc;
   struct loongarch_elf_link_hash_table *htab = loongarch_elf_hash_table (info);
@@ -2267,9 +2295,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
   bool is_dyn = elf_hash_table (info)->dynamic_sections_created;
   asection *plt = htab->elf.splt ? htab->elf.splt : htab->elf.iplt;
   asection *got = htab->elf.sgot;
-
-  if (!larch_init_pcrel_relocs (&pcrel_relocs))
-    return false;
 
   relend = relocs + input_section->reloc_count;
   for (rel = relocs; rel < relend; rel++)
@@ -2283,11 +2308,10 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
       struct elf_link_hash_entry *h = NULL;
       const char *name;
       bfd_reloc_status_type r = bfd_reloc_ok;
-      bool is_ie, is_undefweak, unresolved_reloc, defined_local;
+      bool is_undefweak, unresolved_reloc, defined_local;
       bool resolved_local, resolved_dynly, resolved_to_const;
       char tls_type;
-      bfd_vma relocation;
-      bfd_vma off, ie_off;
+      bfd_vma relocation, off;
       int i, j;
 
       howto = loongarch_elf_rtype_to_howto (input_bfd, r_type);
@@ -2295,7 +2319,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  || r_type == R_LARCH_GNU_VTENTRY)
 	continue;
 
-      /* This is a final link.  */
+      /* This is a final link.	*/
       if (r_symndx < symtab_hdr->sh_info)
 	{
 	  is_undefweak = false;
@@ -2413,7 +2437,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
       BFD_ASSERT (!resolved_local || defined_local);
 
-      is_ie = false;
       switch (r_type)
 	{
 	case R_LARCH_MARK_PCREL:
@@ -2453,13 +2476,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 				     + h->root.u.def.section->output_section->vma
 				     + h->root.u.def.section->output_offset);
 
-		  /* Dynamic relocations are stored in
-		     1. .rela.ifunc section in PIC object.
-		     2. .rela.got section in dynamic executable.
-		     3. .rela.iplt section in static executable.  */
-		  if (bfd_link_pic (info))
-		    sreloc = htab->elf.irelifunc;
-		  else if (htab->elf.splt != NULL)
+		  if (htab->elf.splt != NULL)
 		    sreloc = htab->elf.srelgot;
 		  else
 		    sreloc = htab->elf.irelplt;
@@ -2552,8 +2569,11 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	  break;
 
-	case R_LARCH_TLSLE_L_HI20 ... R_LARCH_TLSLE_H_HI12:
 	case R_LARCH_SOP_PUSH_TLS_TPREL:
+	case R_LARCH_TLS_LE_HI20:
+	case R_LARCH_TLS_LE_LO12:
+	case R_LARCH_TLS_LE64_LO20:
+	case R_LARCH_TLS_LE64_HI12:
 	  if (resolved_local)
 	    {
 	      if (!elf_hash_table (info)->tls_sec)
@@ -2562,7 +2582,13 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			  bfd_reloc_notsupported, is_undefweak, name,
 			  "TLS section not be created"));
 	      else
-		relocation -= elf_hash_table (info)->tls_sec->vma;
+		{
+		  relocation -= elf_hash_table (info)->tls_sec->vma;
+		  if (r_type == R_LARCH_TLS_LE_HI20)
+		    relocation &= ~(bfd_vma)0xfff;
+		  if (r_type == R_LARCH_TLS_LE_LO12)
+		    relocation &= (bfd_vma)0xfff;
+		}
 	    }
 	  else
 	    fatal = (loongarch_reloc_is_fatal
@@ -2571,7 +2597,10 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		      "TLS LE just can be resolved local only."));
 	  break;
 
-	case R_LARCH_L_HI20 ... R_LARCH_H_HI12:
+	case R_LARCH_ABS_HI20:
+	case R_LARCH_ABS_LO12:
+	case R_LARCH_ABS64_LO20:
+	case R_LARCH_ABS64_HI12:
 	case R_LARCH_SOP_PUSH_ABSOLUTE:
 	  if (is_undefweak)
 	    {
@@ -2580,7 +2609,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			 (info, input_bfd, input_section, rel, howto,
 			  bfd_reloc_dangerous, is_undefweak, name,
 			  "Someone require us to resolve undefweak "
-			  "symbol dynamically.  \n"
+			  "symbol dynamically.	\n"
 			  "But this reloc can't be done.  "
 			  "I think I can't throw error "
 			  "for this\n"
@@ -2603,7 +2632,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      fatal = (loongarch_reloc_is_fatal
 		       (info, input_bfd, input_section, rel, howto,
 			bfd_reloc_notsupported, is_undefweak, name,
-			"Under PIC we don't know load address.  Re-compile "
+			"Under PIC we don't know load address.	Re-compile "
 			"with '-fpic'?"));
 	      break;
 	    }
@@ -2642,12 +2671,12 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	  break;
 
-	case R_LARCH_PCALA_LO12:
+	case R_LARCH_PCALA_LO12: 
 	      relocation += rel->r_addend;
 	      relocation &= 0xfff;
 	      break;
 
-	case R_LARCH_PCALA32_HI20:
+	case R_LARCH_PCALA_HI20:
 	    {
 	      bfd_vma lo = (relocation + rel->r_addend) & ((bfd_vma)0xfff);
 	      pc = pc & (~(bfd_vma)0xfff);
@@ -2660,21 +2689,15 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      relocation -= pc;
 	    }
 	  break;
-	case R_LARCH_PCREL64_HI20:
+
 	case R_LARCH_B21:
 	case R_LARCH_B26:
 	case R_LARCH_B16:
-	case R_LARCH_BL26:
 	case R_LARCH_SOP_PUSH_PCREL:
 	case R_LARCH_SOP_PUSH_PLT_PCREL:
 	  unresolved_reloc = false;
 
-	  if (resolved_to_const)
-	    {
-	      relocation += rel->r_addend;
-	      goto record;
-	    }
-	  else if (is_undefweak)
+	  if (is_undefweak)
 	    {
 	      i = 0, j = 0;
 	      relocation = 0;
@@ -2739,20 +2762,18 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  break;
 		}
 	    }
- record:
-	  if (r_type == R_LARCH_PCREL32_HI20 ||
-	      r_type == R_LARCH_PCREL64_HI20)
-	    {
-	      if (!larch_record_pcrel_hi_reloc (&pcrel_relocs, pc,
-					        relocation, r_type, true))
-		r = bfd_reloc_overflow;
-	    }
 	  break;
 
-	case R_LARCH_GOT32_HI20:
-	case R_LARCH_PGOT32_HI20:
-	case R_LARCH_PGOT32_LO12:
+	case R_LARCH_GOT_HI20:
+	case R_LARCH_GOT_LO12:
 	case R_LARCH_GOT64_HI20:
+	case R_LARCH_GOT64_LO12:
+	case R_LARCH_GOT64_LO20:
+	case R_LARCH_GOT64_HI12:
+	case R_LARCH_GOT64_PC_HI20:
+	case R_LARCH_GOT64_PC_LO12:
+	case R_LARCH_GOT64_PC_LO20:
+	case R_LARCH_GOT64_PC_HI12:
 	case R_LARCH_SOP_PUSH_GPREL:
 	  unresolved_reloc = false;
 
@@ -2819,7 +2840,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		     we have initialized it already.
 
 		     When doing a dynamic link, we create a .rela.got
-		     relocation entry to initialize the value.  This
+		     relocation entry to initialize the value.	This
 		     is done in the finish_dynamic_symbol routine.  */
 
 		  if (resolved_dynly)
@@ -2843,7 +2864,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		    off &= ~1;
 		  else
 		    {
-		      /* The pr21964-4. Create relocate entry.  */
+		      /* The pr21964-4. Create relocate entry.	*/
 		      if (is_pic && h->start_stop)
 			{
 			  asection *s;
@@ -2894,7 +2915,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      /* The offset must always be a multiple of the word size.
 		 So, we can use the least significant bit to record
-		 whether we have already processed this entry.  */
+		 whether we have already processed this entry.	*/
 	      if ((off & 1) != 0)
 		off &= ~1;
 	      else
@@ -2917,7 +2938,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 		      outrel.r_offset = sec_addr (got) + off;
 		      outrel.r_info = ELFNN_R_INFO (0, R_LARCH_RELATIVE);
-		      outrel.r_addend = relocation; /* Link-time addr.  */
+		      outrel.r_addend = relocation; /* Link-time addr.	*/
 		      loongarch_elf_append_rela (output_bfd, s, &outrel);
 		    }
 
@@ -2926,15 +2947,11 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		}
 	    }
 	  relocation = off;
-	  if (r_type == R_LARCH_GOT32_HI20 ||
-	      r_type == R_LARCH_GOT64_HI20)
+	  if (r_type == R_LARCH_GOT_HI20)
 	    {
 	      relocation = off + sec_addr(got) - pc;
-	      if (!larch_record_pcrel_hi_reloc (&pcrel_relocs, pc,
-					        relocation, r_type, true))
-		r = bfd_reloc_overflow;
 	    }
-	  else if (r_type == R_LARCH_PGOT32_HI20)
+	  else if (r_type == R_LARCH_GOT_HI20)
 	    {
 	      relocation = off + sec_addr(got);
 	      bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
@@ -2947,39 +2964,35 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      relocation -= pc;
 	    }
-	  else if (r_type == R_LARCH_PGOT32_LO12)
+	  else if (r_type == R_LARCH_GOT_LO12)
 	    {
 	      relocation = off + sec_addr(got);
 	      relocation &= (bfd_vma)0xfff;
 	    }
 	  break;
 
-	case R_LARCH_PIE32_HI20:
-	case R_LARCH_PIE32_LO12:
-	case R_LARCH_PGD32_HI20:
-	case R_LARCH_PGD32_LO12:
-	case R_LARCH_TLSIE32_HI20:
-	case R_LARCH_TLSIE64_HI20:
-	case R_LARCH_TLSGD32_HI20:
-	case R_LARCH_TLSGD64_HI20:
+	case R_LARCH_TLS_IE_PC_HI20:
+	case R_LARCH_TLS_IE64_HI20:
+	case R_LARCH_TLS_LD_PC_HI20:
+	case R_LARCH_TLS_LD64_HI20:
+	case R_LARCH_TLS_GD_PC_HI20:
+	case R_LARCH_TLS_GD64_HI20:
 	case R_LARCH_SOP_PUSH_TLS_GOT:
 	case R_LARCH_SOP_PUSH_TLS_GD:
-	  if (r_type == R_LARCH_SOP_PUSH_TLS_GOT ||
-	      r_type == R_LARCH_TLSIE32_HI20 ||
-	      r_type == R_LARCH_PIE32_HI20 ||
-	      r_type == R_LARCH_TLSIE64_HI20)
-	    is_ie = true;
 	  unresolved_reloc = false;
+
+	  //if (r_type == R_LARCH_SOP_PUSH_TLS_GOT
+	  //    || r_type == R_LARCH_TLS_IE_HI20
+	  //    || r_type == R_LARCH_TLS_IE_LO12)
 
 	  if (rel->r_addend != 0)
 	    {
 	      fatal = (loongarch_reloc_is_fatal
 		       (info, input_bfd, input_section, rel, howto,
 			bfd_reloc_notsupported, is_undefweak, name,
-			"Shouldn't be with r_addend."));
+			"TLS reloc shouldn't be with r_addend."));
 	      break;
 	    }
-
 
 	  if (resolved_to_const && is_undefweak && h->dynindx != -1)
 	    {
@@ -2993,7 +3006,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      fatal = (loongarch_reloc_is_fatal
 		       (info, input_bfd, input_section, rel, howto,
 			bfd_reloc_notsupported, is_undefweak, name,
-			"Internal: Shouldn't be resolved to const."));
+			"Internal: Only TLS LE symbol should be resolved to const."));
 	      break;
 	    }
 
@@ -3018,12 +3031,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    }
 
 	  tls_type = _bfd_loongarch_elf_tls_type (input_bfd, h, r_symndx);
-
-	  /* If this symbol is referenced by both GD and IE TLS, the IE
-	     reference's GOT slot follows the GD reference's slots.  */
-	  ie_off = 0;
-	  if ((tls_type & GOT_TLS_GD) && (tls_type & GOT_TLS_IE))
-	    ie_off = 2 * GOT_ENTRY_SIZE;
 
 	  if ((off & 1) != 0)
 	    off &= ~1;
@@ -3050,7 +3057,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		{
 		  outrel.r_offset = sec_addr (got) + off;
 		  outrel.r_addend = 0;
-		  bfd_put_NN (output_bfd, 0, got->contents + off);
 		  if (resolved_local && bfd_link_executable (info))
 		    bfd_put_NN (output_bfd, 1, got->contents + off);
 		  else if (resolved_local /* && !bfd_link_executable (info) */)
@@ -3083,9 +3089,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      if (tls_type & GOT_TLS_IE)
 		{
-		  outrel.r_offset = sec_addr (got) + off + ie_off;
+		  outrel.r_offset = sec_addr (got) + off;
 		  bfd_put_NN (output_bfd, tls_block_off,
-			      got->contents + off + ie_off);
+			      got->contents + off);
 		  if (resolved_local && bfd_link_executable (info))
 		    /* TPREL known.  */;
 		  else if (resolved_local /* && !bfd_link_executable (info) */)
@@ -3116,19 +3122,11 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		}
 	    }
 
-	  relocation = off + (is_ie ? ie_off : 0);
-	  if (r_type == R_LARCH_TLSIE32_HI20 ||
-	      r_type == R_LARCH_TLSIE64_HI20 ||
-              r_type == R_LARCH_TLSGD32_HI20 ||
-              r_type == R_LARCH_TLSGD64_HI20)
-	    {
-	      relocation += sec_addr (got) - pc;
-	      if (!larch_record_pcrel_hi_reloc (&pcrel_relocs, pc,
-					        relocation, r_type, true))
-		r = bfd_reloc_overflow;
-	    }
-	  else if (r_type == R_LARCH_PIE32_HI20
-	  || r_type == R_LARCH_PGD32_HI20)
+	  relocation = off;
+
+	  if (r_type == R_LARCH_TLS_IE_PC_HI20
+	      || r_type == R_LARCH_TLS_LD_PC_HI20
+	      || r_type == R_LARCH_TLS_GD_PC_HI20)
 	    {
 	      relocation += sec_addr (got);
 	      bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
@@ -3141,24 +3139,13 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      relocation -= pc;
 	    }
-	  else if (r_type == R_LARCH_PIE32_LO12
-	  || r_type == R_LARCH_PGD32_LO12)
-	    {
-	      relocation = off + sec_addr(got);
-	      relocation &= (bfd_vma)0xfff;
-	    }
-	  break;
-
-	case R_LARCH_PCREL_LO12_U:
-	case R_LARCH_PCREL_LO12_S:
-	case R_LARCH_PCREL_H_LO20:
-	case R_LARCH_PCREL_H_HI12:
-	  if (larch_record_pcrel_lo_reloc (&pcrel_relocs,
-					   relocation + rel->r_addend,
-					   rel, input_section, info, howto,
-					   contents))
-	    continue;
-	  r = bfd_reloc_overflow;
+	  //else if (r_type == R_LARCH_TLS_IE64_LO12
+	  //    || r_type == R_LARCH_TLS_LD64_LO12
+	  //    || r_type == R_LARCH_TLS_GD64_LO12)
+	  //  {
+	  //    relocation = off + sec_addr(got);
+	  //    relocation &= (bfd_vma)0xfff;
+	  //  }
 	  break;
 
 	default:
@@ -3244,12 +3231,8 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	}
 
       fatal = true;
-      goto out;
     }
 
-  fatal = !loongarch_resolve_pcrel_lo_relocs (&pcrel_relocs);
- out:
-  larch_free_pcrel_relocs (&pcrel_relocs);
   return !fatal;
 }
 
@@ -3282,7 +3265,10 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
 
 	  plt = htab->elf.splt;
 	  gotplt = htab->elf.sgotplt;
-	  relplt = htab->elf.srelplt;
+	  if (h->type == STT_GNU_IFUNC && SYMBOL_REFERENCES_LOCAL (info, h))
+	    relplt = htab->elf.srelgot;
+	  else
+	    relplt = htab->elf.srelplt;
 	  plt_idx = (h->plt.offset - PLT_HEADER_SIZE) / PLT_ENTRY_SIZE;
 	  got_address =
 	    sec_addr (gotplt) + GOTPLT_HEADER_SIZE + plt_idx * GOT_ENTRY_SIZE;
@@ -3302,7 +3288,7 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
       /* Find out where the .plt entry should go.  */
       loc = plt->contents + h->plt.offset;
 
-      /* Fill in the PLT entry itself.  */
+      /* Fill in the PLT entry itself.	*/
       if (!loongarch_make_plt_entry (got_address,
 				     sec_addr (plt) + h->plt.offset,
 				     plt_entry))
@@ -3318,7 +3304,7 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
       rela.r_offset = got_address;
 
       /* TRUE if this is a PLT reference to a local IFUNC.  */
-      if (PLT_LOCAL_IFUNC_P(info, h))
+      if (PLT_LOCAL_IFUNC_P(info, h) && h->dynindx == -1)
 	{
 	  rela.r_info = ELFNN_R_INFO (0, R_LARCH_IRELATIVE);
 	  rela.r_addend = (h->root.u.def.value
@@ -3332,13 +3318,32 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
 	  rela.r_addend = 0;
 	}
 
-      loc = relplt->contents + plt_idx * sizeof (ElfNN_External_Rela);
-      bed->s->swap_reloca_out (output_bfd, &rela, loc);
+      if((!(h->type == STT_GNU_IFUNC))
+	 || (h->type == STT_GNU_IFUNC
+	     && (!htab->elf.splt || !SYMBOL_REFERENCES_LOCAL (info, h))))
+	loongarch_elf_append_rela (output_bfd, relplt, &rela);
+      else
+	{
+	  /* Find the space after dyn sort.  */
+	  Elf_Internal_Rela *dyn = (Elf_Internal_Rela *)relplt->contents;
+	  bool fill = false;
+	  for (;dyn < dyn + relplt->size / sizeof (*dyn); dyn++)
+	    {
+	      if (0 == dyn->r_offset)
+		{
+		  bed->s->swap_reloca_out (output_bfd, &rela, (bfd_byte *)dyn);
+		  relplt->reloc_count++;
+		  fill = true;
+		  break;
+		}
+	    }
+	  BFD_ASSERT (fill);
+	}
 
       if (!h->def_regular)
 	{
 	  /* Mark the symbol as undefined, rather than as defined in
-	     the .plt section.  Leave the value alone.  */
+	     the .plt section.	Leave the value alone.	*/
 	  sym->st_shndx = SHN_UNDEF;
 	  /* If the symbol is weak, we do need to clear the value.
 	     Otherwise, the PLT entry would provide a definition for
@@ -3600,7 +3605,7 @@ loongarch_elf_finish_dynamic_sections (bfd *output_bfd,
       elf_section_data (output_section)->this_hdr.sh_entsize = GOT_ENTRY_SIZE;
     }
 
-  /* Fill PLT and GOT entries for local STT_GNU_IFUNC symbols.  */
+  /* Fill PLT and GOT entries for local STT_GNU_IFUNC symbols.	*/
   htab_traverse (htab->loc_hash_table,
 		 (void *) elfNN_loongarch_finish_local_dynamic_symbol, info);
 

@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; see the file COPYING3.  If not,
-   see <http://www.gnu.org/licenses/>.  */
+   see <http://www.gnu.org/licenses/>.	*/
 
 #ifndef _ELF_LOONGARCH_H
 #define _ELF_LOONGARCH_H
@@ -24,7 +24,7 @@
 #include "libiberty.h"
 
 START_RELOC_NUMBERS (elf_loongarch_reloc_type)
-/* Used by the dynamic linker.  */
+/* Used by the dynamic linker.	*/
 RELOC_NUMBER (R_LARCH_NONE, 0)
 RELOC_NUMBER (R_LARCH_32, 1)
 RELOC_NUMBER (R_LARCH_64, 2)
@@ -39,7 +39,7 @@ RELOC_NUMBER (R_LARCH_TLS_TPREL32, 10)
 RELOC_NUMBER (R_LARCH_TLS_TPREL64, 11)
 RELOC_NUMBER (R_LARCH_IRELATIVE, 12)
 
-/* Reserved for future relocs that the dynamic linker must understand.  */
+/* Reserved for future relocs that the dynamic linker must understand.	*/
 
 /* Used by the static linker for relocating .text.  */
 RELOC_NUMBER (R_LARCH_MARK_LA, 20)
@@ -74,7 +74,7 @@ RELOC_NUMBER (R_LARCH_SOP_POP_32_S_0_5_10_16_S2, 44)
 RELOC_NUMBER (R_LARCH_SOP_POP_32_S_0_10_10_16_S2, 45)
 RELOC_NUMBER (R_LARCH_SOP_POP_32_U, 46)
 
-/* Used by the static linker for relocating non .text.  */
+/* Used by the static linker for relocating non .text.	*/
 RELOC_NUMBER (R_LARCH_ADD8, 47)
 RELOC_NUMBER (R_LARCH_ADD16, 48)
 RELOC_NUMBER (R_LARCH_ADD24, 49)
@@ -90,39 +90,133 @@ RELOC_NUMBER (R_LARCH_SUB64, 56)
 RELOC_NUMBER (R_LARCH_GNU_VTINHERIT, 57)
 RELOC_NUMBER (R_LARCH_GNU_VTENTRY, 58)
 
+/* B16:
+ * beq/bne/blt/bge/bltu/bgeu/jirl
+ * %b16(sym).  */
 RELOC_NUMBER (R_LARCH_B16, 64)
+/* B21:
+ * beqz/bnez
+ * %b16(sym).  */
 RELOC_NUMBER (R_LARCH_B21, 65)
+/* B26:
+ * b/bl
+ * %b26(sym) or %plt(sym).  */
 RELOC_NUMBER (R_LARCH_B26, 66)
-RELOC_NUMBER (R_LARCH_BL26, 67)
 
-RELOC_NUMBER (R_LARCH_L_HI20, 68)
-RELOC_NUMBER (R_LARCH_L_LO12, 69)
-RELOC_NUMBER (R_LARCH_H_LO20, 70)
-RELOC_NUMBER (R_LARCH_H_HI12, 71)
-RELOC_NUMBER (R_LARCH_TLSLE_L_HI20, 72)
-RELOC_NUMBER (R_LARCH_TLSLE_L_LO12, 73)
-RELOC_NUMBER (R_LARCH_TLSLE_H_LO20, 74)
-RELOC_NUMBER (R_LARCH_TLSLE_H_HI12, 75)
-RELOC_NUMBER (R_LARCH_PCREL32_HI20, 76)
-RELOC_NUMBER (R_LARCH_PCREL64_HI20, 77)
-RELOC_NUMBER (R_LARCH_PCREL_LO12_U, 78)
-RELOC_NUMBER (R_LARCH_PCREL_LO12_S, 79)
-RELOC_NUMBER (R_LARCH_PCREL_H_LO20, 80)
-RELOC_NUMBER (R_LARCH_PCREL_H_HI12, 81)
-RELOC_NUMBER (R_LARCH_GOT32_HI20, 82)
-RELOC_NUMBER (R_LARCH_GOT64_HI20, 83)
-RELOC_NUMBER (R_LARCH_TLSIE32_HI20, 84)
-RELOC_NUMBER (R_LARCH_TLSIE64_HI20, 85)
-RELOC_NUMBER (R_LARCH_TLSGD32_HI20, 86)
-RELOC_NUMBER (R_LARCH_TLSGD64_HI20, 87)
-RELOC_NUMBER (R_LARCH_PCALA32_HI20, 88)
-RELOC_NUMBER (R_LARCH_PCALA_LO12, 89)
-RELOC_NUMBER (R_LARCH_PGOT32_HI20, 90)
-RELOC_NUMBER (R_LARCH_PGOT32_LO12, 91)
-RELOC_NUMBER (R_LARCH_PIE32_HI20, 92)
-RELOC_NUMBER (R_LARCH_PIE32_LO12, 93)
-RELOC_NUMBER (R_LARCH_PGD32_HI20, 94)
-RELOC_NUMBER (R_LARCH_PGD32_LO12, 95)
+/* ABS: 32/64
+ * lu12i.w
+ * %abs_hi20(sym).	*/
+RELOC_NUMBER (R_LARCH_ABS_HI20, 67)
+/* ABS: 32/64
+ * ori
+ * %abs_lo12(sym).  */
+RELOC_NUMBER (R_LARCH_ABS_LO12, 68)
+
+/* ABS: 64
+ * lu32i.d
+ * %abs64_lo20(sym).  */
+RELOC_NUMBER (R_LARCH_ABS64_LO20, 69)
+/* ABS: 64
+ * lu52i.d 
+ * %abs64_hi12(sym).  */
+RELOC_NUMBER (R_LARCH_ABS64_HI12, 70)
+
+/* PCREL: 32/64
+ * pcalau12i
+ * %pc_hi20(sym).  */
+RELOC_NUMBER (R_LARCH_PCALA_HI20, 71)
+/* PCREL: 32/64
+ * addi.w/addi.d
+ * %pc_lo12(sym).  */
+RELOC_NUMBER (R_LARCH_PCALA_LO12, 72)
+
+/* GOT: 32/64
+ * pcalau12i
+ * %got_pc_hi20(got).  */
+RELOC_NUMBER (R_LARCH_GOT_HI20, 73)
+/* GOT 32/64
+ * ld.w/ld.d
+ * %got_pc_lo12(got).  */
+RELOC_NUMBER (R_LARCH_GOT_LO12, 74)
+/* GOT64: ABS
+ * lu12i.w
+ * %got64_hi20(got).  */
+RELOC_NUMBER (R_LARCH_GOT64_HI20, 75)
+/* GOT64: ABS
+ * ori
+ * %got64_lo12(got).  */
+RELOC_NUMBER (R_LARCH_GOT64_LO12, 76)
+/* GOT64: ABS
+ * lu32i.d
+ * %got64_lo20(got).  */
+RELOC_NUMBER (R_LARCH_GOT64_LO20, 77)
+/* GOT64: ABS
+ * lu52i.d
+ * %got64_hi12(got).  */
+RELOC_NUMBER (R_LARCH_GOT64_HI12, 78)
+/* GOT64: PCREL
+ * pcalau12i
+ * %got64_pc_hi20(got).  */
+RELOC_NUMBER (R_LARCH_GOT64_PC_HI20, 79)
+/* GOT64: PCREL
+ * ld.d
+ * %got64_pc_lo12(got).  */
+RELOC_NUMBER (R_LARCH_GOT64_PC_LO12, 80)
+/* GOT64: PCREL
+ * lu32i.d
+ * %got64_pc_lo20(got).  */
+RELOC_NUMBER (R_LARCH_GOT64_PC_LO20, 81)
+/* GOT64: PCREL
+ * lu52i.d
+ * %got64_pc_hi12(got).  */
+RELOC_NUMBER (R_LARCH_GOT64_PC_HI12, 82)
+
+/* TLS-LE: 32/64
+ * lu12i.w
+ * %le_hi20(sym).  */
+RELOC_NUMBER (R_LARCH_TLS_LE_HI20, 83)
+/* TLS-LE: 32/64
+ * ori
+ * %le_lo12(sym).  */
+RELOC_NUMBER (R_LARCH_TLS_LE_LO12, 84)
+/* TLS-LE: 64
+ * lu32i.d
+ * %le64_lo20(sym).  */
+RELOC_NUMBER (R_LARCH_TLS_LE64_LO20, 85)
+/* TLS-LE: 64
+ * lu52i.d
+ * %le64_hi12(sym).  */
+RELOC_NUMBER (R_LARCH_TLS_LE64_HI12, 86)
+
+/* TLS-IE: 32/64
+ * pcalau12i
+ * %ie_pc_hi20(sym).  */
+RELOC_NUMBER (R_LARCH_TLS_IE_PC_HI20, 87)
+/* TLS-IE64: ABS
+ * lu12i.w
+ * %ie64_hi20(sym).  */
+RELOC_NUMBER (R_LARCH_TLS_IE64_HI20, 88)
+
+/* TLS-LD: 32/64
+ * pcalau12i
+ * %ld_pc_hi20(sym).  */
+RELOC_NUMBER (R_LARCH_TLS_LD_PC_HI20, 89)
+/* TLS-LD64: ABS
+ * lu12i.w
+ * %ld64_hi20(sym).  */
+RELOC_NUMBER (R_LARCH_TLS_LD64_HI20, 90)
+
+/* TLS-GD: 32/64
+ * pcalau12i
+ * %gd_pc_hi20(sym).  */
+RELOC_NUMBER (R_LARCH_TLS_GD_PC_HI20, 91)
+/* TLS-GD64: ABS
+ * lu12i.w
+ * %gd64_hi20(sym).  */
+RELOC_NUMBER (R_LARCH_TLS_GD64_HI20, 92)
+
+/* RELAX.  */
+RELOC_NUMBER (R_LARCH_RELAX, 93)
 
 END_RELOC_NUMBERS (R_LARCH_count)
 
@@ -136,9 +230,9 @@ END_RELOC_NUMBERS (R_LARCH_count)
 #define EF_LOONGARCH_ABI_ILP32_SINGLE_FLOAT	0x6
 #define EF_LOONGARCH_ABI_ILP32_DOUBLE_FLOAT	0x7
 
-#define EF_LOONGARCH_ABI_MASK	    		0x7
-#define EF_LOONGARCH_ABI_ILP32_MASK	    	0x4
-#define EF_LOONGARCH_ABI_FLOAT_MASK	    	0x3
+#define EF_LOONGARCH_ABI_MASK			0x7
+#define EF_LOONGARCH_ABI_ILP32_MASK		0x4
+#define EF_LOONGARCH_ABI_FLOAT_MASK		0x3
 #define EF_LOONGARCH_ABI_SOFT_FLOAT_MASK	0x1
 #define EF_LOONGARCH_ABI_SINGLE_FLOAT_MASK	0x2
 #define EF_LOONGARCH_ABI_DOUBLE_FLOAT_MASK	0x3

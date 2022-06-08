@@ -24,6 +24,7 @@ if ![istarget loongarch*-*-*] {
 }
 
 global verbose
+set old_verbose verbose
 #set verbose 3
 
 
@@ -196,3 +197,4 @@ set link_exec_tests [list \
 run_ld_link_exec_tests $link_exec_tests
 
 
+#set verbose  old_verbose
