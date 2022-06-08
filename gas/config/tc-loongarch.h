@@ -54,9 +54,6 @@ extern int loongarch_relax_frag (asection *, struct frag *, long);
 extern int loongarch_fix_adjustable (struct fix *fix);
 #define tc_fix_adjustable(fixp) loongarch_fix_adjustable(fixp)
 
-extern int loongarch_fix_collection (void);
-#define md_fix_collection() loongarch_fix_collection()
-
 /* Values passed to md_apply_fix don't include symbol values.  */
 #define TC_FORCE_RELOCATION_SUB_LOCAL(FIX, SEG) 1
 #define TC_VALIDATE_FIX_SUB(FIX, SEG) 1

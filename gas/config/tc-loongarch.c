@@ -31,13 +31,6 @@
 #include <stdio.h>
 #include <assert.h>
 
-typedef struct loongarch_fake_lable
-{
-  expressionS exp;
-  char *lable;
-  bool valid;
-}fake_lable;
-
 /* All information about an instruction during assemble.  */
 struct loongarch_cl_insn
 {
@@ -335,7 +328,6 @@ loongarch_target_format ()
   return LARCH_opts.ase_lp64 ? "elf64-loongarch" : "elf32-loongarch";
 }
 
-static struct htab *fake_htab = NULL;
 void
 md_begin ()
 {
@@ -360,7 +352,6 @@ md_begin ()
   /* FIXME: expressionS use 'offsetT' as constant,
    * we want this is 64-bit type.  */
   assert (8 <= sizeof (offsetT));
-  fake_htab = str_htab_create ();
 }
 
 unsigned long
@@ -476,11 +467,6 @@ get_internal_label (expressionS *label_expr, unsigned long label,
     symbol_find_or_make (loongarch_internal_label_name (label, augend));
   label_expr->X_add_number = 0;
 }
-
-extern int loongarch_parse_expr (const char *expr,
-				 struct reloc_info *reloc_stack_top,
-				 size_t max_reloc_num, size_t *reloc_num,
-				 offsetT *imm_if_no_reloc);
 
 static int
 is_internal_label (const char *c_str)
@@ -651,7 +637,7 @@ loongarch_args_parser_can_match_arg_helper (char esc_ch1, char esc_ch2,
 		      esc_ch1, esc_ch2, bit_field, arg);
 	  if (ip->reloc_info[0].type >= BFD_RELOC_LARCH_B16 &&
 	       // ip->reloc_info[0].type <= BFD_RELOC_LARCH_TLSGD64_HI20){
-	      ip->reloc_info[0].type <= BFD_RELOC_LARCH_PGD32_LO12){
+	      ip->reloc_info[0].type <= BFD_RELOC_LARCH_RELAX){
 	    /* As we compact stack-relocs, it is no need for pop operation.
 	       But break out until here in order to check the imm field. */
 	    ip->reloc_num = 1;
@@ -897,33 +883,6 @@ append_fixp_and_insn (struct loongarch_cl_insn *ip)
     append_fixed_insn (ip);
 }
 
-static symbolS *
-make_internal_label (void)
-{
-  return (symbolS *) local_symbol_make (FAKE_LABEL_NAME, now_seg, frag_now,
-					  frag_now_fix());
-}
-
-void
-make_fake_lable (const char *lable);
-void
-make_fake_lable (const char *lable)
-{
-  fake_lable *fake;
-  fake = str_hash_find (fake_htab, lable);
-  if (!fake)
-    {
-      fake = XNEW(fake_lable);
-      fake->lable = strdup(lable);
-    }
-  fake->exp.X_op = O_symbol;
-  fake->exp.X_add_number = 0;
-  fake->exp.X_add_symbol = make_internal_label ();
-
-  str_hash_insert (fake_htab, fake->lable, fake, 1);
-
-}
-
 /* Ask helper for returning a malloced c_str or NULL.  */
 static char *
 assember_macro_helper (const char *const args[], void *context_ptr)
@@ -1009,15 +968,6 @@ assember_macro_helper (const char *const args[], void *context_ptr)
     }
 
   return ret;
-}
-
-expressionS *
-fake_lable_find(const char *la);
-
-expressionS *
-fake_lable_find(const char *la)
-{
-  return (expressionS*)str_hash_find (fake_htab, la);
 }
 
 /* Accept instructions separated by ';'
@@ -1110,274 +1060,6 @@ md_pcrel_from (fixS *fixP ATTRIBUTE_UNUSED)
   return 0;
 }
 
-typedef struct larch_pcrel_hi_reloc
-{
-  int64_t address;
-  int64_t value;
-} larch_pcrel_hi_reloc;
-
-typedef struct larch_pcrel_lo_reloc
-{
-  int64_t address;
-  fixS *fixP;
-  struct larch_pcrel_lo_reloc *next;
-} larch_pcrel_lo_reloc;
-
-typedef struct
-{
-  htab_t hi_relocs;
-  larch_pcrel_lo_reloc *lo_relocs;
-} larch_pcrel_relocs;
-
-static hashval_t
-larch_pcrel_reloc_hash (const void *entry)
-{
-  const larch_pcrel_hi_reloc *e = entry;
-  return (hashval_t)(e->address >> 2);
-}
-
-static int
-larch_pcrel_reloc_eq (const void *entry1, const void *entry2)
-{
-  const larch_pcrel_hi_reloc *e1 = entry1, *e2 = entry2;
-  return e1->address == e2->address;
-}
-
-static int prepare;
-static larch_pcrel_relocs *pcrel_relocs = &(larch_pcrel_relocs) {NULL, NULL};
-
-static bool
-larch_init_pcrel_relocs (void)
-{
-  pcrel_relocs->lo_relocs = NULL;
-  pcrel_relocs->hi_relocs = htab_create (1024, larch_pcrel_reloc_hash,
-					 larch_pcrel_reloc_eq, free);
-  return pcrel_relocs->hi_relocs != NULL;
-}
-
-static int larch_record_pcrel_hi_reloc(int64_t pc)
-{
-  larch_pcrel_hi_reloc hi = { pc,  0 };
-  larch_pcrel_hi_reloc **slot =
-    (larch_pcrel_hi_reloc **) htab_find_slot (pcrel_relocs->hi_relocs, &hi, INSERT);
-  *slot = (larch_pcrel_hi_reloc *) xmalloc (sizeof (larch_pcrel_hi_reloc));
-  if (*slot == NULL)
-    return false;
-  **slot = hi;
-  return true;
-}
-
-static inline larch_pcrel_hi_reloc *find_pcrel_hi (int64_t address)
-{
-  larch_pcrel_hi_reloc search = { address, 0 };
-  larch_pcrel_hi_reloc *entry = htab_find (pcrel_relocs->hi_relocs, &search);
-  return entry;
-}
-
-static int larch_record_pcrel_hi_reloc_fix (int64_t pc, int64_t value)
-{
-  larch_pcrel_hi_reloc *hi = find_pcrel_hi (pc);
-  if (!hi)
-    return -1;
-  hi->value = value;
-  return 0;
-}
-
-static int larch_record_pcrel_lo_reloc(int64_t address, fixS *fixP)
-{
-  larch_pcrel_lo_reloc *lo;
-  lo = (larch_pcrel_lo_reloc *) xmalloc (sizeof (larch_pcrel_lo_reloc));
-  *lo = (larch_pcrel_lo_reloc) { address, fixP, pcrel_relocs->lo_relocs };
-  pcrel_relocs->lo_relocs = lo;
-  return 0;
-}
-
-static void
-larch_free_pcrel_relocs (void)
-{
-  larch_pcrel_lo_reloc *cur = pcrel_relocs->lo_relocs;
-
-  while (cur != NULL)
-    {
-      larch_pcrel_lo_reloc *next = cur->next;
-      free (cur);
-      cur = next;
-    }
-
-  htab_delete (pcrel_relocs->hi_relocs);
-
-  pcrel_relocs->lo_relocs = NULL;
-  pcrel_relocs->hi_relocs = NULL;
-}
-
-static inline int
-apply_fix_pcrel_lo12s(int64_t value, insn_t *insn)
-{
-  int64_t imm = (value) - ((value + 0x800) & ~0xffful);
-  /* check 12-bit signed */
-  if ((imm & ~0x7fful) &&
-      (imm & ~0x7fful) != ~0x7fful)
-    return -1;
-  *insn = (*insn & ~0x3ffc00) | ((imm & 0xfff) << 10);
-  return 0;
-}
-
-static inline int
-apply_fix_pcrel_lo12u(int64_t value, insn_t *insn)
-{
-  int64_t imm = ((value) - ((value + 0x80000000) & ~0xfffffffful)) & 0xfff;
-  *insn = (*insn & ~0x3ffc00) | ((imm & 0xfff) << 10);
-  return 0;
-}
-
-static inline int
-apply_fix_pcrel_hlo20(int64_t value, insn_t *insn)
-{
-  int64_t imm = ((value + 0x80000000) << 12) >> 44;
-  /* check 20-bit signed */
-  if ((imm & ~0x7fffful) &&
-      (imm & ~0x7fffful) != ~0x7fffful)
-    return -1;
-  *insn = (*insn & ~0x1ffffe0) | ((imm & 0xfffff) << 5);
-  return 0;
-}
-
-static inline int
-apply_fix_pcrel_hhi12(int64_t value, insn_t *insn)
-{
-  int64_t imm = (value + 0x80000000) >> 52;
-  /* check 12-bit signed */
-  if ((imm & ~0x7fful) &&
-      (imm & ~0x7fful) != ~0x7fful)
-    return -1;
-  *insn = (*insn & ~0x3ffc00) | ((imm & 0xfff) << 10);
-  return 0;
-}
-
-static inline int
-apply_fix_pcrel32_hi20(int64_t sym, int64_t addend, int64_t pc, insn_t *insn)
-{
-  int64_t value = sym + addend;
-  int64_t imm = (value - pc + 0x800) >> 12;
-  /* check 20-bit signed */
-  if ((imm & ~0x7fffful) &&
-      (imm & ~0x7fffful) != ~0x7fffful)
-    return -1;
-  *insn = (*insn & ~0x1ffffe0) | ((imm & 0xfffff) << 5);
-  if (larch_record_pcrel_hi_reloc_fix (pc, value - pc))
-    return -1;
-  return 0;
-}
-
-static inline int
-apply_fix_pcrel64_hi20(int64_t sym, int64_t addend, int64_t pc, insn_t *insn)
-{
-  int64_t value = sym + addend;
-  int64_t imm = (value - pc) -
-		((((value - pc + 0x80000000) & ~0xfffffffful) << 32) >> 44);
-  /* check 20-bit signed */
-  if ((imm & ~0x7fffful) &&
-      (imm & ~0x7fffful) != ~0x7fffful)
-    return -1;
-  *insn = (*insn & ~0x1ffffe0) | ((imm & 0xfffff) << 5);
-  if (larch_record_pcrel_hi_reloc_fix(pc, value - pc))
-    return -1;
-  return 0;
-}
-
-static inline int
-apply_fix_b16(int64_t sym, int64_t addend, int64_t pc, insn_t *insn)
-{
-  int64_t imm = sym + addend - pc;
-  if (imm & 3)
-    return -1;
-  imm >>= 2;
-  /* check 16-bit signed */
-  if ((imm & ~0x7ffful) &&
-      (imm & ~0x7ffful) != ~0x7ffful)
-    return -1;
-  *insn = (*insn & ~0x3fffc00) | ((imm & 0xffff) << 10);
-  return 0;
-}
-
-static inline int
-apply_fix_b21(int64_t sym, int64_t addend, int64_t pc, insn_t *insn)
-{
-  int64_t imm = sym + addend - pc;
-  if (imm & 3)
-    return -1;
-  imm >>= 2;
-  /* check 21-bit signed */
-  if ((imm & ~0xffffful) &&
-      (imm & ~0xffffful) != ~0xffffful)
-    return -1;
-  *insn = (*insn & ~0x3fffc1f) |
-  ((imm & 0xffff) << 10) | ((imm >> 16) & 0x1f);
-  return 0;
-}
-
-static inline int
-apply_fix_b26_bl26(int64_t sym, int64_t addend, int64_t pc, insn_t *insn)
-{
-  int64_t imm = sym + addend - pc;
-  if (imm & 3)
-    return -1;
-  imm >>= 2;
-  /* check 16-bit signed */
-  if ((imm & ~0x1fffffful) &&
-      (imm & ~0x1fffffful) != ~0x1fffffful)
-    return -1;
-  *insn = (*insn & ~0x3ffffff) |
-	  ((imm & 0xffff) << 10) | ((imm >> 16) & 0x3ff);
-  return 0;
-}
-
-#define LARCH_FIX_INSN(fix_func)				\
-do {								\
-  int64_t sym, addend, pc;					\
-  if (fixP->fx_addsy == NULL)					\
-    {								\
-      as_bad_where (fixP->fx_file, fixP->fx_line,		\
-		    _ ("Relocation against a constant"));	\
-      break;							\
-    }								\
-  if (S_GET_SEGMENT (fixP->fx_addsy) != seg			\
-      || S_IS_WEAK(fixP->fx_addsy))				\
-    break;							\
-  if ((fixP->fx_r_type == BFD_RELOC_LARCH_BL26 ||		\
-      fixP->fx_r_type == BFD_RELOC_LARCH_B26) &&		\
-      S_IS_EXTERNAL(fixP->fx_addsy))				\
-    break;							\
-  sym = S_GET_VALUE (fixP->fx_addsy);				\
-  addend = fixP->fx_offset;					\
-  pc = fixP->fx_where + fixP->fx_frag->fr_address;		\
-  insn = bfd_getl32 (buf);					\
-  if (fix_func (sym, addend, pc, &insn))			\
-    as_warn_where (fixP->fx_file, fixP->fx_line,		\
-		   _ ("Reloc overflow"));			\
-  bfd_putl32 (insn, buf);					\
-  if (!S_FORCE_RELOC(fixP->fx_addsy, 1))			\
-    fixP->fx_done = 1;						\
-} while (0)
-
-#define LARCH_RECORD_LO_PCREL()					\
-do {								\
-  int64_t address;						\
-  if (fixP->fx_addsy == NULL)					\
-    {								\
-      as_bad_where (fixP->fx_file, fixP->fx_line,		\
-		    _ ("Relocation against a constant"));	\
-      break;							\
-    }								\
-  address = S_GET_VALUE (fixP->fx_addsy) + fixP->fx_offset;	\
-  if (!find_pcrel_hi (address))					\
-    break;							\
-  if (larch_record_pcrel_lo_reloc (address, fixP))		\
-    as_bad_where (fixP->fx_file, fixP->fx_line,			\
-		  _ ("Record lo reloc error"));			\
-  fixP->fx_done = 1;						\
-} while (0)
-
 static void fix_reloc_insn (fixS *fixP, bfd_vma reloc_val, char *buf)
 {
   reloc_howto_type *howto;
@@ -1402,37 +1084,6 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
   static int last_reloc_is_sop_push_pcrel_1 = 0;
   int last_reloc_is_sop_push_pcrel = last_reloc_is_sop_push_pcrel_1;
   last_reloc_is_sop_push_pcrel_1 = 0;
-  insn_t insn;
-
-  if (prepare == -1)
-    return;
-
-  if (prepare == 0)
-    {
-      fixS *p;
-      int64_t pc;
-
-      if (!larch_init_pcrel_relocs ())
-	{
-	  as_fatal (_ ("Couldn't create pcrel relocs records"));
-	  prepare = -1;
-	  return;
-	}
-      for (p = fixP; p; p = p->fx_next)
-	{
-	  pc = p->fx_where + p->fx_frag->fr_address;
-	  if (p->fx_r_type == BFD_RELOC_LARCH_PCREL32_HI20
-	      || p->fx_r_type == BFD_RELOC_LARCH_PCREL64_HI20)
-	    {
-	      if (p->fx_addsy == NULL
-		  || S_GET_SEGMENT (p->fx_addsy) != seg
-		  || S_IS_WEAK(p->fx_addsy))
-		continue;
-	      larch_record_pcrel_hi_reloc (pc);
-	    }
-	}
-      prepare = 1;
-    }
 
   char *buf = fixP->fx_frag->fr_literal + fixP->fx_where;
   switch (fixP->fx_r_type)
@@ -1440,50 +1091,34 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
     case BFD_RELOC_LARCH_SOP_PUSH_TLS_TPREL:
     case BFD_RELOC_LARCH_SOP_PUSH_TLS_GD:
     case BFD_RELOC_LARCH_SOP_PUSH_TLS_GOT:
+    case BFD_RELOC_LARCH_TLS_LE_HI20:
+    case BFD_RELOC_LARCH_TLS_LE_LO12:
+    case BFD_RELOC_LARCH_TLS_LE64_LO20:
+    case BFD_RELOC_LARCH_TLS_LE64_HI12:
+    case BFD_RELOC_LARCH_TLS_IE_PC_HI20:
+    case BFD_RELOC_LARCH_TLS_IE64_HI20:
+    case BFD_RELOC_LARCH_TLS_LD_PC_HI20:
+    case BFD_RELOC_LARCH_TLS_LD64_HI20:
+    case BFD_RELOC_LARCH_TLS_GD_PC_HI20:
+    case BFD_RELOC_LARCH_TLS_GD64_HI20:
+      /* add tls lo(got_lo reloc type. ) */
+      if (fixP->fx_addsy == NULL)
+	as_bad_where (fixP->fx_file, fixP->fx_line,
+		      _("Relocation against a constant"));
+      S_SET_THREAD_LOCAL (fixP->fx_addsy);
+      break;
+
     case BFD_RELOC_LARCH_SOP_PUSH_PCREL:
-    case BFD_RELOC_LARCH_SOP_PUSH_PLT_PCREL:
-    case BFD_RELOC_LARCH_PIE32_HI20:
-    case BFD_RELOC_LARCH_PIE32_LO12:
-    case BFD_RELOC_LARCH_PGD32_HI20:
-    case BFD_RELOC_LARCH_PGD32_LO12:
-    case BFD_RELOC_LARCH_TLSIE32_HI20:
-    case BFD_RELOC_LARCH_TLSIE64_HI20:
-    case BFD_RELOC_LARCH_TLSGD32_HI20:
-    case BFD_RELOC_LARCH_TLSGD64_HI20:
-    case BFD_RELOC_LARCH_TLSLE_L_HI20:
-    case BFD_RELOC_LARCH_TLSLE_L_LO12:
-    case BFD_RELOC_LARCH_TLSLE_H_LO20:
-    case BFD_RELOC_LARCH_TLSLE_H_HI12:
       if (fixP->fx_addsy == NULL)
 	as_bad_where (fixP->fx_file, fixP->fx_line,
 		      _("Relocation against a constant"));
 
-      if (fixP->fx_r_type == BFD_RELOC_LARCH_SOP_PUSH_TLS_TPREL
-	  || fixP->fx_r_type == BFD_RELOC_LARCH_SOP_PUSH_TLS_GD
-	  || fixP->fx_r_type == BFD_RELOC_LARCH_SOP_PUSH_TLS_GOT
-    || BFD_RELOC_LARCH_PIE32_HI20
-    || BFD_RELOC_LARCH_PIE32_LO12
-    || BFD_RELOC_LARCH_PGD32_HI20
-    || BFD_RELOC_LARCH_PGD32_LO12
-	  || fixP->fx_r_type == BFD_RELOC_LARCH_TLSIE32_HI20
-	  || fixP->fx_r_type == BFD_RELOC_LARCH_TLSIE64_HI20
-	  || fixP->fx_r_type == BFD_RELOC_LARCH_TLSGD32_HI20
-	  || fixP->fx_r_type == BFD_RELOC_LARCH_TLSGD64_HI20
-	  || fixP->fx_r_type == BFD_RELOC_LARCH_TLSLE_L_HI20
-	  || fixP->fx_r_type == BFD_RELOC_LARCH_TLSLE_L_LO12
-	  || fixP->fx_r_type == BFD_RELOC_LARCH_TLSLE_H_LO20
-	  || fixP->fx_r_type == BFD_RELOC_LARCH_TLSLE_H_HI12)
-	S_SET_THREAD_LOCAL (fixP->fx_addsy);
-
-      if (fixP->fx_r_type == BFD_RELOC_LARCH_SOP_PUSH_PCREL)
-	{
-	  last_reloc_is_sop_push_pcrel_1 = 1;
-	  if (S_GET_SEGMENT (fixP->fx_addsy) == seg)
-	    stack_top = (S_GET_VALUE (fixP->fx_addsy) + fixP->fx_offset
-			 - (fixP->fx_where + fixP->fx_frag->fr_address));
-	  else
-	    stack_top = 0;
-	}
+      last_reloc_is_sop_push_pcrel_1 = 1;
+      if (S_GET_SEGMENT (fixP->fx_addsy) == seg)
+	stack_top = (S_GET_VALUE (fixP->fx_addsy) + fixP->fx_offset
+		     - (fixP->fx_where + fixP->fx_frag->fr_address));
+      else
+	stack_top = 0;
       break;
 
     case BFD_RELOC_LARCH_SOP_POP_32_S_10_5:
@@ -1551,85 +1186,27 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
       break;
 
     case BFD_RELOC_LARCH_B16:
-      LARCH_FIX_INSN (apply_fix_b16);
-      break;
     case BFD_RELOC_LARCH_B21:
-      LARCH_FIX_INSN (apply_fix_b21);
-      break;
     case BFD_RELOC_LARCH_B26:
-    case BFD_RELOC_LARCH_BL26:
-      LARCH_FIX_INSN (apply_fix_b26_bl26);
-      break;
-    case BFD_RELOC_LARCH_PCREL32_HI20:
-      LARCH_FIX_INSN (apply_fix_pcrel32_hi20);
-      break;
-    case BFD_RELOC_LARCH_PCREL64_HI20:
-      LARCH_FIX_INSN (apply_fix_pcrel64_hi20);
-      break;
-    case BFD_RELOC_LARCH_PCREL_LO12_U:
-    case BFD_RELOC_LARCH_PCREL_LO12_S:
-    case BFD_RELOC_LARCH_PCREL_H_LO20:
-    case BFD_RELOC_LARCH_PCREL_H_HI12:
-      LARCH_RECORD_LO_PCREL ();
+      if (fixP->fx_addsy == NULL)
+	{
+	  as_bad_where (fixP->fx_file, fixP->fx_line,
+			_ ("Relocation against a constant"));
+	}
+      if (S_GET_SEGMENT (fixP->fx_addsy) == seg
+	  && !S_FORCE_RELOC(fixP->fx_addsy, 1))
+	{
+	  int64_t sym_addend = S_GET_VALUE (fixP->fx_addsy) + fixP->fx_offset;
+	  int64_t pc = fixP->fx_where + fixP->fx_frag->fr_address;
+	  fix_reloc_insn (fixP, sym_addend - pc, buf);
+	  fixP->fx_done = 1;
+	}
+
       break;
 
     default:
       break;
     }
-}
-
-int
-loongarch_fix_collection (void)
-{
-  larch_pcrel_lo_reloc *lo;
-
-  for (lo = pcrel_relocs->lo_relocs; lo; lo = lo->next)
-    {
-      insn_t insn;
-      fixS *fixP = lo->fixP;
-      char *buf = fixP->fx_frag->fr_literal + fixP->fx_where;
-      int ret = 0;
-
-      larch_pcrel_hi_reloc *hi = find_pcrel_hi (lo->address);
-      if (!hi)
-	{
-	  as_fatal (_ ("Collect cannot find pcrel_hi 0x%lx"),  lo->address);
-	  return -1;
-	}
-      insn = bfd_getl32 (buf);
-      switch (fixP->fx_r_type)
-	{
-	case BFD_RELOC_LARCH_PCREL_LO12_U:
-	  ret = apply_fix_pcrel_lo12u (hi->value, &insn);
-	  break;
-	case BFD_RELOC_LARCH_PCREL_LO12_S:
-	  ret = apply_fix_pcrel_lo12s (hi->value, &insn);
-	  break;
-	case BFD_RELOC_LARCH_PCREL_H_LO20:
-	  ret = apply_fix_pcrel_hlo20 (hi->value, &insn);
-	  break;
-	case BFD_RELOC_LARCH_PCREL_H_HI12:
-	  ret = apply_fix_pcrel_hhi12 (hi->value, &insn);
-	  break;
-	default:
-	  as_fatal (_ ("Collect unsupported r_type %d"),  fixP->fx_r_type);
-	  break;
-	}
-
-      if (ret)
-	{
-	  as_warn_where (fixP->fx_file, fixP->fx_line, _ ("Reloc overflow"));
-	  return ret;
-	}
-      bfd_putl32 (insn, buf);
-    }
-
-  if (prepare)
-    {
-      larch_free_pcrel_relocs ();
-      prepare = 0;
-    }
-  return 0;
 }
 
 int

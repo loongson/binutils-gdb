@@ -88,7 +88,6 @@ my_getExpression (expressionS *ep, const char *str)
     {
       unsigned long j;
       char *str_1 = (char *) str;
-      str_1++;
       j = strtol (str_1, &str_1, 10);
       get_internal_label (ep, j, *str_1 == 'f');
       return NULL;
@@ -100,11 +99,6 @@ my_getExpression (expressionS *ep, const char *str)
   input_line_pointer = save_in;
   return ret;
 }
-
-expressionS *
-fake_lable_find(const char *la);
-void
-make_fake_lable (const char *lable);
 
 #define SET_RELOC_TYPE_ON_TOP(key, name)	\
 else if (strcmp (op_c_str, key) == 0)		\
@@ -118,75 +112,31 @@ static void
 reloc (const char *op_c_str, const char *id_c_str, offsetT addend)
 {
   expressionS id_sym_expr;
+  bfd_reloc_code_real_type btype;
 
   if (end <= top)
     as_fatal (_("expr too huge"));
 
+  /* For compatible old asm code.  */
+  if (0 == strcmp (op_c_str, "plt"))
+    btype = BFD_RELOC_LARCH_B26;
+  else
+    btype = loongarch_larch_reloc_name_lookup (NULL, op_c_str);
+
   if (id_c_str)
   {
-    expressionS *fake;
-    if (!strcmp(op_c_str, "pcrel32_hi20")
-	|| !strcmp(op_c_str, "pcala32_hi20")
-	|| !strcmp(op_c_str, "ie32_hi20")
-	|| !strcmp(op_c_str, "gd32_hi20")
-	|| !strcmp(op_c_str, "got64_hi20")
-	|| !strcmp(op_c_str, "got32_hi20"))
-    {
-      make_fake_lable (id_c_str);
-      my_getExpression (&id_sym_expr, id_c_str);
-    }
-    else if (!strncmp(op_c_str, "pcrel_", 6)
-	     && (fake = fake_lable_find (id_c_str)))
-    {
-      id_sym_expr = *fake;
-    }
-    else
-      my_getExpression (&id_sym_expr, id_c_str);
+    my_getExpression (&id_sym_expr, id_c_str);
     id_sym_expr.X_add_number += addend;
-  }
-  else
-    {
-      id_sym_expr.X_op = O_constant;
-      id_sym_expr.X_add_number = addend;
     }
-
-  if (0) /* unreachable; */;
-  SET_RELOC_TYPE_ON_TOP ("plt", BL26);
-  SET_RELOC_TYPE_ON_TOP ("b16", B16);
-  SET_RELOC_TYPE_ON_TOP ("b21", B21);
-  SET_RELOC_TYPE_ON_TOP ("b26", B26);
-
-  SET_RELOC_TYPE_ON_TOP ("l_hi20", L_HI20);
-  SET_RELOC_TYPE_ON_TOP ("l_lo12", L_LO12);
-  SET_RELOC_TYPE_ON_TOP ("h_lo20", H_LO20);
-  SET_RELOC_TYPE_ON_TOP ("h_hi12", H_HI12);
-  SET_RELOC_TYPE_ON_TOP ("lel_hi20", TLSLE_L_HI20);
-  SET_RELOC_TYPE_ON_TOP ("lel_lo12", TLSLE_L_LO12);
-  SET_RELOC_TYPE_ON_TOP ("leh_lo20", TLSLE_H_LO20);
-  SET_RELOC_TYPE_ON_TOP ("leh_hi12", TLSLE_H_HI12);
-  SET_RELOC_TYPE_ON_TOP ("pcrel32_hi20", PCREL32_HI20);
-  SET_RELOC_TYPE_ON_TOP ("pcrel64_hi20", PCREL64_HI20);
-  SET_RELOC_TYPE_ON_TOP ("pcrel_lo12u", PCREL_LO12_U);
-  SET_RELOC_TYPE_ON_TOP ("pcrel_lo12s", PCREL_LO12_S);
-  SET_RELOC_TYPE_ON_TOP ("pcrel_hlo20", PCREL_H_LO20);
-  SET_RELOC_TYPE_ON_TOP ("pcrel_hhi12", PCREL_H_HI12);
-  SET_RELOC_TYPE_ON_TOP ("got32_hi20", GOT32_HI20);
-  SET_RELOC_TYPE_ON_TOP ("got64_hi20", GOT64_HI20);
-  SET_RELOC_TYPE_ON_TOP ("ie32_hi20", TLSIE32_HI20);
-  SET_RELOC_TYPE_ON_TOP ("ie64_hi20", TLSIE64_HI20);
-  SET_RELOC_TYPE_ON_TOP ("gd32_hi20", TLSGD32_HI20);
-  SET_RELOC_TYPE_ON_TOP ("gd64_hi20", TLSGD64_HI20);
-  SET_RELOC_TYPE_ON_TOP ("pcala32_hi20", PCALA32_HI20);
-  SET_RELOC_TYPE_ON_TOP ("pcala_lo12", PCALA_LO12);
-  SET_RELOC_TYPE_ON_TOP ("pgot32_hi20", PGOT32_HI20);
-  SET_RELOC_TYPE_ON_TOP ("pgot32_lo12", PGOT32_LO12);
-  SET_RELOC_TYPE_ON_TOP ("pie32_hi20", PIE32_HI20);
-  SET_RELOC_TYPE_ON_TOP ("pie32_lo12", PIE32_LO12);
-  SET_RELOC_TYPE_ON_TOP ("pgd32_hi20", PGD32_HI20);
-  SET_RELOC_TYPE_ON_TOP ("pgd32_lo12", PGD32_LO12);
-
   else
-    as_fatal (_("unknown reloc hint: %s"), op_c_str);
+  {
+    id_sym_expr.X_op = O_constant;
+    id_sym_expr.X_add_number = addend;
+  }
+
+  top->value = id_sym_expr;
+  top->type = btype;
+  top++;
 }
 
 static void
