@@ -1356,7 +1356,8 @@ do {								\
     as_warn_where (fixP->fx_file, fixP->fx_line,		\
 		   _ ("Reloc overflow"));			\
   bfd_putl32 (insn, buf);					\
-  fixP->fx_done = 1;						\
+  if (!S_FORCE_RELOC(fixP->fx_addsy, 1))			\
+    fixP->fx_done = 1;						\
 } while (0)
 
 #define LARCH_RECORD_LO_PCREL()					\
