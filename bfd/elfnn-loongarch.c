@@ -655,15 +655,23 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	  if (htab->elf.dynobj == NULL)
 	    htab->elf.dynobj = abfd;
 
+	  /* Dynamic relocations are stored in
+	     1. .rel[a].ifunc section in PIC object.
+	     2. .rel[a].got section in dynamic executable.
+	     3. .rel[a].iplt section in static executable.	*/
+
+	  /* Create 'irelifunc' in PIC object.  */
+	  if (bfd_link_pic (info)
+	      && !_bfd_elf_create_ifunc_sections (htab->elf.dynobj, info))
+	    return false;
+	    /* If '.plt' not represent, create '.iplt' to deal with ifunc.  */
+	  else if (!htab->elf.splt
+	      && !_bfd_elf_create_ifunc_sections (htab->elf.dynobj, info))
+	    return false;
 	  /* Create the ifunc sections, iplt and ipltgot, for static
 	     executables.  */
 	  if ((r_type == R_LARCH_64 || r_type == R_LARCH_32)
 	      && !_bfd_elf_create_ifunc_sections (htab->elf.dynobj, info))
-	    return false;
-
-	  if (!htab->elf.splt
-	      && !_bfd_elf_create_ifunc_sections (htab->elf.dynobj, info))
-	    /* If '.plt' not represent, create '.iplt' to deal with ifunc.  */
 	    return false;
 
 	  if (h->plt.refcount < 0)
