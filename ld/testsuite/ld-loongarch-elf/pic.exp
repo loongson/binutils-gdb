@@ -19,6 +19,9 @@
 # MA 02110-1301, USA.
 #
 
+if ![istarget loongarch*-*-*] {
+  return
+}
 
 global verbose
 #set verbose 3
