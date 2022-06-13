@@ -755,7 +755,10 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 
 	case R_LARCH_PCALA32_HI20:
 	  if (h != NULL)
+	    {
 	      h->non_got_ref = 1;
+	      h->pointer_equality_needed = 1;
+	    }
 
 	  if (bfd_link_pic (info))
 	    need_dynreloc = 1;
@@ -772,12 +775,13 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	  if (h != NULL)
 	    {
 	      if (!bfd_link_pic(info))
-	      h->non_got_ref = 1;
+		h->non_got_ref = 1;
 
 	      /* We try to create PLT stub for all non-local function.  */
 	      if (h->plt.refcount < 0)
 		h->plt.refcount = 0;
 	      h->plt.refcount++;
+	      h->pointer_equality_needed = 1;
 	    }
 
 	  if (bfd_link_pic (info))
