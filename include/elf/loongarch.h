@@ -142,12 +142,12 @@ RELOC_NUMBER (R_LARCH_PCALA64_HI12, 74)
  * pcalau12i
  * %got_pc_hi20(got).  */
 RELOC_NUMBER (R_LARCH_GOT_PC_HI20, 75)
-/* GOT 32/64
- * pcalau12i
- * %got_pc_hi20(got).  */
-RELOC_NUMBER (R_LARCH_GOT_PC_LO12, 76)
 /* GOT: 32/64
  * ld.w/ld.d
+ * %got_pc_lo12(got).  */
+RELOC_NUMBER (R_LARCH_GOT_PC_LO12, 76)
+/* GOT: 32/64
+ * lu32i.d
  * %got_pc_lo12(got).  */
 RELOC_NUMBER (R_LARCH_GOT64_PC_LO20, 77)
 /* GOT64: PCREL
