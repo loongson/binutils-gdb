@@ -686,6 +686,8 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	case R_LARCH_GOT_PC_HI20:
 	case R_LARCH_GOT64_HI20:
 	case R_LARCH_SOP_PUSH_GPREL:
+	  /* For la.global.  */
+	  h->pointer_equality_needed = 1;
 	  if (!loongarch_elf_record_tls_and_got_reference (abfd, info, h,
 							   r_symndx,
 							   GOT_NORMAL))
@@ -1489,9 +1491,8 @@ local_allocate_ifunc_dyn_relocs (struct bfd_link_info *info,
 	  || (bfd_link_pic (info)
 	      && (h->dynindx == -1
 		  || h->forced_local))
-	  || (!bfd_link_pic (info)
-	      && !h->pointer_equality_needed)
-	  || bfd_link_pie (info)
+	  || (
+	      !h->pointer_equality_needed)
 	  || htab->sgot == NULL))
     {
       /* Use .got.plt.	*/
@@ -3170,8 +3171,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			- sec_addr(htab->elf.sgot);
 		    }
 
-		  if (!WILL_CALL_FINISH_DYNAMIC_SYMBOL (is_dyn, is_pic, h)
-		      || (is_pic && SYMBOL_REFERENCES_LOCAL (info, h)))
+		  if (!WILL_CALL_FINISH_DYNAMIC_SYMBOL (is_dyn, is_pic, h))
 		    {
 		      /* This is actually a static link, or it is a
 			 -Bsymbolic link and the symbol is defined
@@ -3202,7 +3202,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			  outrel.r_addend = relocation;
 			  loongarch_elf_append_rela (output_bfd, htab->elf.srelgot, &outrel);
 			}
-		      bfd_put_NN (output_bfd, relocation, got->contents + got_off);
 		    }
 		}
 	      else
@@ -3225,8 +3224,8 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		      loongarch_elf_append_rela (output_bfd, htab->elf.srelgot, &outrel);
 		    }
 
-		  bfd_put_NN (output_bfd, relocation, got->contents + got_off);
 		}
+		bfd_put_NN (output_bfd, relocation, got->contents + got_off);
 
 	      relocation = got_off + sec_addr(got);
 	    }
@@ -3563,40 +3562,36 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
       rela.r_offset = got_address;
 
       /* TRUE if this is a PLT reference to a local IFUNC.  */
-      if (PLT_LOCAL_IFUNC_P(info, h) && h->dynindx == -1)
+      if (PLT_LOCAL_IFUNC_P(info, h))
 	{
 	  rela.r_info = ELFNN_R_INFO (0, R_LARCH_IRELATIVE);
 	  rela.r_addend = (h->root.u.def.value
 			   + h->root.u.def.section->output_section->vma
 			   + h->root.u.def.section->output_offset);
+	    {
+	      /* Find the space after dyn sort.  */
+	      Elf_Internal_Rela *dyn = (Elf_Internal_Rela *)relplt->contents;
+	      bool fill = false;
+	      for (;dyn < dyn + relplt->size / sizeof (*dyn); dyn++)
+		{
+		  if (0 == dyn->r_offset)
+		    {
+		      bed->s->swap_reloca_out (output_bfd, &rela, (bfd_byte *)dyn);
+		      relplt->reloc_count++;
+		      fill = true;
+		      break;
+		    }
+		}
+	      BFD_ASSERT (fill);
+	    }
+
 	}
       else
 	{
 	  /* Fill in the entry in the .rela.plt section.  */
 	  rela.r_info = ELFNN_R_INFO (h->dynindx, R_LARCH_JUMP_SLOT);
 	  rela.r_addend = 0;
-	}
-
-      if((!(h->type == STT_GNU_IFUNC))
-	 || (h->type == STT_GNU_IFUNC
-	     && (!htab->elf.splt || !SYMBOL_REFERENCES_LOCAL (info, h))))
-	loongarch_elf_append_rela (output_bfd, relplt, &rela);
-      else
-	{
-	  /* Find the space after dyn sort.  */
-	  Elf_Internal_Rela *dyn = (Elf_Internal_Rela *)relplt->contents;
-	  bool fill = false;
-	  for (;dyn < dyn + relplt->size / sizeof (*dyn); dyn++)
-	    {
-	      if (0 == dyn->r_offset)
-		{
-		  bed->s->swap_reloca_out (output_bfd, &rela, (bfd_byte *)dyn);
-		  relplt->reloc_count++;
-		  fill = true;
-		  break;
-		}
-	    }
-	  BFD_ASSERT (fill);
+	  loongarch_elf_append_rela (output_bfd, relplt, &rela);
 	}
 
       if (!h->def_regular)
