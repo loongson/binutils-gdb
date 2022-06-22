@@ -129,47 +129,47 @@ RELOC_NUMBER (R_LARCH_PCALA_HI20, 71)
  * addi.w/addi.d
  * %pc_lo12(sym).  */
 RELOC_NUMBER (R_LARCH_PCALA_LO12, 72)
+/* PCREL: 64
+ * lu32i.d
+ * %pc64_lo20(sym).  */
+RELOC_NUMBER (R_LARCH_PCALA64_LO20, 73)
+/* PCREL: 64
+ * lu52i.d
+ * %pc64_hi12(sym).  */
+RELOC_NUMBER (R_LARCH_PCALA64_HI12, 74)
 
 /* GOT: 32/64
  * pcalau12i
  * %got_pc_hi20(got).  */
-RELOC_NUMBER (R_LARCH_GOT_HI20, 73)
-/* GOT 32/64
+RELOC_NUMBER (R_LARCH_GOT_PC_HI20, 75)
+/* GOT: 32/64
  * ld.w/ld.d
  * %got_pc_lo12(got).  */
-RELOC_NUMBER (R_LARCH_GOT_LO12, 74)
-/* GOT64: ABS
- * lu12i.w
- * %got64_hi20(got).  */
-RELOC_NUMBER (R_LARCH_GOT64_HI20, 75)
-/* GOT64: ABS
- * ori
- * %got64_lo12(got).  */
-RELOC_NUMBER (R_LARCH_GOT64_LO12, 76)
-/* GOT64: ABS
+RELOC_NUMBER (R_LARCH_GOT_PC_LO12, 76)
+/* GOT: 32/64
  * lu32i.d
- * %got64_lo20(got).  */
-RELOC_NUMBER (R_LARCH_GOT64_LO20, 77)
-/* GOT64: ABS
- * lu52i.d
- * %got64_hi12(got).  */
-RELOC_NUMBER (R_LARCH_GOT64_HI12, 78)
-/* GOT64: PCREL
- * pcalau12i
- * %got64_pc_hi20(got).  */
-RELOC_NUMBER (R_LARCH_GOT64_PC_HI20, 79)
-/* GOT64: PCREL
- * ld.d
- * %got64_pc_lo12(got).  */
-RELOC_NUMBER (R_LARCH_GOT64_PC_LO12, 80)
-/* GOT64: PCREL
- * lu32i.d
- * %got64_pc_lo20(got).  */
-RELOC_NUMBER (R_LARCH_GOT64_PC_LO20, 81)
+ * %got_pc_lo12(got).  */
+RELOC_NUMBER (R_LARCH_GOT64_PC_LO20, 77)
 /* GOT64: PCREL
  * lu52i.d
  * %got64_pc_hi12(got).  */
-RELOC_NUMBER (R_LARCH_GOT64_PC_HI12, 82)
+RELOC_NUMBER (R_LARCH_GOT64_PC_HI12, 78)
+/* GOT64: ABS
+ * lu12i.w
+ * %got64_hi20(got).  */
+RELOC_NUMBER (R_LARCH_GOT64_HI20, 79)
+/* GOT64: ABS
+ * ori
+ * %got64_lo12(got).  */
+RELOC_NUMBER (R_LARCH_GOT64_LO12, 80)
+/* GOT64: ABS
+ * lu32i.d
+ * %got64_lo20(got).  */
+RELOC_NUMBER (R_LARCH_GOT64_LO20, 81)
+/* GOT64: ABS
+ * lu52i.d
+ * %got64_hi12(got).  */
+RELOC_NUMBER (R_LARCH_GOT64_HI12, 82)
 
 /* TLS-LE: 32/64
  * lu12i.w
