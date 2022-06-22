@@ -249,7 +249,7 @@ const char *const loongarch_x_normal_name[32] =
   &LARCH_opts.ase_lp64,		      \
   &LARCH_opts.ase_gpcr
 #define INSN_LA_TLS_GD64_LARGE_PCREL  \
-  "pcalau12i %1,%%gd64_pc_hi20(%3);"  \
+  "pcalau12i %1,%%gd_pc_hi20(%3);"  \
   "addi.d %2,$r0,%%got_pc_lo12(%3);"  \
   "lu32i.d %2,%%got64_pc_lo20(%3);"   \
   "lu52i.d %2,%2,%%got64_pc_hi12(%3);"\
