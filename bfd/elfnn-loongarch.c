@@ -3054,7 +3054,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	  break;
 
-	/* New reloc type 2.0.  */
+	/* New reloc type 2.0.	*/
 	case R_LARCH_B21:
 	case R_LARCH_B26:
 	case R_LARCH_B16:
@@ -3152,11 +3152,11 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      bfd_vma got_off = h->got.offset;
 	      if (h != NULL)
 		{
-		  /* GOT ref or ifunc.  */
+		  /* GOT ref or ifunc.	*/
 		  BFD_ASSERT (h->got.offset != MINUS_ONE || h->type == STT_GNU_IFUNC);
 
 		  /* Hidden symbol not has .got entry,
-		   * only .got.plt entry so it is (plt - got).  */
+		   * only .got.plt entry so it is (plt - got).	*/
 		  if (h->got.offset == MINUS_ONE && h->type == STT_GNU_IFUNC)
 		    {
 		      bfd_vma idx;
@@ -3184,10 +3184,10 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 			 When doing a dynamic link, we create a .rela.got
 			 relocation entry to initialize the value.	This
-			 is done in the finish_dynamic_symbol routine.  */
+			 is done in the finish_dynamic_symbol routine.	*/
 
 		      BFD_ASSERT (!resolved_dynly
-				  && !(defined_local || resolved_to_const));
+				  || (defined_local || resolved_to_const));
 
 		      /* The pr21964-4. Create relocate entry.	*/
 		      if (is_pic && h->start_stop)
@@ -3338,7 +3338,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			}
 		      else /* if (resolved_dynly) */
 			{
-			  /* Process moudleID.  */
+			  /* Process moudleID.	*/
 			  rela.r_info =
 			    ELFNN_R_INFO (h->dynindx, R_LARCH_TLS_DTPMODNN);
 			  loongarch_elf_append_rela (output_bfd, relgot, &rela);
@@ -3621,7 +3621,9 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
     {
       asection *sgot, *srela;
       Elf_Internal_Rela rela;
-      bfd_vma off = h->got.offset & ~(bfd_vma) 1;
+      /* New reloc type2.0 need not clean 1 bit. */
+      bfd_vma off = (h->got.offset & 1)
+	? (h->got.offset & ~(bfd_vma)1)	: h->got.offset;
 
       /* This symbol has an entry in the GOT.  Set it up.  */
 
@@ -3649,7 +3651,6 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
 		}
 	      else
 		{
-		  BFD_ASSERT ((h->got.offset & 1) == 0);
 		  BFD_ASSERT (h->dynindx != -1);
 		  rela.r_info = ELFNN_R_INFO (h->dynindx, R_LARCH_NN);
 		  rela.r_addend = 0;
@@ -3679,7 +3680,6 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
 	}
       else if (bfd_link_pic (info) && SYMBOL_REFERENCES_LOCAL (info, h))
 	{
-	  BFD_ASSERT (h->got.offset & 1 /* Has been filled in addr.  */);
 	  asection *sec = h->root.u.def.section;
 	  rela.r_info = ELFNN_R_INFO (0, R_LARCH_RELATIVE);
 	  rela.r_addend = (h->root.u.def.value + sec->output_section->vma
@@ -3687,7 +3687,6 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
 	}
       else
 	{
-	  BFD_ASSERT ((h->got.offset & 1) == 0);
 	  BFD_ASSERT (h->dynindx != -1);
 	  rela.r_info = ELFNN_R_INFO (h->dynindx, R_LARCH_NN);
 	  rela.r_addend = 0;

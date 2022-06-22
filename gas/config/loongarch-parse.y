@@ -127,7 +127,7 @@ reloc (const char *op_c_str, const char *id_c_str, offsetT addend)
   {
     my_getExpression (&id_sym_expr, id_c_str);
     id_sym_expr.X_add_number += addend;
-    }
+  }
   else
   {
     id_sym_expr.X_op = O_constant;
