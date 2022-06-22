@@ -3109,7 +3109,11 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	case R_LARCH_PCALA_HI20:
 	    {
-	      relocation += rel->r_addend;
+	      if (h && h->plt.offset != MINUS_ONE)
+		relocation = sec_addr (plt) + h->plt.offset;
+	      else
+		relocation += rel->r_addend;
+
 	      bfd_vma lo = relocation & ((bfd_vma)0xfff);
 	      pc = pc & (~(bfd_vma)0xfff);
 	      if (lo > 0x7ff)
@@ -3122,13 +3126,20 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  break;
 
 	case R_LARCH_PCALA_LO12: 
-	  relocation += rel->r_addend;
+	  if (h && h->plt.offset != MINUS_ONE)
+	    relocation = sec_addr (plt) + h->plt.offset;
+	  else
+	    relocation += rel->r_addend;
 	  relocation &= 0xfff;
 	  break;
 	case R_LARCH_PCALA64_LO20:
 	case R_LARCH_PCALA64_HI12:
 	    {
-	      relocation += rel->r_addend;
+	      if (h && h->plt.offset != MINUS_ONE)
+		relocation = sec_addr (plt) + h->plt.offset;
+	      else
+		relocation += rel->r_addend;
+
 	      bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
 	      if (lo > 0x7ff)
 		{
@@ -3150,12 +3161,13 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      unresolved_reloc = false;
 	      BFD_ASSERT (rel->r_addend == 0);
 
-	      bfd_vma got_off = h->got.offset;
+	      bfd_vma got_off = 0;
 	      if (h != NULL)
 		{
 		  /* GOT ref or ifunc.	*/
 		  BFD_ASSERT (h->got.offset != MINUS_ONE || h->type == STT_GNU_IFUNC);
 
+		  got_off = h->got.offset;
 		  /* Hidden symbol not has .got entry,
 		   * only .got.plt entry so it is (plt - got).	*/
 		  if (h->got.offset == MINUS_ONE && h->type == STT_GNU_IFUNC)
@@ -3212,7 +3224,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  got_off = local_got_offsets[r_symndx];
 		  if (is_pic)
 		    {
-		      BFD_ASSERT (false);
+		    //  BFD_ASSERT (false);
 		      Elf_Internal_Rela outrel;
 		      BFD_ASSERT (htab->elf.srelgot);
 		      /* We need to generate a R_LARCH_RELATIVE reloc
