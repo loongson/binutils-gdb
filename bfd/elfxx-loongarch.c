@@ -883,7 +883,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 0x3ffc00,				  /* dst_mask */
 	 false,					  /* pcrel_offset */
 	 BFD_RELOC_LARCH_PCALA_LO12,		  /* bfd_reloc_code_real_type */
-	 loongarch_gen_adjust_reloc_bits,	  /* adjust_reloc_bits */
+	 loongarch_pcala_lo12_reloc_bits,	  /* adjust_reloc_bits */
 	 "pc_lo12"),				  /* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_PCALA64_LO20,	  /* type (73).  */
