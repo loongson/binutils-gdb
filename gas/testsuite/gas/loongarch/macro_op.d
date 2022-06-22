@@ -25,6 +25,7 @@ Disassembly of section .text:
 [ 	]+24:[ 	]+02c00084[ 	]+addi.d[ 	]+\$a0,[ 	]+\$a0,[ 	]+0
 [ 	]+24:[ 	]+R_LARCH_PCALA_LO12[ 	]+.L1
 [ 	]+28:[ 	]+14000004[ 	]+lu12i.w[ 	]+\$a0,[ 	]+0
+[ 	]+28:[ 	]+R_LARCH_MARK_LA[ 	]+\*ABS\*
 [ 	]+28:[ 	]+R_LARCH_ABS_HI20[ 	]+.L1
 [ 	]+2c:[ 	]+03800084[ 	]+ori[ 	]+\$a0,[ 	]+\$a0,[ 	]+0x0
 [ 	]+2c:[ 	]+R_LARCH_ABS_LO12[ 	]+.L1
