@@ -322,6 +322,17 @@ loongarch_after_parse_args ()
     }
 }
 
+static const char *
+my_getExpression (expressionS *ep, const char *str)
+{
+  char *save_in, *ret;
+  save_in = input_line_pointer;
+  input_line_pointer = (char *)str;
+  expression (ep);
+  ret = input_line_pointer;
+  input_line_pointer = save_in;
+  return ret;
+}
 const char *
 loongarch_target_format ()
 {
@@ -792,7 +803,13 @@ check_this_insn_before_appending (struct loongarch_cl_insn *ip)
 {
   int ret = 0;
 
-  if (ip->insn->mask == 0xffff8000
+  if (strncmp (ip->name, "la.abs", 6) == 0)
+    {
+      ip->reloc_info[ip->reloc_num].type = BFD_RELOC_LARCH_MARK_LA;
+      my_getExpression (&ip->reloc_info[ip->reloc_num].value, ip->arg_strs[1]);
+      ip->reloc_num++;
+    }
+  else if (ip->insn->mask == 0xffff8000
 	   /* amswap.w	rd, rk, rj  */
 	   && ((ip->insn_bin & 0xfff00000) == 0x38600000
 	       /* ammax_db.wu  rd, rk, rj  */
@@ -1334,3 +1351,4 @@ loongarch_elf_final_processing (void)
 {
   elf_elfheader (stdoutput)->e_flags = LARCH_opts.ase_abi;
 }
+
