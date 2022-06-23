@@ -3130,8 +3130,10 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    relocation = sec_addr (plt) + h->plt.offset;
 	  else
 	    relocation += rel->r_addend;
+
 	  relocation &= 0xfff;
 	  break;
+
 	case R_LARCH_PCALA64_LO20:
 	case R_LARCH_PCALA64_HI12:
 	    {
@@ -3145,17 +3147,12 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		{
 		  relocation -= 0x100000000;
 		}
+	      relocation -= (pc & ~(bfd_vma)0xffffffff);
 	    }
 	  break;
 
 	case R_LARCH_GOT_PC_HI20:
-	case R_LARCH_GOT_PC_LO12:
-	case R_LARCH_GOT64_PC_LO20:
-	case R_LARCH_GOT64_PC_HI12:
 	case R_LARCH_GOT64_HI20:
-	case R_LARCH_GOT64_LO12:
-	case R_LARCH_GOT64_LO20:
-	case R_LARCH_GOT64_HI12:
 	  /* Calc got offset.  */
 	    {
 	      unresolved_reloc = false;
@@ -3243,44 +3240,43 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    }
 
 	  /* Calc relocation.  */
-	  switch (r_type)  
+	  if (r_type == R_LARCH_GOT_PC_HI20)
 	    {
-	    case R_LARCH_GOT_PC_HI20:
+	      bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
+	      pc = pc & (~(bfd_vma)0xfff);
+	      if (lo > 0x7ff)
 		{
-		  bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
-		  pc = pc & (~(bfd_vma)0xfff);
-		  if (lo > 0x7ff)
-		    {
-		      relocation += 0x1000;
-		    }
-		  relocation &= ~(bfd_vma)0xfff;
-		  relocation -= pc;
+		  relocation += 0x1000;
 		}
-	      break;
-
-	    case R_LARCH_GOT_PC_LO12:
-	      relocation &= (bfd_vma)0xfff;
-	      break;
-
-	    case R_LARCH_GOT64_PC_LO20:
-	    case R_LARCH_GOT64_PC_HI12:
-		{
-		  bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
-		  if (lo > 0x7ff)
-		    {
-		      relocation -= 0x100000000;
-		    }
-		}
-	      break;
-
-		 /* case R_LARCH_GOT64_LO20:
-		 case R_LARCH_GOT64_HI20:
-		 case R_LARCH_GOT64_LO12:
-		 case R_LARCH_GOT64_HI12:
-		 break;.  */
-	    default:
-	      break;
+	      relocation &= ~(bfd_vma)0xfff;
+	      relocation -= pc;
 	    }
+	  break;
+
+	case R_LARCH_GOT_PC_LO12:
+	case R_LARCH_GOT64_PC_LO20:
+	case R_LARCH_GOT64_PC_HI12:
+	case R_LARCH_GOT64_LO12:
+	case R_LARCH_GOT64_LO20:
+	case R_LARCH_GOT64_HI12:
+	  if (h)
+	    relocation = h->got.offset + sec_addr(got);
+	  else
+	    relocation = local_got_offsets[r_symndx] + sec_addr(got);
+
+	  if (r_type == R_LARCH_GOT_PC_LO12)
+	    relocation &= (bfd_vma)0xfff;
+	  else if (r_type == R_LARCH_GOT64_PC_LO20
+		   || R_LARCH_GOT64_PC_LO20)
+	    {
+	      bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
+	      if (lo > 0x7ff)
+		{
+		  relocation -= 0x100000000;
+		}
+	      relocation -= (pc & ~(bfd_vma)0xffffffff);
+	    }
+
 	  break;
 
 	case R_LARCH_TLS_LE_HI20:
@@ -3410,13 +3406,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		}
 	    }
 	  break;
-
-
-
-
-
-
-
 
 	default:
 	  break;
