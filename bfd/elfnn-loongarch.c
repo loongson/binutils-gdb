@@ -3109,6 +3109,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	case R_LARCH_PCALA_HI20:
 	    {
+	  unresolved_reloc = false;
 	      if (h && h->plt.offset != MINUS_ONE)
 		relocation = sec_addr (plt) + h->plt.offset;
 	      else
@@ -3126,6 +3127,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  break;
 
 	case R_LARCH_PCALA_LO12: 
+	  unresolved_reloc = false;
 	  if (h && h->plt.offset != MINUS_ONE)
 	    relocation = sec_addr (plt) + h->plt.offset;
 	  else
@@ -3137,6 +3139,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_PCALA64_LO20:
 	case R_LARCH_PCALA64_HI12:
 	    {
+	  unresolved_reloc = false;
 	      if (h && h->plt.offset != MINUS_ONE)
 		relocation = sec_addr (plt) + h->plt.offset;
 	      else
@@ -3259,6 +3262,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_GOT64_LO12:
 	case R_LARCH_GOT64_LO20:
 	case R_LARCH_GOT64_HI12:
+	  unresolved_reloc = false;
 	  if (h)
 	    relocation = h->got.offset + sec_addr(got);
 	  else
@@ -3283,6 +3287,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_TLS_LE_LO12:
 	case R_LARCH_TLS_LE64_LO20:
 	case R_LARCH_TLS_LE64_HI12:
+	  unresolved_reloc = false;
 	  BFD_ASSERT (resolved_local && elf_hash_table (info)->tls_sec);
 
 	  relocation -= elf_hash_table (info)->tls_sec->vma;
