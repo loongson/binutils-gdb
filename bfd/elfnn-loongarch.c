@@ -1896,6 +1896,10 @@ loongarch_elf_append_rela (bfd *abfd, asection *s, Elf_Internal_Rela *rel)
   bfd_byte *loc;
 
   bed = get_elf_backend_data (abfd);
+  if(!(s->size > s->reloc_count * bed->s->sizeof_rela))
+    {
+  BFD_ASSERT(s->size > s->reloc_count * bed->s->sizeof_rela);
+    }
   loc = s->contents + (s->reloc_count++ * bed->s->sizeof_rela);
   bed->s->swap_reloca_out (abfd, rel, loc);
 }
@@ -2578,13 +2582,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			  bfd_reloc_notsupported, is_undefweak, name,
 			  "TLS section not be created"));
 	      else
-		{
 		  relocation -= elf_hash_table (info)->tls_sec->vma;
-		  if (r_type == R_LARCH_TLS_LE_HI20)
-		    relocation &= ~(bfd_vma)0xfff;
-		  if (r_type == R_LARCH_TLS_LE_LO12)
-		    relocation &= (bfd_vma)0xfff;
-		}
 	    }
 	  else
 	    fatal = (loongarch_reloc_is_fatal
@@ -3139,7 +3137,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_PCALA64_LO20:
 	case R_LARCH_PCALA64_HI12:
 	    {
-	  unresolved_reloc = false;
+	      unresolved_reloc = false;
 	      if (h && h->plt.offset != MINUS_ONE)
 		relocation = sec_addr (plt) + h->plt.offset;
 	      else
@@ -3202,9 +3200,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 				  || (defined_local || resolved_to_const));
 
 		      /* The pr21964-4. Create relocate entry.	*/
-		      if (is_pic && h->start_stop)
+		      if (is_pic && h->start_stop && (h->got.offset & 1) == 0)
 			{
-			  BFD_ASSERT (false);
+			  //BFD_ASSERT (false);
 			  Elf_Internal_Rela outrel;
 			  BFD_ASSERT (htab->elf.srelgot);
 			  /* We need to generate a R_LARCH_RELATIVE reloc
@@ -3213,6 +3211,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			  outrel.r_info = ELFNN_R_INFO (0, R_LARCH_RELATIVE);
 			  outrel.r_addend = relocation;
 			  loongarch_elf_append_rela (output_bfd, htab->elf.srelgot, &outrel);
+			  h->got.offset |= 1;
 			}
 		    }
 		}
@@ -3222,9 +3221,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			      && local_got_offsets[r_symndx] != MINUS_ONE);
 
 		  got_off = local_got_offsets[r_symndx];
-		  if (is_pic)
+		  if (is_pic && (got_off & 1) == 0)
 		    {
-		    //  BFD_ASSERT (false);
+		    //	BFD_ASSERT (false);
 		      Elf_Internal_Rela outrel;
 		      BFD_ASSERT (htab->elf.srelgot);
 		      /* We need to generate a R_LARCH_RELATIVE reloc
@@ -3234,6 +3233,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		      outrel.r_info = ELFNN_R_INFO (0, R_LARCH_RELATIVE);
 		      outrel.r_addend = relocation;
 		      loongarch_elf_append_rela (output_bfd, htab->elf.srelgot, &outrel);
+		      local_got_offsets[r_symndx] |= 1;
 		    }
 
 		}
@@ -3314,14 +3314,21 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      bfd_vma got_off = 0;
 	      if (h != NULL)
-		got_off = h->got.offset;
+		{
+		  got_off = h->got.offset;
+		  h->got.offset |= 1;
+		}
 	      else
-		got_off = local_got_offsets[r_symndx];
+		{
+		  got_off = local_got_offsets[r_symndx];
+		  local_got_offsets[r_symndx] |= 1;
+		}
 
 	      BFD_ASSERT (got_off != MINUS_ONE);
 
 	      tls_type = _bfd_loongarch_elf_tls_type (input_bfd, h, r_symndx);
 
+	      if ((got_off & 1) == 0)
 		{
 		  bfd_vma tls_block_off = 0;
 		  Elf_Internal_Rela rela;
@@ -3339,13 +3346,14 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		      rela.r_offset = sec_addr (got) + got_off;
 		      rela.r_addend = 0;
 
-		      if (resolved_local)
+		      if (resolved_local && bfd_link_executable (info))
+			{
+			  bfd_put_NN (output_bfd, 1, got->contents + got_off);
+			}
+		      else if (resolved_local /* && !bfd_link_executable (info) */)
 			{
 			  /* Process moudleID only.  */
-			  if (bfd_link_executable (info))
-			    bfd_put_NN (output_bfd, 1, got->contents + got_off);
-			  else
-			    rela.r_info = ELFNN_R_INFO (0, R_LARCH_TLS_DTPMODNN);
+			  rela.r_info = ELFNN_R_INFO (0, R_LARCH_TLS_DTPMODNN);
 			  loongarch_elf_append_rela (output_bfd, relgot, &rela);
 			}
 		      else /* if (resolved_dynly) */
@@ -3355,11 +3363,15 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			    ELFNN_R_INFO (h->dynindx, R_LARCH_TLS_DTPMODNN);
 			  loongarch_elf_append_rela (output_bfd, relgot, &rela);
 
-			  /* Process offset.  */
-			  bfd_put_NN (output_bfd, tls_block_off,
-				      got->contents + got_off + GOT_ENTRY_SIZE);
+			}
 
-			  rela.r_offset += GOT_ENTRY_SIZE;
+		      /* Process offset.  */
+		      rela.r_offset += GOT_ENTRY_SIZE;
+		      bfd_put_NN (output_bfd, tls_block_off,
+				  got->contents + got_off + GOT_ENTRY_SIZE);
+
+		      if (!resolved_local)
+			{
 			  rela.r_info =
 			    ELFNN_R_INFO (h->dynindx, R_LARCH_TLS_DTPRELNN);
 			  loongarch_elf_append_rela (output_bfd, relgot, &rela);
