@@ -943,7 +943,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 12,					  /* bitsize.  */
 	 false,					  /* pc_relative.  */
 	 10,					  /* bitpos.  */
-	 complain_overflow_unsigned,		  /* complain_on_overflow.  */
+	 complain_overflow_signed,		  /* complain_on_overflow.  */
 	 bfd_elf_generic_reloc,			  /* special_function.	*/
 	 "R_LARCH_GOT_PC_LO12",			  /* name.  */
 	 false,					  /* partial_inplace.  */
