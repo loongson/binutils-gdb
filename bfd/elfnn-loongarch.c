@@ -3165,7 +3165,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  /* GOT ref or ifunc.	*/
 		  BFD_ASSERT (h->got.offset != MINUS_ONE || h->type == STT_GNU_IFUNC);
 
-		  got_off = h->got.offset;
+		  got_off = h->got.offset  & (~(bfd_vma)1);
 		  /* Hidden symbol not has .got entry,
 		   * only .got.plt entry so it is (plt - got).	*/
 		  if (h->got.offset == MINUS_ONE && h->type == STT_GNU_IFUNC)
@@ -3220,8 +3220,8 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  BFD_ASSERT (local_got_offsets
 			      && local_got_offsets[r_symndx] != MINUS_ONE);
 
-		  got_off = local_got_offsets[r_symndx];
-		  if (is_pic && (got_off & 1) == 0)
+		  got_off = local_got_offsets[r_symndx] & (~(bfd_vma)1);
+		  if (is_pic && (local_got_offsets[r_symndx] & 1) == 0)
 		    {
 		    //	BFD_ASSERT (false);
 		      Elf_Internal_Rela outrel;
@@ -3262,11 +3262,17 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_GOT64_LO12:
 	case R_LARCH_GOT64_LO20:
 	case R_LARCH_GOT64_HI12:
-	  unresolved_reloc = false;
-	  if (h)
-	    relocation = h->got.offset + sec_addr(got);
-	  else
-	    relocation = local_got_offsets[r_symndx] + sec_addr(got);
+	    {
+	      unresolved_reloc = false;
+	      bfd_vma got_off;
+	      if (h)
+		got_off = h->got.offset;
+	      else
+		got_off = local_got_offsets[r_symndx];
+
+	      got_off = got_off & (~(bfd_vma)1);
+	      relocation = got_off + sec_addr(got);
+	    }
 
 	  if (r_type == R_LARCH_GOT_PC_LO12)
 	    relocation &= (bfd_vma)0xfff;
