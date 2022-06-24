@@ -758,7 +758,11 @@ get_loongarch_opcode (struct loongarch_cl_insn *insn)
 	{
 	  ase->name_hash_entry = str_htab_create ();
 	  for (it = ase->opcodes; it->name; it++)
-	    str_hash_insert (ase->name_hash_entry, it->name, (void *) it, 0);
+	    {
+	      if ((!it->include || (it->include && *it->include))
+		  && (!it->exclude || (it->exclude && !(*it->include))))
+		str_hash_insert (ase->name_hash_entry, it->name, (void *) it, 0);
+	    }
 	}
 
       if ((it = str_hash_find (ase->name_hash_entry, insn->name)) == NULL)

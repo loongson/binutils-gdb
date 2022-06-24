@@ -3063,19 +3063,20 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      BFD_ASSERT (h && h->plt.offset != MINUS_ONE);
 	      relocation = 0;
 	    }
-
-	  if (resolved_dynly)
+	  else if (resolved_dynly)
 	    {
 	      BFD_ASSERT (h && h->plt.offset != MINUS_ONE
 			  && rel->r_addend == 0);
 	      relocation = sec_addr (plt) + h->plt.offset - pc;
 	    }
-
-	  if (resolved_local)
+	  else if (resolved_local)
 	    {
+	      unresolved_reloc = true;
 	      relocation -= pc;
 	      relocation += rel->r_addend;
 	    }
+	  else
+	    BFD_ASSERT (false);
 
 	  break;
 
@@ -3097,17 +3098,17 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    }
 	  else if (resolved_dynly)
 	    {
+	      unresolved_reloc = false;
 	      BFD_ASSERT((plt && h && h->plt.offset != MINUS_ONE)
 			 && rel->r_addend == 0);
 	      relocation = sec_addr (plt) + h->plt.offset;
 	    }
-	  unresolved_reloc = false;
 
 	  break;
 
 	case R_LARCH_PCALA_HI20:
 	    {
-	  unresolved_reloc = false;
+	      unresolved_reloc = false;
 	      if (h && h->plt.offset != MINUS_ONE)
 		relocation = sec_addr (plt) + h->plt.offset;
 	      else
@@ -3125,7 +3126,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  break;
 
 	case R_LARCH_PCALA_LO12: 
-	  unresolved_reloc = false;
 	  if (h && h->plt.offset != MINUS_ONE)
 	    relocation = sec_addr (plt) + h->plt.offset;
 	  else
@@ -3137,7 +3137,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_PCALA64_LO20:
 	case R_LARCH_PCALA64_HI12:
 	    {
-	      unresolved_reloc = false;
 	      if (h && h->plt.offset != MINUS_ONE)
 		relocation = sec_addr (plt) + h->plt.offset;
 	      else
@@ -3293,7 +3292,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_TLS_LE_LO12:
 	case R_LARCH_TLS_LE64_LO20:
 	case R_LARCH_TLS_LE64_HI12:
-	  unresolved_reloc = false;
 	  BFD_ASSERT (resolved_local && elf_hash_table (info)->tls_sec);
 
 	  relocation -= elf_hash_table (info)->tls_sec->vma;
