@@ -3271,7 +3271,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  if (r_type == R_LARCH_GOT_PC_LO12)
 	    relocation &= (bfd_vma)0xfff;
 	  else if (r_type == R_LARCH_GOT64_PC_LO20
-		   || R_LARCH_GOT64_PC_LO20)
+		   || r_type == R_LARCH_GOT64_PC_HI12)
 	    {
 	      bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
 	      if (lo > 0x7ff)
