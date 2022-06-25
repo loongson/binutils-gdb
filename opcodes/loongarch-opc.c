@@ -267,7 +267,7 @@ static struct loongarch_opcode loongarch_macro_opcodes[] =
   { 0, 0, "li.d", "r,sc", "%f",	0, 0, 0 },
 
   { 0, 0, "la",		"r,la",	  "la.global %1,%2",	0,			0, 0 },
-  { 0, 0, "la.global",	"r,la",	  "la.pcrel %1,%2",	0,			0, 0 },
+  { 0, 0, "la.global",	"r,la",	  "la.pcrel %1,%2",	&LARCH_opts.ase_gpcr,	0, 0 },
   { 0, 0, "la.global",	"r,r,la", "la.pcrel %1,%2,%3",	&LARCH_opts.ase_gpcr,	0, 0 },
   { 0, 0, "la.global",	"r,la",	  "la.abs %1,%2",	&LARCH_opts.ase_gabs,	0, 0 },
   { 0, 0, "la.global",	"r,r,la", "la.abs %1,%3",	&LARCH_opts.ase_gabs,	0, 0 },
