@@ -168,6 +168,7 @@ const char *const loongarch_x_normal_name[32] =
   "lu12i.w %1,%%le_hi20(%2);"	    \
   "ori %1,%1,%%le_lo12(%2);",	    \
   &LARCH_opts.ase_ilp32, 0
+
 /* For LoongArch64 cmode=large.  */
 #define INSN_LA_TLS_LE64_LARGE	    \
   "lu12i.w %1,%%le_hi20(%2);"	    \
@@ -178,33 +179,34 @@ const char *const loongarch_x_normal_name[32] =
 
 #define INSN_LA_TLS_IE32	    \
   "pcalau12i %1,%%ie_pc_hi20(%2);"  \
-  "ld.w %1,%1,%%got_pc_lo12(%2);",  \
+  "ld.w %1,%1,%%ie_pc_lo12(%2);",  \
   &LARCH_opts.ase_ilp32,	    \
   &LARCH_opts.ase_lp64
 
 #define INSN_LA_TLS_IE64	    \
   "pcalau12i %1,%%ie_pc_hi20(%2);"  \
-  "ld.d %1,%1,%%got_pc_lo12(%2);",  \
+  "ld.d %1,%1,%%ie_pc_lo12(%2);",  \
   &LARCH_opts.ase_lp64, 0
+
+/* For ie64 pic.  */
+#define INSN_LA_TLS_IE64_LARGE_PCREL  \
+  "pcalau12i %1,%%ie_pc_hi20(%3);"    \
+  "addi.d %2,$r0,%%ie_pc_lo12(%3);"  \
+  "lu32i.d %2,%%ie64_pc_lo20(%3);"   \
+  "lu52i.d %2,%2,%%ie64_pc_hi12(%3);"\
+  "ldx.d %1,%1,%2;",		      \
+  &LARCH_opts.ase_lp64,		      \
+  &LARCH_opts.ase_gabs
 
 /* For ie64 abs.  */
 #define INSN_LA_TLS_IE64_LARGE_ABS  \
   "lu12i.w %1,%%ie64_hi20(%2);"	    \
-  "ori %1,%1,%%got64_lo12(%2);"	    \
-  "lu32i.d %1,%%got64_lo20(%2);"    \
-  "lu52i.d %1,%1,%%got64_hi12(%2);" \
+  "ori %1,%1,%%ie64_lo12(%2);"	    \
+  "lu32i.d %1,%%ie64_lo20(%2);"    \
+  "lu52i.d %1,%1,%%ie64_hi12(%2);" \
   "ld.d %1,%1,0",		    \
   &LARCH_opts.ase_lp64,		    \
   &LARCH_opts.ase_gpcr
-/* For ie64 pic.  */
-#define INSN_LA_TLS_IE64_LARGE_PCREL  \
-  "pcalau12i %1,%%ie_pc_hi20(%3);"    \
-  "addi.d %2,$r0,%%got_pc_lo12(%3);"  \
-  "lu32i.d %2,%%got64_pc_lo20(%3);"   \
-  "lu52i.d %2,%2,%%got64_pc_hi12(%3);"\
-  "ldx.d %1,%1,%2;",		      \
-  &LARCH_opts.ase_lp64,		      \
-  &LARCH_opts.ase_gabs
 
 /* For LoongArch32/64 cmode=normal.  */
 #define INSN_LA_TLS_LD32	      \
@@ -216,13 +218,6 @@ const char *const loongarch_x_normal_name[32] =
   "pcalau12i %1,%%ld_pc_hi20(%2);"    \
   "addi.d %1,%1,%%got_pc_lo12(%2);",  \
   &LARCH_opts.ase_lp64, 0
-#define INSN_LA_TLS_LD64_LARGE_ABS    \
-  "lu12i.w %1,%%ld64_hi20(%2);"	      \
-  "ori %1,%1,%%got64_lo12(%2);"	      \
-  "lu32i.d %1,%%got64_lo20(%2);"      \
-  "lu52i.d %1,%1,%%got64_hi12(%2);",  \
-  &LARCH_opts.ase_lp64,		      \
-  &LARCH_opts.ase_gpcr
 #define INSN_LA_TLS_LD64_LARGE_PCREL  \
   "pcalau12i %1,%%ld_pc_hi20(%3);"    \
   "addi.d %2,$r0,%%got_pc_lo12(%3);"  \
@@ -231,6 +226,13 @@ const char *const loongarch_x_normal_name[32] =
   "add.d %1,%1,%2;",		      \
   &LARCH_opts.ase_lp64,		      \
   &LARCH_opts.ase_gabs
+#define INSN_LA_TLS_LD64_LARGE_ABS    \
+  "lu12i.w %1,%%ld64_hi20(%2);"	      \
+  "ori %1,%1,%%got64_lo12(%2);"	      \
+  "lu32i.d %1,%%got64_lo20(%2);"      \
+  "lu52i.d %1,%1,%%got64_hi12(%2);",  \
+  &LARCH_opts.ase_lp64,		      \
+  &LARCH_opts.ase_gpcr
 
 #define INSN_LA_TLS_GD32	      \
   "pcalau12i %1,%%gd_pc_hi20(%2);"    \
@@ -241,13 +243,6 @@ const char *const loongarch_x_normal_name[32] =
   "pcalau12i %1,%%gd_pc_hi20(%2);"    \
   "addi.d %1,%1,%%got_pc_lo12(%2);",  \
   &LARCH_opts.ase_lp64, 0
-#define INSN_LA_TLS_GD64_LARGE_ABS    \
-  "lu12i.w %1,%%gd64_hi20(%2);"	      \
-  "ori %1,%1,%%got64_lo12(%2);"	      \
-  "lu32i.d %1,%%got64_lo20(%2);"      \
-  "lu52i.d %1,%1,%%got64_hi12(%2);",  \
-  &LARCH_opts.ase_lp64,		      \
-  &LARCH_opts.ase_gpcr
 #define INSN_LA_TLS_GD64_LARGE_PCREL  \
   "pcalau12i %1,%%gd_pc_hi20(%3);"  \
   "addi.d %2,$r0,%%got_pc_lo12(%3);"  \
@@ -256,6 +251,13 @@ const char *const loongarch_x_normal_name[32] =
   "add.d %1,%1,%2;",		      \
   &LARCH_opts.ase_lp64,		      \
   &LARCH_opts.ase_gabs
+#define INSN_LA_TLS_GD64_LARGE_ABS    \
+  "lu12i.w %1,%%gd64_hi20(%2);"	      \
+  "ori %1,%1,%%got64_lo12(%2);"	      \
+  "lu32i.d %1,%%got64_lo20(%2);"      \
+  "lu52i.d %1,%1,%%got64_hi12(%2);",  \
+  &LARCH_opts.ase_lp64,		      \
+  &LARCH_opts.ase_gpcr
 
 
 static struct loongarch_opcode loongarch_macro_opcodes[] =
