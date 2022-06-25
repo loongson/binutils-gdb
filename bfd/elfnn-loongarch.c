@@ -687,7 +687,8 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	case R_LARCH_GOT64_HI20:
 	case R_LARCH_SOP_PUSH_GPREL:
 	  /* For la.global.  */
-	  h->pointer_equality_needed = 1;
+	  if (h)
+	    h->pointer_equality_needed = 1;
 	  if (!loongarch_elf_record_tls_and_got_reference (abfd, info, h,
 							   r_symndx,
 							   GOT_NORMAL))
