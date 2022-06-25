@@ -2914,9 +2914,10 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  break;
 
 	case R_LARCH_SOP_PUSH_TLS_GOT:
-	  is_ie = true;
 	case R_LARCH_SOP_PUSH_TLS_GD:
 	  unresolved_reloc = false;
+	  if (r_type == R_LARCH_SOP_PUSH_TLS_GOT)
+	    is_ie = true;
 
 	  if (rel->r_addend != 0)
 	    {
@@ -3308,7 +3309,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	case R_LARCH_TLS_IE_PC_HI20:
 	case R_LARCH_TLS_IE64_HI20:
-	  is_ie = true;
 	case R_LARCH_TLS_LD_PC_HI20:
 	case R_LARCH_TLS_LD64_HI20:
 	case R_LARCH_TLS_GD_PC_HI20:
@@ -3316,6 +3316,10 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    {
 	      BFD_ASSERT (rel->r_addend == 0);
 	      unresolved_reloc = false;
+
+	      if (r_type == R_LARCH_TLS_IE_PC_HI20
+		  || r_type == R_LARCH_TLS_IE64_HI20)
+		is_ie = true;
 
 	      if (resolved_to_const && is_undefweak && h->dynindx != -1)
 		{
