@@ -1897,9 +1897,7 @@ loongarch_elf_append_rela (bfd *abfd, asection *s, Elf_Internal_Rela *rel)
 
   bed = get_elf_backend_data (abfd);
   if(!(s->size > s->reloc_count * bed->s->sizeof_rela))
-    {
-  BFD_ASSERT(s->size > s->reloc_count * bed->s->sizeof_rela);
-    }
+    BFD_ASSERT(s->size > s->reloc_count * bed->s->sizeof_rela);
   loc = s->contents + (s->reloc_count++ * bed->s->sizeof_rela);
   bed->s->swap_reloca_out (abfd, rel, loc);
 }
@@ -2110,7 +2108,13 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
     case R_LARCH_TLS_LE64_LO20:
     case R_LARCH_TLS_LE64_HI12:
     case R_LARCH_TLS_IE_PC_HI20:
+    case R_LARCH_TLS_IE_PC_LO12:
+    case R_LARCH_TLS_IE64_PC_LO20:
+    case R_LARCH_TLS_IE64_PC_HI12:
     case R_LARCH_TLS_IE64_HI20:
+    case R_LARCH_TLS_IE64_LO12:
+    case R_LARCH_TLS_IE64_LO20:
+    case R_LARCH_TLS_IE64_HI12:
     case R_LARCH_TLS_LD_PC_HI20:
     case R_LARCH_TLS_LD64_HI20:
     case R_LARCH_TLS_GD_PC_HI20:
@@ -2312,10 +2316,10 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
       struct elf_link_hash_entry *h = NULL;
       const char *name;
       bfd_reloc_status_type r = bfd_reloc_ok;
-      bool is_undefweak, unresolved_reloc, defined_local;
+      bool is_ie, is_undefweak, unresolved_reloc, defined_local;
       bool resolved_local, resolved_dynly, resolved_to_const;
       char tls_type;
-      bfd_vma relocation, off;
+      bfd_vma relocation, off, ie_off;
       int i, j;
 
       howto = loongarch_elf_rtype_to_howto (input_bfd, r_type);
@@ -2441,6 +2445,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
       BFD_ASSERT (!resolved_local || defined_local);
 
+      is_ie = false;
       switch (r_type)
 	{
 	case R_LARCH_MARK_PCREL:
@@ -2909,6 +2914,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  break;
 
 	case R_LARCH_SOP_PUSH_TLS_GOT:
+	  is_ie = true;
 	case R_LARCH_SOP_PUSH_TLS_GD:
 	  unresolved_reloc = false;
 
@@ -2958,6 +2964,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    }
 
 	  tls_type = _bfd_loongarch_elf_tls_type (input_bfd, h, r_symndx);
+	  ie_off = 0;
+	  if ((tls_type & GOT_TLS_GD) && (tls_type & GOT_TLS_IE))
+	    ie_off = 2 * GOT_ENTRY_SIZE;
 
 	  if ((off & 1) != 0)
 	    off &= ~1;
@@ -3016,9 +3025,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      if (tls_type & GOT_TLS_IE)
 		{
-		  outrel.r_offset = sec_addr (got) + off;
+		  outrel.r_offset = sec_addr (got) + off + ie_off;
 		  bfd_put_NN (output_bfd, tls_block_off,
-			      got->contents + off);
+			      got->contents + off + ie_off);
 		  if (resolved_local && bfd_link_executable (info))
 		    /* TPREL known.  */;
 		  else if (resolved_local /* && !bfd_link_executable (info) */)
@@ -3049,7 +3058,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		}
 	    }
 
-	  relocation = off;
+	  relocation = off + (is_ie ? ie_off : 0);
 
 	  break;
 
@@ -3299,6 +3308,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	case R_LARCH_TLS_IE_PC_HI20:
 	case R_LARCH_TLS_IE64_HI20:
+	  is_ie = true;
 	case R_LARCH_TLS_LD_PC_HI20:
 	case R_LARCH_TLS_LD64_HI20:
 	case R_LARCH_TLS_GD_PC_HI20:
@@ -3331,6 +3341,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      BFD_ASSERT (got_off != MINUS_ONE);
 
 	      tls_type = _bfd_loongarch_elf_tls_type (input_bfd, h, r_symndx);
+	      ie_off = 0;
+	      if ((tls_type & GOT_TLS_GD) && (tls_type & GOT_TLS_IE))
+		ie_off = 2 * GOT_ENTRY_SIZE;
 
 	      if ((got_off & 1) == 0)
 		{
@@ -3359,6 +3372,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			  /* Process moudleID only.  */
 			  rela.r_info = ELFNN_R_INFO (0, R_LARCH_TLS_DTPMODNN);
 			  loongarch_elf_append_rela (output_bfd, relgot, &rela);
+
+			  bfd_put_NN (output_bfd, tls_block_off,
+				      got->contents + got_off + GOT_ENTRY_SIZE);
 			}
 		      else /* if (resolved_dynly) */
 			{
@@ -3384,8 +3400,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 		  if (tls_type & GOT_TLS_IE)
 		    {
-		      rela.r_offset = sec_addr (got) + got_off;
-		      bfd_put_NN (output_bfd, tls_block_off, got->contents + got_off);
+		      rela.r_offset = sec_addr (got) + got_off + ie_off;
+		      bfd_put_NN (output_bfd, tls_block_off, got->contents
+				      + got_off + ie_off);
 
 		      if (resolved_local && bfd_link_executable (info))
 			/* TPREL known.  */;
@@ -3409,7 +3426,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		    }
 		}
 
-	      relocation = got_off + sec_addr (got);
+	      relocation = got_off + sec_addr (got) + (is_ie ? ie_off : 0);
 
 	      if (r_type == R_LARCH_TLS_IE_PC_HI20
 		  || r_type == R_LARCH_TLS_LD_PC_HI20
@@ -3425,6 +3442,40 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 		  relocation -= pc;
 		}
+	    }
+	  break;
+	
+	case R_LARCH_TLS_IE_PC_LO12:
+	case R_LARCH_TLS_IE64_PC_LO20:
+	case R_LARCH_TLS_IE64_PC_HI12:
+	case R_LARCH_TLS_IE64_LO12:
+	case R_LARCH_TLS_IE64_LO20:
+	case R_LARCH_TLS_IE64_HI12:
+	  unresolved_reloc = false;
+	  bfd_vma got_off;
+	  if (h)
+	    got_off = h->got.offset;
+	  else
+	    got_off = local_got_offsets[r_symndx];
+
+	  got_off = got_off & (~(bfd_vma)1);
+	  relocation = got_off + sec_addr(got);
+
+	  tls_type = _bfd_loongarch_elf_tls_type (input_bfd, h, r_symndx);
+	  if ((tls_type & GOT_TLS_GD) && (tls_type & GOT_TLS_IE))
+	    relocation += 2 * GOT_ENTRY_SIZE;
+
+	  if (r_type == R_LARCH_TLS_IE_PC_LO12)
+	    relocation &= (bfd_vma)0xfff;
+	  else if (r_type == R_LARCH_TLS_IE64_PC_LO20
+		   || r_type == R_LARCH_TLS_IE64_PC_HI12)
+	    {
+	      bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
+	      if (lo > 0x7ff)
+		{
+		  relocation -= 0x100000000;
+		}
+	      relocation -= (pc & ~(bfd_vma)0xffffffff);
 	    }
 	  break;
 
