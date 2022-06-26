@@ -436,13 +436,13 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 2,					  /* size.  */
 	 16,					  /* bitsize.  */
 	 false,					  /* pc_relative.  */
-	 0,					  /* bitpos.  */
+	 10,					  /* bitpos.  */
 	 complain_overflow_signed,		  /* complain_on_overflow.  */
 	 bfd_elf_generic_reloc,			  /* special_function.	*/
 	 "R_LARCH_SOP_POP_32_S_10_16_S2",	  /* name.  */
 	 false,					  /* partial_inplace.  */
-	 0xfc0003ff,				  /* src_mask */
-	 0xfc0003ff,				  /* dst_mask */
+	 0x3fffc00,				  /* src_mask */
+	 0x3fffc00,				  /* dst_mask */
 	 false,					  /* pcrel_offset */
 	 BFD_RELOC_LARCH_SOP_POP_32_S_10_16_S2,	  /* bfd_reloc_code_real_type */
 	 reloc_bits,				  /* adjust_reloc_bits */
@@ -739,8 +739,8 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 bfd_elf_generic_reloc,			/* special_function.  */
 	 "R_LARCH_B16",				/* name.  */
 	 false,					/* partial_inplace.  */
-	 0xfc0003ff,				/* src_mask */
-	 0xfc0003ff,				/* dst_mask */
+	 0x3fffc00,				/* src_mask */
+	 0x3fffc00,				/* dst_mask */
 	 false,					/* pcrel_offset */
 	 BFD_RELOC_LARCH_B16,			/* bfd_reloc_code_real_type */
 	 reloc_bits,				/* adjust_reloc_bits */
@@ -781,7 +781,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "b26"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_ABS_HI20,		/* type (67).  */
-	 0,					/* rightshift.  */
+	 12,					/* rightshift.  */
 	 2,					/* size.  */
 	 20,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -815,7 +815,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "abs_lo12"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_ABS64_LO20,		/* type (69).  */
-	 0,					/* rightshift.  */
+	 32,					/* rightshift.  */
 	 2,					/* size.  */
 	 20,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -832,7 +832,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "abs64_lo20"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_ABS64_HI12,		/* type (70).  */
-	 0,					/* rightshift.  */
+	 52,					/* rightshift.  */
 	 2,					/* size.  */
 	 12,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -883,7 +883,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "pc_lo12"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_PCALA64_LO20,	/* type (73).  */
-	 0,					/* rightshift.  */
+	 32,					/* rightshift.  */
 	 2,					/* size.  */
 	 20,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -900,7 +900,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "pc64_lo20"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_PCALA64_HI12,	/* type (74).  */
-	 0,					/* rightshift.  */
+	 52,					/* rightshift.  */
 	 2,					/* size.  */
 	 12,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -951,7 +951,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "got_pc_lo12"),			/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_GOT64_PC_LO20,	/* type (77).  */
-	 0,					/* rightshift.  */
+	 32,					/* rightshift.  */
 	 2,					/* size.  */
 	 20,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -985,7 +985,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "got64_pc_hi12"),			/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_GOT64_HI20,		/* type (79).  */
-	 0,					/* rightshift.  */
+	 12,					/* rightshift.  */
 	 2,					/* size.  */
 	 20,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -1019,7 +1019,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "got64_lo12"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_GOT64_LO20,		/* type (81).  */
-	 0,					/* rightshift.  */
+	 32,					/* rightshift.  */
 	 2,					/* size.  */
 	 20,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -1036,7 +1036,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "got64_lo20"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_GOT64_HI12,		/* type (82).  */
-	 0,					/* rightshift.  */
+	 52,					/* rightshift.  */
 	 2,					/* size.  */
 	 12,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -1053,7 +1053,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "got64_hi12"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_TLS_LE_HI20,		/* type (83).  */
-	 0,					/* rightshift.  */
+	 12,					/* rightshift.  */
 	 2,					/* size.  */
 	 20,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -1087,7 +1087,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "le_lo12"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_TLS_LE64_LO20,	/* type (85).  */
-	 0,					/* rightshift.  */
+	 32,					/* rightshift.  */
 	 2,					/* size.  */
 	 20,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -1104,7 +1104,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "le64_lo20"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_TLS_LE64_HI12,	/* type (86).  */
-	 0,					/* rightshift.  */
+	 52,					/* rightshift.  */
 	 2,					/* size.  */
 	 12,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -1155,7 +1155,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "ie_pc_lo12"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_TLS_IE64_PC_LO20,	/* type (89).  */
-	 0,					/* rightshift.  */
+	 32,					/* rightshift.  */
 	 2,					/* size.  */
 	 20,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -1172,7 +1172,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "ie64_pc_lo20"),			/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_TLS_IE64_PC_HI12,	/* type (90).  */
-	 0,					/* rightshift.  */
+	 52,					/* rightshift.  */
 	 2,					/* size.  */
 	 12,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -1189,7 +1189,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "ie64_pc_hi12"),			/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_TLS_IE64_HI20,	/* type (91).  */
-	 0,					/* rightshift.  */
+	 12,					/* rightshift.  */
 	 2,					/* size.  */
 	 20,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -1223,7 +1223,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "ie64_lo12"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_TLS_IE64_LO20,	/* type (93).  */
-	 0,					/* rightshift.  */
+	 32,					/* rightshift.  */
 	 2,					/* size.  */
 	 20,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -1240,7 +1240,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "ie64_lo20"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_TLS_IE64_HI12,	/* type (94).  */
-	 0,					/* rightshift.  */
+	 52,					/* rightshift.  */
 	 2,					/* size.  */
 	 12,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -1274,7 +1274,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "ld_pc_hi20"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_TLS_LD64_HI20,	/* type (96).  */
-	 0,					/* rightshift.  */
+	 12,					/* rightshift.  */
 	 2,					/* size.  */
 	 20,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -1308,7 +1308,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 "gd_pc_hi20"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_TLS_GD64_HI20,	/* type (98).  */
-	 0,					/* rightshift.  */
+	 12,					/* rightshift.  */
 	 2,					/* size.  */
 	 20,					/* bitsize.  */
 	 false,					/* pc_relative.  */
@@ -1437,37 +1437,13 @@ loongarch_larch_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
 static bool
 reloc_bits (reloc_howto_type *howto, bfd_vma *fix_val)
 {
-  bfd_vma val = *fix_val >> howto->rightshift;
-
-  bfd_vma sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
-  if (howto->complain_on_overflow == complain_overflow_signed)
-    {
-      /* If val < 0.  */
-      if (sig_bit)
-	{
-	  if ((LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1) & val)
-	      != LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1))
-	    return false;
-	}
-      else
-	{
-	  if (LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize) & val)
-	    return false;
-	}
-    }
-  else if (howto->complain_on_overflow == complain_overflow_unsigned)
-    {
-      if (LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize) & val)
-	return false;
-    }
-  else
-    return false;
+  int64_t val = ((int64_t)(*fix_val)) >> howto->rightshift;
 
   /* Perform insn bits field.  */
   val = val & (((bfd_vma)0x1 << howto->bitsize) - 1);
   val <<= howto->bitpos;
 
-  *fix_val = val;
+  *fix_val = (bfd_vma)val;
 
   return true;
 }
@@ -1482,9 +1458,9 @@ reloc_bits_b21 (reloc_howto_type *howto,
   if (howto->complain_on_overflow != complain_overflow_signed)
     return false;
 
-  bfd_vma val = *fix_val >> howto->rightshift;
+  int64_t val = ((int64_t)(*fix_val)) >> howto->rightshift;
 
-  bfd_vma sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
+  int64_t sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
 
   /* If val < 0.  */
   if (sig_bit)
@@ -1505,7 +1481,7 @@ reloc_bits_b21 (reloc_howto_type *howto,
   /* Perform insn bits field. 20:16>>16, 15:0<<10 */
   val = ((val & 0xffff) << 10) | ((val >> 16) & 0x1f);
 
-  *fix_val = val;
+  *fix_val = (bfd_vma)val;
 
   return true;
 }
@@ -1521,12 +1497,11 @@ reloc_bits_b26 (reloc_howto_type *howto,
   if (howto->complain_on_overflow != complain_overflow_signed)
     return false;
 
-  bfd_vma val = *fix_val >> howto->rightshift;
+  int64_t val = ((int64_t)(*fix_val)) >> howto->rightshift;
 
-  bfd_vma sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
+  int64_t sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
 
   /* If val < 0.  */
-
   if (sig_bit)
     {
       if ((LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1) & val)
@@ -1545,7 +1520,7 @@ reloc_bits_b26 (reloc_howto_type *howto,
   /* Perform insn bits field. 25:16>>16, 15:0<<10 */
   val = ((val & 0xffff) << 10) | ((val >> 16) & 0x3ff);
 
-  *fix_val = val;
+  *fix_val = (bfd_vma)val;
 
   return true;
 }
