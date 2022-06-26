@@ -1210,7 +1210,8 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	      && (ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
 	      && h->start_stop)
 	    {
-	      /* The pr21964-4. do nothing.  */
+	      /* The pr21964-4. do nothing, need srelgot.  */
+	      htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
 	    }
 	  else
 	    {
@@ -3071,23 +3072,33 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  unresolved_reloc = false;
 	  if (is_undefweak)
 	    {
-	      BFD_ASSERT (h && h->plt.offset != MINUS_ONE);
+	      //BFD_ASSERT (h && h->plt.offset != MINUS_ONE);
 	      relocation = 0;
 	    }
-	  else if (resolved_dynly)
-	    {
-	      BFD_ASSERT (h && h->plt.offset != MINUS_ONE
-			  && rel->r_addend == 0);
-	      relocation = sec_addr (plt) + h->plt.offset - pc;
-	    }
-	  else if (resolved_local)
+
+	  if (resolved_local)
 	    {
 	      unresolved_reloc = true;
 	      relocation -= pc;
 	      relocation += rel->r_addend;
 	    }
-	  else
-	    BFD_ASSERT (false);
+
+	  else if (resolved_dynly)
+	    {
+	      BFD_ASSERT (h
+			  && (h->plt.offset != MINUS_ONE
+			      || ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
+			  && rel->r_addend == 0);
+	      if (h && h->plt.offset == MINUS_ONE
+		  && ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
+		{
+		  unresolved_reloc = true;
+		  relocation -= pc;
+		  relocation += rel->r_addend;
+		}
+	      else
+		relocation = sec_addr (plt) + h->plt.offset - pc;
+	    }
 
 	  break;
 
@@ -3324,7 +3335,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      if (resolved_to_const && is_undefweak && h->dynindx != -1)
 		{
-		  BFD_ASSERT (false);
+		  //BFD_ASSERT (false);
 		  /* What if undefweak? Let rtld make a decision.  */
 		  resolved_to_const = resolved_local = false;
 		  resolved_dynly = true;
@@ -3694,12 +3705,9 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
     {
       asection *sgot, *srela;
       Elf_Internal_Rela rela;
-      /* New reloc type2.0 need not clean 1 bit. */
-      bfd_vma off = (h->got.offset & 1)
-	? (h->got.offset & ~(bfd_vma)1)	: h->got.offset;
+      bfd_vma off = h->got.offset & ~(bfd_vma)1;
 
       /* This symbol has an entry in the GOT.  Set it up.  */
-
       sgot = htab->elf.sgot;
       srela = htab->elf.srelgot;
       BFD_ASSERT (sgot && srela);

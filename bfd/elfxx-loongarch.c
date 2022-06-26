@@ -1437,7 +1437,7 @@ loongarch_larch_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
 static bool
 reloc_bits (reloc_howto_type *howto, bfd_vma *fix_val)
 {
-  int64_t val = ((int64_t)(*fix_val)) >> howto->rightshift;
+  bfd_signed_vma val = ((bfd_signed_vma)(*fix_val)) >> howto->rightshift;
 
   /* Perform insn bits field.  */
   val = val & (((bfd_vma)0x1 << howto->bitsize) - 1);
@@ -1458,9 +1458,9 @@ reloc_bits_b21 (reloc_howto_type *howto,
   if (howto->complain_on_overflow != complain_overflow_signed)
     return false;
 
-  int64_t val = ((int64_t)(*fix_val)) >> howto->rightshift;
+  bfd_signed_vma val = ((bfd_signed_vma)(*fix_val)) >> howto->rightshift;
 
-  int64_t sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
+  bfd_signed_vma sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
 
   /* If val < 0.  */
   if (sig_bit)
@@ -1497,9 +1497,9 @@ reloc_bits_b26 (reloc_howto_type *howto,
   if (howto->complain_on_overflow != complain_overflow_signed)
     return false;
 
-  int64_t val = ((int64_t)(*fix_val)) >> howto->rightshift;
+  bfd_signed_vma val = ((bfd_signed_vma)(*fix_val)) >> howto->rightshift;
 
-  int64_t sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
+  bfd_signed_vma sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
 
   /* If val < 0.  */
   if (sig_bit)
