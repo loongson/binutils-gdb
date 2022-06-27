@@ -3106,7 +3106,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_ABS_LO12:
 	case R_LARCH_ABS64_LO20:
 	case R_LARCH_ABS64_HI12:
-	  BFD_ASSERT(is_pic);
+	  BFD_ASSERT(!is_pic);
 
 	  if (is_undefweak)
 	    {
