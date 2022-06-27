@@ -54,6 +54,8 @@ typedef struct loongarch_reloc_howto_type_struct
 static bool
 reloc_bits (reloc_howto_type *howto, bfd_vma *val);
 static bool
+reloc_bits_b16 (reloc_howto_type *howto, bfd_vma *fix_val);
+static bool
 reloc_bits_b21 (reloc_howto_type *howto, bfd_vma *fix_val);
 static bool
 reloc_bits_b26 (reloc_howto_type *howto, bfd_vma *val);
@@ -445,7 +447,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 0x3fffc00,				  /* dst_mask */
 	 false,					  /* pcrel_offset */
 	 BFD_RELOC_LARCH_SOP_POP_32_S_10_16_S2,	  /* bfd_reloc_code_real_type */
-	 reloc_bits,				  /* adjust_reloc_bits */
+	 reloc_bits_b16,			  /* adjust_reloc_bits */
 	 NULL),					  /* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_SOP_POP_32_S_5_20,	  /* type (43).  */
@@ -743,7 +745,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 0x3fffc00,				/* dst_mask */
 	 false,					/* pcrel_offset */
 	 BFD_RELOC_LARCH_B16,			/* bfd_reloc_code_real_type */
-	 reloc_bits,				/* adjust_reloc_bits */
+	 reloc_bits_b16,			/* adjust_reloc_bits */
 	 "b16"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_B21,			/* type (65).  */
@@ -1431,9 +1433,7 @@ loongarch_larch_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
  * BFD_RELOC_LARCH_SOP_POP_32_U_10_12
  * BFD_RELOC_LARCH_SOP_POP_32_S_10_16
  * BFD_RELOC_LARCH_SOP_POP_32_S_5_20
- * BFD_RELOC_LARCH_SOP_POP_32_U.
- * R_LARCH_SOP_POP_32_S_10_16_S2
- * R_LARCH_B16.  */
+ * BFD_RELOC_LARCH_SOP_POP_32_U.  */
 static bool
 reloc_bits (reloc_howto_type *howto, bfd_vma *fix_val)
 {
@@ -1448,6 +1448,49 @@ reloc_bits (reloc_howto_type *howto, bfd_vma *fix_val)
   return true;
 }
 
+/* Adjust val to perform insn
+ * R_LARCH_SOP_POP_32_S_10_16_S2
+ * R_LARCH_B16.  */
+static bool
+reloc_bits_b16 (reloc_howto_type *howto, bfd_vma *fix_val)
+{
+  if (howto->complain_on_overflow != complain_overflow_signed)
+    return false;
+
+  bfd_signed_vma val = *fix_val;
+
+  /* Judge whether 4 bytes align  */
+  if (val & ((0x1UL << howto->rightshift) - 1))
+    return false;
+
+  int bitsize = howto->bitsize + howto->rightshift;
+  bfd_signed_vma sig_bit = (val >> (bitsize - 1)) & 0x1;
+
+  /* If val < 0, sign bit is 1  */
+  if (sig_bit)
+    {
+      /* high bits is 1  */
+      if ((LARCH_RELOC_BFD_VMA_BIT_MASK (bitsize - 1) & val)
+	  != LARCH_RELOC_BFD_VMA_BIT_MASK (bitsize - 1))
+	return false;
+    }
+  else
+    {
+      /* high bits is 0  */
+      if (LARCH_RELOC_BFD_VMA_BIT_MASK (bitsize) & val)
+	return false;
+    }
+
+  /* Perform insn bits field.  */
+  val >>= howto->rightshift;
+  val = val & (((bfd_vma)0x1 << howto->bitsize) - 1);
+  val <<= howto->bitpos;
+
+  *fix_val = val;
+
+  return true;
+}
+
 /* Reloc type :
  * R_LARCH_SOP_POP_32_S_0_5_10_16_S2
  * R_LARCH_B21.  */
@@ -1458,30 +1501,35 @@ reloc_bits_b21 (reloc_howto_type *howto,
   if (howto->complain_on_overflow != complain_overflow_signed)
     return false;
 
-  bfd_signed_vma val = ((bfd_signed_vma)(*fix_val)) >> howto->rightshift;
+  bfd_signed_vma val = *fix_val;
 
-  bfd_signed_vma sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
+  if (val & ((0x1UL << howto->rightshift) - 1))
+    return false;
+
+  int bitsize = howto->bitsize + howto->rightshift;
+  bfd_signed_vma sig_bit = (val >> (bitsize - 1)) & 0x1;
 
   /* If val < 0.  */
   if (sig_bit)
     {
-      if ((LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1) & val)
-	  != LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1))
+      if ((LARCH_RELOC_BFD_VMA_BIT_MASK (bitsize - 1) & val)
+	  != LARCH_RELOC_BFD_VMA_BIT_MASK (bitsize - 1))
 	return false;
     }
   else
     {
-      if (LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize) & val)
+      if (LARCH_RELOC_BFD_VMA_BIT_MASK (bitsize) & val)
 	return false;
     }
 
   /* Perform insn bits field.  */
+  val >>= howto->rightshift;
   val = val & (((bfd_vma)0x1 << howto->bitsize) - 1);
 
-  /* Perform insn bits field. 20:16>>16, 15:0<<10 */
+  /* Perform insn bits field. 15:0<<10, 20:16>>16  */
   val = ((val & 0xffff) << 10) | ((val >> 16) & 0x1f);
 
-  *fix_val = (bfd_vma)val;
+  *fix_val = val;
 
   return true;
 }
@@ -1497,30 +1545,35 @@ reloc_bits_b26 (reloc_howto_type *howto,
   if (howto->complain_on_overflow != complain_overflow_signed)
     return false;
 
-  bfd_signed_vma val = ((bfd_signed_vma)(*fix_val)) >> howto->rightshift;
+  bfd_signed_vma val = *fix_val;
 
-  bfd_signed_vma sig_bit = (val >> (howto->bitsize - 1)) & 0x1;
+  if (val & ((0x1UL << howto->rightshift) - 1))
+    return false;
+
+  int bitsize = howto->bitsize + howto->rightshift;
+  bfd_signed_vma sig_bit = (val >> (bitsize - 1)) & 0x1;
 
   /* If val < 0.  */
   if (sig_bit)
     {
-      if ((LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1) & val)
-	  != LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize - 1))
+      if ((LARCH_RELOC_BFD_VMA_BIT_MASK (bitsize - 1) & val)
+	  != LARCH_RELOC_BFD_VMA_BIT_MASK (bitsize - 1))
 	return false;
     }
   else
     {
-      if (LARCH_RELOC_BFD_VMA_BIT_MASK (howto->bitsize) & val)
+      if (LARCH_RELOC_BFD_VMA_BIT_MASK (bitsize) & val)
 	return false;
     }
 
   /* Perform insn bits field.  */
+  val >>= howto->rightshift;
   val = val & (((bfd_vma)0x1 << howto->bitsize) - 1);
 
   /* Perform insn bits field. 25:16>>16, 15:0<<10 */
   val = ((val & 0xffff) << 10) | ((val >> 16) & 0x3ff);
 
-  *fix_val = (bfd_vma)val;
+  *fix_val = val;
 
   return true;
 }
