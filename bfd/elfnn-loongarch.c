@@ -1211,7 +1211,6 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	      && h->start_stop)
 	    {
 	      /* The pr21964-4. do nothing, need srelgot.  */
-	      htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
 	    }
 	  else
 	    {
@@ -2429,7 +2428,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  resolved_to_const = true;
 	}
 
-      /* The ifunc without reference does not generate plt.  */
+      /* The ifunc reference generate plt.  */
       if (h && h->type == STT_GNU_IFUNC && h->plt.offset != MINUS_ONE)
 	{
 	  defined_local = true;
@@ -3645,20 +3644,33 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
 	bfd_put_32 (output_bfd, plt_entry[i], loc + 4 * i);
 
       /* Fill in the initial value of the .got.plt entry.  */
+      if (h->type != STT_GNU_IFUNC)
+	{
       loc = gotplt->contents + (got_address - sec_addr (gotplt));
       bfd_put_NN (output_bfd, sec_addr (plt), loc);
+	}
 
       rela.r_offset = got_address;
 
       /* TRUE if this is a PLT reference to a local IFUNC.  */
-      if (PLT_LOCAL_IFUNC_P(info, h))
+      //if (PLT_LOCAL_IFUNC_P(info, h))
+      if (relplt == htab->elf.srelgot)
 	{
-	  rela.r_info = ELFNN_R_INFO (0, R_LARCH_IRELATIVE);
-	  rela.r_addend = (h->root.u.def.value
-			   + h->root.u.def.section->output_section->vma
-			   + h->root.u.def.section->output_offset);
+	  if (h->dynindx != -1)
 	    {
-	      /* Find the space after dyn sort.  */
+	      rela.r_info = ELFNN_R_INFO (h->dynindx, R_LARCH_IRELATIVE);
+	      rela.r_addend = 0;
+	    }
+	  else
+	    {
+	      rela.r_info = ELFNN_R_INFO (0, R_LARCH_IRELATIVE);
+	      rela.r_addend = (h->root.u.def.value
+			       + h->root.u.def.section->output_section->vma
+			       + h->root.u.def.section->output_offset);
+	    }
+
+	    /* Find the space after dyn sort.  */
+	    {
 	      Elf_Internal_Rela *dyn = (Elf_Internal_Rela *)relplt->contents;
 	      bool fill = false;
 	      for (;dyn < dyn + relplt->size / sizeof (*dyn); dyn++)
