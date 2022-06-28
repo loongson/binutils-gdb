@@ -3192,13 +3192,21 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		    {
 		      bfd_vma idx;
 		      if (htab->elf.splt != NULL)
-			idx = (h->plt.offset - PLT_HEADER_SIZE) / PLT_ENTRY_SIZE;
+			{
+			  idx = (h->plt.offset - PLT_HEADER_SIZE) / PLT_ENTRY_SIZE;
+			  got_off = sec_addr(htab->elf.sgotplt)
+			    + GOTPLT_HEADER_SIZE
+			    + (idx * GOT_ENTRY_SIZE)
+			    - sec_addr(htab->elf.sgot);
+			}
 		      else
-			idx = h->plt.offset / PLT_ENTRY_SIZE;
+			{
+			  idx = h->plt.offset / PLT_ENTRY_SIZE;
+			  got_off = sec_addr(htab->elf.sgotplt)
+			    + (idx * GOT_ENTRY_SIZE)
+			    - sec_addr(htab->elf.sgot);
+			}
 
-		      got_off = sec_addr(htab->elf.sgotplt)
-			+ (idx * GOT_ENTRY_SIZE)
-			- sec_addr(htab->elf.sgot);
 		    }
 
 		  if (!WILL_CALL_FINISH_DYNAMIC_SYMBOL (is_dyn, is_pic, h))
@@ -3219,18 +3227,22 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		      BFD_ASSERT (!resolved_dynly
 				  || (defined_local || resolved_to_const));
 
-		      /* The pr21964-4. Create relocate entry.	*/
-		      if (is_pic && h->start_stop && (h->got.offset & 1) == 0)
+		      if ((h->got.offset & 1) == 0)
 			{
-			  //BFD_ASSERT (false);
-			  Elf_Internal_Rela outrel;
-			  BFD_ASSERT (htab->elf.srelgot);
-			  /* We need to generate a R_LARCH_RELATIVE reloc
-			     for the dynamic linker.  */
-			  outrel.r_offset = sec_addr (got) + got_off;
-			  outrel.r_info = ELFNN_R_INFO (0, R_LARCH_RELATIVE);
-			  outrel.r_addend = relocation;
-			  loongarch_elf_append_rela (output_bfd, htab->elf.srelgot, &outrel);
+			  /* The pr21964-4. Create relocate entry.	*/
+			  if (is_pic && h->start_stop)
+			    {
+			      //BFD_ASSERT (false);
+			      Elf_Internal_Rela outrel;
+			      BFD_ASSERT (htab->elf.srelgot);
+			      /* We need to generate a R_LARCH_RELATIVE reloc
+				 for the dynamic linker.  */
+			      outrel.r_offset = sec_addr (got) + got_off;
+			      outrel.r_info = ELFNN_R_INFO (0, R_LARCH_RELATIVE);
+			      outrel.r_addend = relocation;
+			      loongarch_elf_append_rela (output_bfd, htab->elf.srelgot, &outrel);
+			    }
+			  bfd_put_NN (output_bfd, relocation, got->contents + got_off);
 			  h->got.offset |= 1;
 			}
 		    }
@@ -3241,23 +3253,25 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			      && local_got_offsets[r_symndx] != MINUS_ONE);
 
 		  got_off = local_got_offsets[r_symndx] & (~(bfd_vma)1);
-		  if (is_pic && (local_got_offsets[r_symndx] & 1) == 0)
+		  if ((local_got_offsets[r_symndx] & 1) == 0)
 		    {
-		    //	BFD_ASSERT (false);
-		      Elf_Internal_Rela outrel;
-		      BFD_ASSERT (htab->elf.srelgot);
-		      /* We need to generate a R_LARCH_RELATIVE reloc
-			 for the dynamic linker.  */
+		      if (is_pic)
+			{
+			  //	BFD_ASSERT (false);
+			  Elf_Internal_Rela outrel;
+			  BFD_ASSERT (htab->elf.srelgot);
+			  /* We need to generate a R_LARCH_RELATIVE reloc
+			     for the dynamic linker.  */
 
-		      outrel.r_offset = sec_addr (got) + got_off;
-		      outrel.r_info = ELFNN_R_INFO (0, R_LARCH_RELATIVE);
-		      outrel.r_addend = relocation;
-		      loongarch_elf_append_rela (output_bfd, htab->elf.srelgot, &outrel);
+			  outrel.r_offset = sec_addr (got) + got_off;
+			  outrel.r_info = ELFNN_R_INFO (0, R_LARCH_RELATIVE);
+			  outrel.r_addend = relocation;
+			  loongarch_elf_append_rela (output_bfd, htab->elf.srelgot, &outrel);
+			}
+		      bfd_put_NN (output_bfd, relocation, got->contents + got_off);
 		      local_got_offsets[r_symndx] |= 1;
 		    }
-
 		}
-		bfd_put_NN (output_bfd, relocation, got->contents + got_off);
 
 	      relocation = got_off + sec_addr(got);
 	    }
@@ -3289,6 +3303,20 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		got_off = h->got.offset;
 	      else
 		got_off = local_got_offsets[r_symndx];
+
+	      if (h && h->got.offset == MINUS_ONE && h->type == STT_GNU_IFUNC)
+		{
+		  bfd_vma idx;
+		  if (htab->elf.splt != NULL)
+		    idx = (h->plt.offset - PLT_HEADER_SIZE) / PLT_ENTRY_SIZE;
+		  else
+		    idx = h->plt.offset / PLT_ENTRY_SIZE;
+
+		  got_off = sec_addr(htab->elf.sgotplt)
+		    + GOTPLT_HEADER_SIZE
+		    + (idx * GOT_ENTRY_SIZE)
+		    - sec_addr(htab->elf.sgot);
+		}
 
 	      got_off = got_off & (~(bfd_vma)1);
 	      relocation = got_off + sec_addr(got);
@@ -3644,24 +3672,16 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
 	bfd_put_32 (output_bfd, plt_entry[i], loc + 4 * i);
 
       /* Fill in the initial value of the .got.plt entry.  */
-      if (h->type != STT_GNU_IFUNC)
-	{
       loc = gotplt->contents + (got_address - sec_addr (gotplt));
       bfd_put_NN (output_bfd, sec_addr (plt), loc);
-	}
 
       rela.r_offset = got_address;
 
       /* TRUE if this is a PLT reference to a local IFUNC.  */
-      //if (PLT_LOCAL_IFUNC_P(info, h))
-      if (relplt == htab->elf.srelgot)
+      if (PLT_LOCAL_IFUNC_P(info, h)
+	  && (relplt == htab->elf.srelgot
+	      || relplt == htab->elf.irelplt))
 	{
-	  if (h->dynindx != -1)
-	    {
-	      rela.r_info = ELFNN_R_INFO (h->dynindx, R_LARCH_IRELATIVE);
-	      rela.r_addend = 0;
-	    }
-	  else
 	    {
 	      rela.r_info = ELFNN_R_INFO (0, R_LARCH_IRELATIVE);
 	      rela.r_addend = (h->root.u.def.value
@@ -3692,7 +3712,8 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
 	  /* Fill in the entry in the .rela.plt section.  */
 	  rela.r_info = ELFNN_R_INFO (h->dynindx, R_LARCH_JUMP_SLOT);
 	  rela.r_addend = 0;
-	  loongarch_elf_append_rela (output_bfd, relplt, &rela);
+          loc = relplt->contents + plt_idx * sizeof (ElfNN_External_Rela);
+          bed->s->swap_reloca_out (output_bfd, &rela, loc);
 	}
 
       if (!h->def_regular)
