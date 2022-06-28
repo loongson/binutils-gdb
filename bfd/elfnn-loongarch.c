@@ -822,6 +822,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	case R_LARCH_JUMP_SLOT:
 	case R_LARCH_32:
 	case R_LARCH_64:
+
 	  need_dynreloc = 1;
 
 	  /* If resolved symbol is defined in this object,
@@ -1211,6 +1212,7 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	      && h->start_stop)
 	    {
 	      /* The pr21964-4. do nothing, need srelgot.  */
+	      htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
 	    }
 	  else
 	    {
@@ -3077,7 +3079,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	  if (resolved_local)
 	    {
-	      unresolved_reloc = true;
 	      relocation -= pc;
 	      relocation += rel->r_addend;
 	    }
@@ -3091,7 +3092,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      if (h && h->plt.offset == MINUS_ONE
 		  && ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
 		{
-		  unresolved_reloc = true;
 		  relocation -= pc;
 		  relocation += rel->r_addend;
 		}
