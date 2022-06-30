@@ -622,7 +622,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
       if (r_symndx < symtab_hdr->sh_info)
 	{
 	  /* A local symbol.  */
-	  isym = bfd_sym_from_r_symndx (&htab->sym_cache, abfd, r_symndx);
+	  isym = bfd_sym_from_r_symndx (&htab->elf.sym_cache, abfd, r_symndx);
 	  if (isym == NULL)
 	    return false;
 
@@ -749,12 +749,15 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    {
 	      h->non_got_ref = 1;
 	      h->pointer_equality_needed = 1;
+
+	      /* Only for reloc_copy in no-pic.  */
+	      if (!bfd_link_pic (info)
+		  && (!h->def_regular && h->def_dynamic))
+		{
+		  need_dynreloc = 1;
+		}
 	    }
 
-	  if (bfd_link_pic (info))
-	    need_dynreloc = 1;
-	  else
-	    non_got_reloc = 1;
 	  break;
 
 	case R_LARCH_B21:
@@ -772,10 +775,6 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	      h->plt.refcount++;
 	    }
 
-	  if (bfd_link_pic (info))
-	    need_dynreloc = 1;
-	  else
-	    non_got_reloc = 1;
 	  break;
 
 	case R_LARCH_SOP_PUSH_PCREL:
@@ -790,11 +789,6 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	      h->plt.refcount++;
 	      h->pointer_equality_needed = 1;
 	    }
-
-	  if (bfd_link_pic (info))
-	    need_dynreloc = 1;
-	  else
-	    non_got_reloc = 1;
 
 	  break;
 
@@ -985,7 +979,6 @@ loongarch_elf_adjust_dynamic_symbol (struct bfd_link_info *info,
 				     struct elf_link_hash_entry *h)
 {
   struct loongarch_elf_link_hash_table *htab;
-  struct loongarch_elf_link_hash_entry *eh;
   bfd *dynobj;
   asection *s, *srel;
 
@@ -1060,7 +1053,7 @@ loongarch_elf_adjust_dynamic_symbol (struct bfd_link_info *info,
 //	return true;
 //    }
 
-  /* If we don't find any dynamic relocs in read-only sections with pic, then
+  /* If we don't find any dynamic relocs in read-only sections , then
      we'll be keeping the dynamic relocs and avoiding the copy reloc.  */
   if (!readonly_dynrelocs (h))
     {
@@ -1088,8 +1081,7 @@ loongarch_elf_adjust_dynamic_symbol (struct bfd_link_info *info,
      to copy the initial value out of the dynamic object and into the
      runtime process image.  We need to remember the offset into the
      .rel.bss section we are going to use.  */
-  eh = (struct loongarch_elf_link_hash_entry *) h;
-  if (eh->tls_type & ~GOT_NORMAL)
+  if (loongarch_elf_hash_entry(h)->tls_type & ~GOT_NORMAL)
     {
       s = htab->sdyntdata;
       srel = htab->elf.srelbss;
@@ -1280,6 +1272,13 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	       && !bfd_elf_link_record_dynamic_symbol (info, h))
 	return false;
     }
+
+  /* For reloc copy
+   * PC_HI20
+   * or LARCH_64.  */
+  if (h->needs_copy)
+    h->dyn_relocs = NULL;
+
 
   for (p = h->dyn_relocs; p != NULL; p = p->next)
     {
@@ -2504,7 +2503,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  outrel.r_addend = relocation + rel->r_addend;
 		}
 
-	      if (unresolved_reloc)
+	      /* Copy reloc done in finish_dyn.  */
+	      if (unresolved_reloc
+		  && (!h || (!h->needs_copy && !h->is_weakalias)))
 		loongarch_elf_append_rela (output_bfd, sreloc, &outrel);
 	    }
 
