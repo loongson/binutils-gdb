@@ -1222,14 +1222,37 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	  if (tls_type & GOT_TLS_GD)
 	    {
 	      s->size += 2 * GOT_ENTRY_SIZE;
-	      htab->elf.srelgot->size += 2 * sizeof (ElfNN_External_Rela);
+	      if (bfd_link_executable (info))
+		{
+		  if (h->def_regular)
+		    {
+		    }
+		  else
+		    htab->elf.srelgot->size += 2 * sizeof (ElfNN_External_Rela);
+		}
+	      else
+		{
+		  if (ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
+		    htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
+		  else
+		    htab->elf.srelgot->size += 2 * sizeof (ElfNN_External_Rela);
+		}
 	    }
 
 	  /* TLS_IE needs one dynamic reloc and one GOT slot.  */
 	  if (tls_type & GOT_TLS_IE)
 	    {
 	      s->size += GOT_ENTRY_SIZE;
-	      htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
+	      if (bfd_link_executable (info))
+		{
+		  if (h->def_regular)
+		    {
+		    }
+		  else
+		    htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
+		}
+	      else
+		htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
 	    }
 	}
       else
@@ -1724,11 +1747,17 @@ loongarch_elf_size_dynamic_sections (bfd *output_bfd,
 	      if (*local_tls_type & GOT_TLS_GD)
 		s->size += GOT_ENTRY_SIZE;
 
+	      if (bfd_link_executable (info)
+		  && (*local_tls_type & (GOT_TLS_GD | GOT_TLS_IE)))
+		{
+		}
 	      /* If R_LARCH_RELATIVE.  */
-	      if (bfd_link_pic (info)
+	      else if (bfd_link_pic (info)
 		  /* Or R_LARCH_TLS_DTPRELNN or R_LARCH_TLS_TPRELNN.  */
 		  || (*local_tls_type & (GOT_TLS_GD | GOT_TLS_IE)))
-		srel->size += sizeof (ElfNN_External_Rela);
+		{
+		  srel->size += sizeof (ElfNN_External_Rela);
+		}
 	    }
 	  else
 	    *local_got = MINUS_ONE;
