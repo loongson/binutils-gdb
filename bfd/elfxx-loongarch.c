@@ -36,7 +36,7 @@ typedef struct loongarch_reloc_howto_type_struct
   bfd_reloc_code_real_type bfd_type;
   bool (*adjust_reloc_bits)(reloc_howto_type *, bfd_vma *);
   const char *larch_reloc_type_name;
-}loongarch_reloc_howto_type;
+} loongarch_reloc_howto_type;
 
 #define LOONGARCH_DEFAULT_HOWTO(r_name)					    \
   { HOWTO (R_LARCH_##r_name, 0, 2, 32, false, 0, complain_overflow_signed,  \
@@ -1390,6 +1390,15 @@ loongarch_reloc_type_lookup (bfd *abfd ATTRIBUTE_UNUSED,
 {
   BFD_ASSERT (ARRAY_SIZE (loongarch_howto_table) == R_LARCH_count);
 
+  /* Fast search for new reloc types.  */
+  if (BFD_RELOC_LARCH_B16 <= code && code < BFD_RELOC_LARCH_RELAX)
+    {
+      loongarch_reloc_howto_type *ht = NULL;
+      ht = &loongarch_howto_table [code - BFD_RELOC_LARCH_B16 + R_LARCH_B16];
+      BFD_ASSERT (ht->bfd_type == code);
+      return (reloc_howto_type *)ht;
+    }
+
   for (size_t i = 0; i < ARRAY_SIZE (loongarch_howto_table); i++)
     if (loongarch_howto_table[i].bfd_type == code)
       return (reloc_howto_type *)&loongarch_howto_table[i];
@@ -1407,9 +1416,9 @@ loongarch_larch_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
 {
   for (size_t i = 0; i < ARRAY_SIZE (loongarch_howto_table); i++)
     {
-    loongarch_reloc_howto_type *lht = &loongarch_howto_table[i];
-    if ((NULL != lht->larch_reloc_type_name)
-	&& (0 == strcmp (lht->larch_reloc_type_name, l_r_name)))
+      loongarch_reloc_howto_type *lht = &loongarch_howto_table[i];
+      if ((NULL != lht->larch_reloc_type_name)
+	  && (0 == strcmp (lht->larch_reloc_type_name, l_r_name)))
 	return lht->bfd_type;
     }
 
