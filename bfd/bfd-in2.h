@@ -6340,6 +6340,7 @@ assembler and not (currently) written to any object files.  */
   BFD_RELOC_LARCH_TLS_LD64_HI20,
   BFD_RELOC_LARCH_TLS_GD_PC_HI20,
   BFD_RELOC_LARCH_TLS_GD64_HI20,
+  BFD_RELOC_LARCH_32_PCREL,
   BFD_RELOC_LARCH_RELAX,
   BFD_RELOC_UNUSED };
 

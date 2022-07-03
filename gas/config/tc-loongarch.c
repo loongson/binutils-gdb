@@ -1093,6 +1093,7 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
   static int64_t stack_top;
   static int last_reloc_is_sop_push_pcrel_1 = 0;
   int last_reloc_is_sop_push_pcrel = last_reloc_is_sop_push_pcrel_1;
+  segT sub_segment;
   last_reloc_is_sop_push_pcrel_1 = 0;
 
   char *buf = fixP->fx_frag->fr_literal + fixP->fx_where;
@@ -1154,11 +1155,24 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
 
     case BFD_RELOC_64:
     case BFD_RELOC_32:
+    case BFD_RELOC_24:
+    case BFD_RELOC_16:
+    case BFD_RELOC_8:
+
+      if (fixP->fx_r_type == BFD_RELOC_32
+	  && fixP->fx_addsy && fixP->fx_subsy
+	  && (sub_segment = S_GET_SEGMENT (fixP->fx_subsy))
+	  && strcmp (sub_segment->name, ".eh_frame") == 0
+	  && S_GET_VALUE (fixP->fx_subsy)
+	  == fixP->fx_frag->fr_address + fixP->fx_where)
+	{
+	  fixP->fx_r_type = BFD_RELOC_LARCH_32_PCREL;
+	  fixP->fx_subsy = NULL;
+	  break;
+	}
+
       if (fixP->fx_subsy)
 	{
-	case BFD_RELOC_24:
-	case BFD_RELOC_16:
-	case BFD_RELOC_8:
 	  fixP->fx_next = xmemdup (fixP, sizeof (*fixP), sizeof (*fixP));
 	  fixP->fx_next->fx_addsy = fixP->fx_subsy;
 	  fixP->fx_next->fx_subsy = NULL;
@@ -1291,11 +1305,13 @@ loongarch_cfi_frame_initial_instructions (void)
   cfi_add_CFA_def_cfa_register (3 /* $sp */);
 }
 
+/*
 int
 loongarch_dwarf2_addr_size (void)
 {
   return LARCH_opts.ase_lp64 ? 8 : 4;
 }
+*/
 
 void
 tc_loongarch_parse_to_dw2regnum (expressionS *exp)
