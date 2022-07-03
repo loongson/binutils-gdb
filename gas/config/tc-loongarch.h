@@ -62,10 +62,10 @@ extern int loongarch_fix_adjustable (struct fix *fix);
 #define TARGET_USE_CFIPOP 1
 #define DWARF2_DEFAULT_RETURN_COLUMN 1 /* $ra.  */
 #define DWARF2_CIE_DATA_ALIGNMENT -4
-extern int loongarch_dwarf2_addr_size (void);
-#define DWARF2_FDE_RELOC_SIZE loongarch_dwarf2_addr_size ()
-#define DWARF2_ADDR_SIZE(bfd) loongarch_dwarf2_addr_size ()
-#define CFI_DIFF_EXPR_OK 0
+//extern int loongarch_dwarf2_addr_size (void);
+//#define DWARF2_FDE_RELOC_SIZE loongarch_dwarf2_addr_size ()
+//#define DWARF2_ADDR_SIZE(bfd) loongarch_dwarf2_addr_size ()
+//#define CFI_DIFF_EXPR_OK 0
 
 #define tc_cfi_frame_initial_instructions	\
   loongarch_cfi_frame_initial_instructions

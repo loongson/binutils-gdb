@@ -1326,7 +1326,24 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 reloc_bits,				/* adjust_reloc_bits */
 	 "gd64_hi20"),				/* larch_reloc_type_name */
 
-  LOONGARCH_HOWTO (R_LARCH_RELAX,		/* type (99).	*/
+  LOONGARCH_HOWTO (R_LARCH_32_PCREL,		/* type (99).  */
+	 0,					/* rightshift.	*/
+	 2,					/* size.  */
+	 32,					/* bitsize.  */
+	 true,					/* pc_relative.  */
+	 0,					/* bitpos.  */
+	 complain_overflow_dont,		/* complain_on_overflow.  */
+	 bfd_elf_generic_reloc,			/* special_function.  */
+	 "R_LARCH_32_PCREL",			/* name.  */
+	 false,					/* partial_inplace.  */
+	 0,					/* src_mask */
+	 0xffffffff,				/* dst_mask */
+	 false,					/* pcrel_offset */
+	 BFD_RELOC_LARCH_32_PCREL,		/* bfd_reloc_code_real_type */
+	 NULL,					/* adjust_reloc_bits */
+	 NULL),					/* larch_reloc_type_name */
+
+  LOONGARCH_HOWTO (R_LARCH_RELAX,		/* type (100).	*/
 	 0,				  	/* rightshift */
 	 3,				  	/* size */
 	 0,				  	/* bitsize */
@@ -1393,6 +1410,8 @@ loongarch_reloc_type_lookup (bfd *abfd ATTRIBUTE_UNUSED,
   /* Fast search for new reloc types.  */
   if (BFD_RELOC_LARCH_B16 <= code && code < BFD_RELOC_LARCH_RELAX)
     {
+      BFD_ASSERT (BFD_RELOC_LARCH_RELAX - BFD_RELOC_LARCH_B16
+		  == R_LARCH_RELAX - R_LARCH_B16);
       loongarch_reloc_howto_type *ht = NULL;
       ht = &loongarch_howto_table [code - BFD_RELOC_LARCH_B16 + R_LARCH_B16];
       BFD_ASSERT (ht->bfd_type == code);

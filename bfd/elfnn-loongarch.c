@@ -873,6 +873,9 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	  struct elf_dyn_relocs *p;
 	  struct elf_dyn_relocs **head;
 
+//	  if (0 == strcmp(sec->name, ".eh_frame"))
+//	    info->callbacks->info ("warning: R_LARCH_NONE\n");
+
 	  if (sreloc == NULL)
 	    {
 	      sreloc
@@ -2083,7 +2086,17 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
       bfd_put (bits, input_bfd, opr1 - value, contents + rel->r_offset);
       break;
 
-    /* All new reloc type.
+    /* For eh_frame and debug info.  */
+    case R_LARCH_32_PCREL:
+      value -= sec_addr (input_section) + rel->r_offset;
+      value += rel->r_addend;
+      bfd_vma word = bfd_get (howto->bitsize, input_bfd, contents + rel->r_offset);
+      word = (word & ~howto->dst_mask) | (value & howto->dst_mask);
+      bfd_put (howto->bitsize, input_bfd, word, contents + rel->r_offset);
+      r = bfd_reloc_ok;
+      break;
+
+    /* New reloc type.
        R_LARCH_B16 ~ R_LARCH_TLS_GD64_HI20.  */
     case R_LARCH_B16:
     case R_LARCH_B21:
@@ -2505,7 +2518,12 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      /* Copy reloc done in finish_dyn.  */
 	      if (unresolved_reloc
 		  && (!h || (!h->needs_copy && !h->is_weakalias)))
-		loongarch_elf_append_rela (output_bfd, sreloc, &outrel);
+		{
+		//  if (0 == strcmp (input_section->name, ".eh_frame"))
+		//    info->callbacks->info ("warning: %s R_LARCH_NONE\n",
+		//			   howto->name);
+		  loongarch_elf_append_rela (output_bfd, sreloc, &outrel);
+		}
 	    }
 
 	  relocation += rel->r_addend;
