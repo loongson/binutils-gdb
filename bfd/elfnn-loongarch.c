@@ -678,7 +678,6 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	}
 
       int need_dynreloc = 0;
-      int non_got_reloc = 0;
       int only_need_pcrel = 0;
 
       switch (r_type)
@@ -866,7 +865,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	}
 
       /* Record some info for sizing and allocating dynamic entry.  */
-      if ((need_dynreloc || non_got_reloc) && (sec->flags & SEC_ALLOC))
+      if (need_dynreloc && (sec->flags & SEC_ALLOC))
 	{
 	  /* When creating a shared object, we must copy these
 	     relocs into the output file.  We create a reloc
