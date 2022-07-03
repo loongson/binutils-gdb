@@ -161,9 +161,9 @@ set link_exec_tests [list \
   ] \
   [list \
     "$testname" \
-    "-L./tmpdir -lnopic-global -lc -Wl,-rpath=./tmpdir" "" \
+    "-L./tmpdir -lnopic-global -lc -Wl,-rpath=./tmpdir -no-pie" "" \
     { nopic-global.s }   \
-    "nopic-global" \
+    "nopic-global-so" \
     "nopic-global.out" \
   ] \
   [list \
@@ -175,9 +175,9 @@ set link_exec_tests [list \
   ] \
   [list \
     "$testname" \
-    "-L./tmpdir -lnopic-global -lc -Wl,-rpath=./tmpdir" "" \
+    "-L./tmpdir -lnopic-global -lc -Wl,-rpath=./tmpdir -no-pie" "" \
     { nopic-weak-global.s }   \
-    "nopic-weak-global" \
+    "nopic-weak-global-so" \
     "nopic-weak-global.out" \
   ] \
 ]

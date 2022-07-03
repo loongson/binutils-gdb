@@ -1,6 +1,5 @@
 #as:
 #objdump: -dr
-#skip: loongarch32-*-*
 
 .*:[    ]+file format .*
 
@@ -48,7 +47,7 @@ Disassembly of section .text:
 [ 	]+50:[ 	]+1a000004[ 	]+pcalau12i[ 	]+\$a0,[ 	]+0
 [ 	]+50:[ 	]+R_LARCH_TLS_IE_PC_HI20[ 	]+TLS1
 [ 	]+54:[ 	]+28c00084[ 	]+ld.d[ 	]+\$a0,[ 	]+\$a0,[ 	]+0
-[ 	]+54:[ 	]+R_LARCH_GOT_PC_LO12[ 	]+TLS1
+[ 	]+54:[ 	]+R_LARCH_TLS_IE_PC_LO12[ 	]+TLS1
 [ 	]+58:[ 	]+1a000004[ 	]+pcalau12i[ 	]+\$a0,[ 	]+0
 [ 	]+58:[ 	]+R_LARCH_TLS_LD_PC_HI20[ 	]+TLS1
 [ 	]+5c:[ 	]+02c00084[ 	]+addi.d[ 	]+\$a0,[ 	]+\$a0,[ 	]+0

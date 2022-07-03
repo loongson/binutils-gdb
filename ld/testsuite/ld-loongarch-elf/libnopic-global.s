@@ -99,12 +99,12 @@ g_nopic:
 	.section	.debug_line,"",@progbits
 .Ldebug_line0:
 	.section	.debug_str,"MS",@progbits,1
+.LASF1:
+	.ascii	"libnopic-global.c\000"
 .LASF0:
 	.ascii	"GNU C17 13.0.0 20220512 (experimental) -mabi=lp64d -marc"
 	.ascii	"h=loongarch64 -mfpu=64 -mcmodel=normal -mtune=la464 -g -"
-	.ascii	"fno-pic\000"
-.LASF1:
-	.ascii	"libnopic-global.c\000"
+	.ascii	"O0 -fPIC\000"
 .LASF2:
 	.ascii	"/home/liuzhensong/test/ld/nopic/test/global_var\000"
 .LASF3:
