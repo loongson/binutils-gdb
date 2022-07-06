@@ -1194,12 +1194,12 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
   if (0 < h->got.refcount)
     {
       asection *s;
-      bool dyn;
       int tls_type = loongarch_elf_hash_entry (h)->tls_type;
+      bool dyn = htab->elf.dynamic_sections_created;
 
       /* Make sure this symbol is output as a dynamic symbol.
 	 Undefined weak syms won't yet be marked as dynamic.  */
-      if (h->dynindx == -1 && !h->forced_local)
+      if (dyn && h->dynindx == -1 && !h->forced_local)
 	{
 	  if (SYMBOL_REFERENCES_LOCAL (info, h)
 	      && (ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
@@ -1217,7 +1217,6 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 
       s = htab->elf.sgot;
       h->got.offset = s->size;
-      dyn = htab->elf.dynamic_sections_created;
       if (tls_type & (GOT_TLS_GD | GOT_TLS_IE))
 	{
 	  /* TLS_GD needs two dynamic relocs and two GOT slots.  */
@@ -1228,10 +1227,22 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	    }
 
 	  /* TLS_IE needs one dynamic reloc and one GOT slot.  */
-	  if (tls_type & GOT_TLS_IE)
+	  if ((tls_type & GOT_TLS_IE)
+		 && ELF_ST_VISIBILITY (h->other) == STV_DEFAULT)
 	    {
 	      s->size += GOT_ENTRY_SIZE;
-	      htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
+
+	      int indx = h && h->dynindx != -1 ? h->dynindx : 0;
+
+	      bool need_relocs =
+		(!bfd_link_executable (info)
+		 || indx != 0
+		 || WILL_CALL_FINISH_DYNAMIC_SYMBOL (dyn, 0, h))
+		&& (ELF_ST_VISIBILITY (h->other) == STV_DEFAULT
+		    || h->root.type != bfd_link_hash_undefweak);
+
+	      if (need_relocs)
+		htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
 	    }
 	}
       else
@@ -1266,7 +1277,8 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 
   if (h->root.type == bfd_link_hash_undefweak)
     {
-      if (UNDEFWEAK_NO_DYNAMIC_RELOC (info, h))
+      if (UNDEFWEAK_NO_DYNAMIC_RELOC (info, h)
+	  || ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
 	h->dyn_relocs = NULL;
       else if (h->dynindx == -1 && !h->forced_local
 	       /* Make sure this symbol is output as a dynamic symbol.
@@ -1724,13 +1736,19 @@ loongarch_elf_size_dynamic_sections (bfd *output_bfd,
 	      s->size += GOT_ENTRY_SIZE;
 
 	      if (*local_tls_type & GOT_TLS_GD)
+		s->size += GOT_ENTRY_SIZE * 2;
+
+	      if (*local_tls_type & GOT_TLS_IE
+		  || *local_tls_type & GOT_NORMAL)
 		s->size += GOT_ENTRY_SIZE;
 
-	      /* If R_LARCH_RELATIVE.  */
-	      if (bfd_link_pic (info)
-		  /* Or R_LARCH_TLS_DTPRELNN or R_LARCH_TLS_TPRELNN.  */
-		  || (*local_tls_type & (GOT_TLS_GD | GOT_TLS_IE)))
-		srel->size += sizeof (ElfNN_External_Rela);
+	      if (bfd_link_pic (info))
+		{
+		  if (*local_tls_type & (GOT_NORMAL | GOT_TLS_IE))
+		    srel->size += sizeof (ElfNN_External_Rela) * 2;
+		  if (*local_tls_type &GOT_TLS_GD)
+		    srel->size += sizeof (ElfNN_External_Rela);
+		}
 	    }
 	  else
 	    *local_got = MINUS_ONE;
@@ -3378,7 +3396,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  || r_type == R_LARCH_TLS_IE64_HI20)
 		is_ie = true;
 
-	      if (resolved_to_const && is_undefweak && h->dynindx != -1)
+	      if (resolved_to_const && is_undefweak)
 		{
 		  //BFD_ASSERT (false);
 		  /* What if undefweak? Let rtld make a decision.  */
@@ -3462,28 +3480,30 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  if (tls_type & GOT_TLS_IE)
 		    {
 		      rela.r_offset = sec_addr (got) + got_off + ie_off;
-		      bfd_put_NN (output_bfd, tls_block_off, got->contents
-				      + got_off + ie_off);
 
-		      if (resolved_local && bfd_link_executable (info))
-			/* TPREL known.  */;
-		      else if (resolved_local /* && !bfd_link_executable (info) */)
+
+		      int indx = h && h->dynindx != -1 ? h->dynindx : 0;
+
+		      bool need_relocs =
+			(!bfd_link_executable (info) || indx != 0) &&
+			(h == NULL
+			 || ELF_ST_VISIBILITY (h->other) == STV_DEFAULT
+			 || h->root.type != bfd_link_hash_undefweak);
+
+		      if (need_relocs)
 			{
-			  rela.r_info = ELFNN_R_INFO (0, R_LARCH_TLS_TPRELNN);
-			  rela.r_addend = tls_block_off;
-			  loongarch_elf_append_rela (output_bfd, relgot, &rela);
-			}
-		      else /* if (resolved_dynly) */
-			{
-			  /* Static linking has no .dynsym table.  */
-			  if (!htab->elf.dynamic_sections_created)
-			    rela.r_info = ELFNN_R_INFO (0, R_LARCH_TLS_TPRELNN);
+			  if (indx == 0)
+			    rela.r_addend = tls_block_off;
 			  else
-			    rela.r_info = ELFNN_R_INFO (h->dynindx, R_LARCH_TLS_TPRELNN);
+			    rela.r_addend = 0;
 
-			  rela.r_addend = 0;
+			  rela.r_info = ELFNN_R_INFO (indx, R_LARCH_TLS_TPRELNN);
 			  loongarch_elf_append_rela (output_bfd, relgot, &rela);
 			}
+		      bfd_put_NN (output_bfd, rela.r_addend, got->contents
+				  + got_off + ie_off);
+
+
 		    }
 		}
 
