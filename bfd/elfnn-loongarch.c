@@ -1221,8 +1221,7 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	    }
 
 	  /* TLS_IE needs one dynamic reloc and one GOT slot.  */
-	  if ((tls_type & GOT_TLS_IE)
-		 && ELF_ST_VISIBILITY (h->other) == STV_DEFAULT)
+	  if (tls_type & GOT_TLS_IE)
 	    {
 	      s->size += GOT_ENTRY_SIZE;
 
@@ -1729,21 +1728,21 @@ loongarch_elf_size_dynamic_sections (bfd *output_bfd,
 	  if (0 < *local_got)
 	    {
 	      *local_got = s->size;
-	      s->size += GOT_ENTRY_SIZE;
 
+	      /* TLS gd use two got.  */
 	      if (*local_tls_type & GOT_TLS_GD)
 		s->size += GOT_ENTRY_SIZE * 2;
-
-	      if (*local_tls_type & GOT_TLS_IE
-		  || *local_tls_type & GOT_NORMAL)
+	      else
+		/* Normal got, tls ie/ld use one got.  */
 		s->size += GOT_ENTRY_SIZE;
 
 	      if (bfd_link_pic (info))
 		{
 		  if (*local_tls_type & (GOT_NORMAL | GOT_TLS_IE))
-		    srel->size += sizeof (ElfNN_External_Rela) * 2;
-		  if (*local_tls_type &GOT_TLS_GD)
 		    srel->size += sizeof (ElfNN_External_Rela);
+
+		  if (*local_tls_type &GOT_TLS_GD)
+		    srel->size += sizeof (ElfNN_External_Rela) * 2;
 		}
 	    }
 	  else
@@ -2310,7 +2309,27 @@ loongarch_reloc_is_fatal (struct bfd_link_info *info,
   return fatal;
 }
 
+#define RELOCATE_CALC_PC32_HI20(relocation, pc)	  \
+  ({						  \
+    bfd_vma lo = (relocation) & ((bfd_vma)0xfff); \
+    pc = pc & (~(bfd_vma)0xfff);		  \
+    if (lo > 0x7ff)				  \
+      {						  \
+	relocation += 0x1000;			  \
+      }						  \
+    relocation &= ~(bfd_vma)0xfff;		  \
+    relocation -= pc;				  \
+  })
 
+#define RELOCATE_CALC_PC64_HI32(relocation, pc)	  \
+  ({						  \
+    bfd_vma lo = (relocation) & ((bfd_vma)0xfff); \
+    if (lo > 0x7ff)				  \
+      {						  \
+	relocation -= 0x100000000;		  \
+      }						  \
+    relocation -= (pc & ~(bfd_vma)0xffffffff);	  \
+  })
 
 
 static int
@@ -2843,7 +2862,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 			 When doing a dynamic link, we create a .rela.got
 			 relocation entry to initialize the value.	This
-			 is done in the finish_dynamic_symbol routine.  */
+			 is done in the finish_dynamic_symbol routine.	*/
 
 		      if (resolved_dynly)
 			{
@@ -3159,22 +3178,14 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  break;
 
 	case R_LARCH_PCALA_HI20:
-	    {
-	      unresolved_reloc = false;
-	      if (h && h->plt.offset != MINUS_ONE)
-		relocation = sec_addr (plt) + h->plt.offset;
-	      else
-		relocation += rel->r_addend;
+	  unresolved_reloc = false;
+	  if (h && h->plt.offset != MINUS_ONE)
+	    relocation = sec_addr (plt) + h->plt.offset;
+	  else
+	    relocation += rel->r_addend;
 
-	      bfd_vma lo = relocation & ((bfd_vma)0xfff);
-	      pc = pc & (~(bfd_vma)0xfff);
-	      if (lo > 0x7ff)
-		{
-		  relocation += 0x1000;
-		}
-	      relocation &= ~(bfd_vma)0xfff;
-	      relocation -= pc;
-	    }
+	  RELOCATE_CALC_PC32_HI20 (relocation, pc);
+
 	  break;
 
 	case R_LARCH_PCALA_LO12: 
@@ -3184,23 +3195,18 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    relocation += rel->r_addend;
 
 	  relocation &= 0xfff;
+
 	  break;
 
 	case R_LARCH_PCALA64_LO20:
 	case R_LARCH_PCALA64_HI12:
-	    {
-	      if (h && h->plt.offset != MINUS_ONE)
-		relocation = sec_addr (plt) + h->plt.offset;
-	      else
-		relocation += rel->r_addend;
+	  if (h && h->plt.offset != MINUS_ONE)
+	    relocation = sec_addr (plt) + h->plt.offset;
+	  else
+	    relocation += rel->r_addend;
 
-	      bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
-	      if (lo > 0x7ff)
-		{
-		  relocation -= 0x100000000;
-		}
-	      relocation -= (pc & ~(bfd_vma)0xffffffff);
-	    }
+	  RELOCATE_CALC_PC64_HI32 (relocation, pc);
+
 	  break;
 
 	case R_LARCH_GOT_PC_HI20:
@@ -3238,7 +3244,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			    + (idx * GOT_ENTRY_SIZE)
 			    - sec_addr(htab->elf.sgot);
 			}
-
 		    }
 
 		  if ((h->got.offset & 1) == 0)
@@ -3268,7 +3273,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  got_off = local_got_offsets[r_symndx] & (~(bfd_vma)1);
 		  if ((local_got_offsets[r_symndx] & 1) == 0)
 		    {
-		      if(bfd_link_pic (info))
+		      if (bfd_link_pic (info))
 			{
 			  Elf_Internal_Rela rela;
 			  rela.r_offset = sec_addr (got) + got_off;
@@ -3276,8 +3281,8 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			  rela.r_addend = relocation;
 			  loongarch_elf_append_rela (output_bfd, htab->elf.srelgot, &rela);
 			}
+		      local_got_offsets[r_symndx] |= 1;
 		    }
-		  local_got_offsets[r_symndx] |= 1;
 		}
 
 	      bfd_put_NN (output_bfd, relocation, got->contents + got_off);
@@ -3285,18 +3290,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      relocation = got_off + sec_addr(got);
 	    }
 
-	  /* Calc relocation.  */
 	  if (r_type == R_LARCH_GOT_PC_HI20)
-	    {
-	      bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
-	      pc = pc & (~(bfd_vma)0xfff);
-	      if (lo > 0x7ff)
-		{
-		  relocation += 0x1000;
-		}
-	      relocation &= ~(bfd_vma)0xfff;
-	      relocation -= pc;
-	    }
+	    RELOCATE_CALC_PC32_HI20 (relocation, pc);
+
 	  break;
 
 	case R_LARCH_GOT_PC_LO12:
@@ -3309,9 +3305,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      unresolved_reloc = false;
 	      bfd_vma got_off;
 	      if (h)
-		got_off = h->got.offset;
+		got_off = h->got.offset & (~(bfd_vma)1);
 	      else
-		got_off = local_got_offsets[r_symndx];
+		got_off = local_got_offsets[r_symndx] & (~(bfd_vma)1);
 
 	      if (h && h->got.offset == MINUS_ONE && h->type == STT_GNU_IFUNC)
 		{
@@ -3326,8 +3322,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		    + (idx * GOT_ENTRY_SIZE)
 		    - sec_addr(htab->elf.sgot);
 		}
-
-	      got_off = got_off & (~(bfd_vma)1);
 	      relocation = got_off + sec_addr(got);
 	    }
 
@@ -3335,14 +3329,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    relocation &= (bfd_vma)0xfff;
 	  else if (r_type == R_LARCH_GOT64_PC_LO20
 		   || r_type == R_LARCH_GOT64_PC_HI12)
-	    {
-	      bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
-	      if (lo > 0x7ff)
-		{
-		  relocation -= 0x100000000;
-		}
-	      relocation -= (pc & ~(bfd_vma)0xffffffff);
-	    }
+	    RELOCATE_CALC_PC64_HI32 (relocation, pc);
 
 	  break;
 
@@ -3355,29 +3342,23 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  relocation -= elf_hash_table (info)->tls_sec->vma;
 	  break;
 
-	case R_LARCH_TLS_IE_PC_HI20:
-	case R_LARCH_TLS_IE64_HI20:
 	case R_LARCH_TLS_LD_PC_HI20:
 	case R_LARCH_TLS_LD64_HI20:
 	case R_LARCH_TLS_GD_PC_HI20:
 	case R_LARCH_TLS_GD64_HI20:
+	  BFD_ASSERT (rel->r_addend == 0);
+	  unresolved_reloc = false;
+
+	  if (resolved_to_const && is_undefweak)
 	    {
-	      BFD_ASSERT (rel->r_addend == 0);
-	      unresolved_reloc = false;
+	      //BFD_ASSERT (false);
+	      /* What if undefweak? Let rtld make a decision.  */
+	      resolved_to_const = resolved_local = false;
+	      resolved_dynly = true;
+	    }
+	  BFD_ASSERT (!resolved_to_const);
 
-	      if (r_type == R_LARCH_TLS_IE_PC_HI20
-		  || r_type == R_LARCH_TLS_IE64_HI20)
-		is_ie = true;
-
-	      if (resolved_to_const && is_undefweak)
-		{
-		  //BFD_ASSERT (false);
-		  /* What if undefweak? Let rtld make a decision.  */
-		  resolved_to_const = resolved_local = false;
-		  resolved_dynly = true;
-		}
-	      BFD_ASSERT (!resolved_to_const);
-
+	    {
 	      bfd_vma got_off = 0;
 	      if (h != NULL)
 		{
@@ -3391,11 +3372,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		}
 
 	      BFD_ASSERT (got_off != MINUS_ONE);
-
-	      tls_type = _bfd_loongarch_elf_tls_type (input_bfd, h, r_symndx);
-	      ie_off = 0;
-	      if ((tls_type & GOT_TLS_GD) && (tls_type & GOT_TLS_IE))
-		ie_off = 2 * GOT_ENTRY_SIZE;
 
 	      if ((got_off & 1) == 0)
 		{
@@ -3449,53 +3425,93 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			  loongarch_elf_append_rela (output_bfd, relgot, &rela);
 			}
 		    }
-
-		  if (tls_type & GOT_TLS_IE)
-		    {
-		      rela.r_offset = sec_addr (got) + got_off + ie_off;
-
-
-		      int indx = h && h->dynindx != -1 ? h->dynindx : 0;
-
-		      bool need_relocs =
-			(!bfd_link_executable (info)
-			 || !SYMBOL_REFERENCES_LOCAL (info, h))
-			&& (h == NULL
-			    || ELF_ST_VISIBILITY (h->other) == STV_DEFAULT
-			    || h->root.type != bfd_link_hash_undefweak);
-
-		      if (need_relocs)
-			{
-			  if (indx == 0)
-			    rela.r_addend = tls_block_off;
-			  else
-			    rela.r_addend = 0;
-
-			  rela.r_info = ELFNN_R_INFO (indx, R_LARCH_TLS_TPRELNN);
-			  loongarch_elf_append_rela (output_bfd, relgot, &rela);
-			}
-		      bfd_put_NN (output_bfd, rela.r_addend, got->contents
-				  + got_off + ie_off);
-		    }
 		}
-
-	      relocation = got_off + sec_addr (got) + (is_ie ? ie_off : 0);
-
-	      if (r_type == R_LARCH_TLS_IE_PC_HI20
-		  || r_type == R_LARCH_TLS_LD_PC_HI20
-		  || r_type == R_LARCH_TLS_GD_PC_HI20)
-		{
-		  bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
-		  pc = pc & (~(bfd_vma)0xfff);
-		  if (lo > 0x7ff)
-		    {
-		      relocation += 0x1000;
-		    }
-		  relocation &= ~(bfd_vma)0xfff;
-
-		  relocation -= pc;
-		}
+	      relocation = (got_off & (~(bfd_vma)1)) + sec_addr (got);
 	    }
+
+	  if (r_type == R_LARCH_TLS_LD_PC_HI20
+	      || r_type == R_LARCH_TLS_GD_PC_HI20)
+	    RELOCATE_CALC_PC32_HI20 (relocation, pc);
+
+	  break;
+
+	case R_LARCH_TLS_IE_PC_HI20:
+	case R_LARCH_TLS_IE64_HI20:
+	  BFD_ASSERT (rel->r_addend == 0);
+	  unresolved_reloc = false;
+
+	  if (resolved_to_const && is_undefweak)
+	    {
+	      //BFD_ASSERT (false);
+	      /* What if undefweak? Let rtld make a decision.  */
+	      resolved_to_const = resolved_local = false;
+	      resolved_dynly = true;
+	    }
+	  BFD_ASSERT (!resolved_to_const);
+
+	    {
+	      bfd_vma got_off = 0;
+	      if (h != NULL)
+		{
+		  got_off = h->got.offset;
+		  h->got.offset |= 1;
+		}
+	      else
+		{
+		  got_off = local_got_offsets[r_symndx];
+		  local_got_offsets[r_symndx] |= 1;
+		}
+
+	      BFD_ASSERT (got_off != MINUS_ONE);
+
+	      /* Use both TLS_GD and TLS_IE.  */
+	      tls_type = _bfd_loongarch_elf_tls_type (input_bfd, h, r_symndx);
+	      if ((tls_type & GOT_TLS_GD) && (tls_type & GOT_TLS_IE))
+		got_off += 2 * GOT_ENTRY_SIZE;
+
+	      if ((got_off & 1) == 0)
+		{
+		  bfd_vma tls_block_off = 0;
+		  Elf_Internal_Rela rela;
+		  asection *relgot = htab->elf.srelgot;
+
+		  if (resolved_local)
+		    {
+		      BFD_ASSERT (elf_hash_table (info)->tls_sec);
+		      tls_block_off =
+			relocation - elf_hash_table (info)->tls_sec->vma;
+		    }
+
+		  rela.r_offset = sec_addr (got) + got_off;
+		  rela.r_addend = tls_block_off;
+
+		  int indx = h && h->dynindx != -1 ? h->dynindx : 0;
+
+		  bool need_relocs =
+		    (!bfd_link_executable (info)
+		     || !SYMBOL_REFERENCES_LOCAL (info, h))
+		    && (h == NULL
+			|| ELF_ST_VISIBILITY (h->other) == STV_DEFAULT
+			|| h->root.type != bfd_link_hash_undefweak);
+
+		  if (need_relocs)
+		    {
+		      if (indx == 0)
+			rela.r_addend = tls_block_off;
+		      else
+			rela.r_addend = 0;
+
+		      rela.r_info = ELFNN_R_INFO (indx, R_LARCH_TLS_TPRELNN);
+		      loongarch_elf_append_rela (output_bfd, relgot, &rela);
+		    }
+		  bfd_put_NN (output_bfd, rela.r_addend, got->contents + got_off);
+		}
+	      relocation = (got_off & (~(bfd_vma)1)) + sec_addr (got);
+	    }
+
+	  if (r_type == R_LARCH_TLS_IE_PC_HI20)
+	    RELOCATE_CALC_PC32_HI20 (relocation, pc);
+
 	  break;
 	
 	case R_LARCH_TLS_IE_PC_LO12:
@@ -3505,16 +3521,15 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_TLS_IE64_LO20:
 	case R_LARCH_TLS_IE64_HI12:
 	  unresolved_reloc = false;
-	  bfd_vma got_off;
-	  if (h)
-	    got_off = h->got.offset;
-	  else
-	    got_off = local_got_offsets[r_symndx];
 
-	  got_off = got_off & (~(bfd_vma)1);
-	  relocation = got_off + sec_addr(got);
+	  if (h)
+	    relocation = sec_addr(got) + (h->got.offset & (~(bfd_vma)1));
+	  else
+	    relocation = sec_addr(got)
+	      + (local_got_offsets[r_symndx] & (~(bfd_vma)1));
 
 	  tls_type = _bfd_loongarch_elf_tls_type (input_bfd, h, r_symndx);
+	  /* Use both TLS_GD and TLS_IE.  */
 	  if ((tls_type & GOT_TLS_GD) && (tls_type & GOT_TLS_IE))
 	    relocation += 2 * GOT_ENTRY_SIZE;
 
@@ -3522,14 +3537,8 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    relocation &= (bfd_vma)0xfff;
 	  else if (r_type == R_LARCH_TLS_IE64_PC_LO20
 		   || r_type == R_LARCH_TLS_IE64_PC_HI12)
-	    {
-	      bfd_vma lo = (relocation) & ((bfd_vma)0xfff);
-	      if (lo > 0x7ff)
-		{
-		  relocation -= 0x100000000;
-		}
-	      relocation -= (pc & ~(bfd_vma)0xffffffff);
-	    }
+	    RELOCATE_CALC_PC64_HI32 (relocation, pc);
+
 	  break;
 
 	default:
@@ -3722,8 +3731,8 @@ loongarch_elf_finish_dynamic_symbol (bfd *output_bfd,
 	  /* Fill in the entry in the .rela.plt section.  */
 	  rela.r_info = ELFNN_R_INFO (h->dynindx, R_LARCH_JUMP_SLOT);
 	  rela.r_addend = 0;
-          loc = relplt->contents + plt_idx * sizeof (ElfNN_External_Rela);
-          bed->s->swap_reloca_out (output_bfd, &rela, loc);
+	  loc = relplt->contents + plt_idx * sizeof (ElfNN_External_Rela);
+	  bed->s->swap_reloca_out (output_bfd, &rela, loc);
 	}
 
       if (!h->def_regular)
