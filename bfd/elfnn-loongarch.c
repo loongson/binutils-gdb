@@ -1126,6 +1126,7 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 
   info = (struct bfd_link_info *) inf;
   htab = loongarch_elf_hash_table (info);
+  bool dyn = htab->elf.dynamic_sections_created;
   BFD_ASSERT (htab != NULL);
 
   do
@@ -1139,9 +1140,12 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 
       if (htab->elf.splt)
 	{
-	  if (h->dynindx == -1 && !h->forced_local
-	      && !bfd_elf_link_record_dynamic_symbol (info, h))
-	    return false;
+	  if (h->dynindx == -1 && !h->forced_local && dyn
+	      && h->root.type == bfd_link_hash_undefweak)
+	    {
+	      if (!bfd_elf_link_record_dynamic_symbol (info, h))
+		return false;
+	    }
 
 	  if (!WILL_CALL_FINISH_DYNAMIC_SYMBOL (1, bfd_link_pic (info), h)
 	      && h->type != STT_GNU_IFUNC)
@@ -1195,24 +1199,14 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
     {
       asection *s;
       int tls_type = loongarch_elf_hash_entry (h)->tls_type;
-      bool dyn = htab->elf.dynamic_sections_created;
 
       /* Make sure this symbol is output as a dynamic symbol.
 	 Undefined weak syms won't yet be marked as dynamic.  */
-      if (dyn && h->dynindx == -1 && !h->forced_local)
+      if (h->dynindx == -1 && !h->forced_local && dyn
+	  && h->root.type == bfd_link_hash_undefweak)
 	{
-	  if (SYMBOL_REFERENCES_LOCAL (info, h)
-	      && (ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
-	      && h->start_stop)
-	    {
-	      /* The pr21964-4. do nothing, need srelgot.  */
-	      htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
-	    }
-	  else
-	    {
-	      if( !bfd_elf_link_record_dynamic_symbol (info, h))
-		return false;
-	    }
+	  if( !bfd_elf_link_record_dynamic_symbol (info, h))
+	    return false;
 	}
 
       s = htab->elf.sgot;
@@ -1232,12 +1226,10 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	    {
 	      s->size += GOT_ENTRY_SIZE;
 
-	      int indx = h && h->dynindx != -1 ? h->dynindx : 0;
-
 	      bool need_relocs =
 		(!bfd_link_executable (info)
-		 || indx != 0
-		 || WILL_CALL_FINISH_DYNAMIC_SYMBOL (dyn, 0, h))
+		 || !SYMBOL_REFERENCES_LOCAL (info, h)
+		 || WILL_CALL_FINISH_DYNAMIC_SYMBOL (dyn, bfd_link_pic(info), h))
 		&& (ELF_ST_VISIBILITY (h->other) == STV_DEFAULT
 		    || h->root.type != bfd_link_hash_undefweak);
 
@@ -1248,9 +1240,13 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
       else
 	{
 	  s->size += GOT_ENTRY_SIZE;
-	  if ((WILL_CALL_FINISH_DYNAMIC_SYMBOL (dyn, bfd_link_pic (info), h)
-	       && !UNDEFWEAK_NO_DYNAMIC_RELOC (info, h))
-	      || h->type == STT_GNU_IFUNC)
+	  if ((ELF_ST_VISIBILITY (h->other) == STV_DEFAULT
+	       || h->root.type != bfd_link_hash_undefweak)
+	      && (bfd_link_pic (info)
+		  || WILL_CALL_FINISH_DYNAMIC_SYMBOL (dyn, bfd_link_pic (info), h))
+	      && !UNDEFWEAK_NO_DYNAMIC_RELOC (info, h))
+	      /* Undefined weak symbol in static PIE resolves to 0 without
+		 any dynamic relocations.  */
 	    htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
 	}
     }
@@ -1914,6 +1910,7 @@ loongarch_top (int64_t *val)
 static void
 loongarch_elf_append_rela (bfd *abfd, asection *s, Elf_Internal_Rela *rel)
 {
+  BFD_ASSERT (s && s->contents);
   const struct elf_backend_data *bed;
   bfd_byte *loc;
 
@@ -2790,7 +2787,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	  if (h != NULL)
 	    {
-	      off = h->got.offset;
+	      off = h->got.offset & (~1);
 
 	      if (off == MINUS_ONE
 		  && h->type != STT_GNU_IFUNC)
@@ -2829,45 +2826,44 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		    }
 		}
 
-	      if (!WILL_CALL_FINISH_DYNAMIC_SYMBOL (is_dyn, is_pic, h)
-		  || (is_pic && SYMBOL_REFERENCES_LOCAL (info, h)))
+	      if ((h->got.offset & 1) == 0)
 		{
-		  /* This is actually a static link, or it is a
-		     -Bsymbolic link and the symbol is defined
-		     locally, or the symbol was forced to be local
-		     because of a version file.  We must initialize
-		     this entry in the global offset table.  Since the
-		     offset must always be a multiple of the word size,
-		     we use the least significant bit to record whether
-		     we have initialized it already.
-
-		     When doing a dynamic link, we create a .rela.got
-		     relocation entry to initialize the value.	This
-		     is done in the finish_dynamic_symbol routine.  */
-
-		  if (resolved_dynly)
+		  if (!WILL_CALL_FINISH_DYNAMIC_SYMBOL (is_dyn, bfd_link_pic (info), h)
+		      && ((bfd_link_pic (info)
+			   && SYMBOL_REFERENCES_LOCAL (info, h))))
 		    {
-		      fatal = (loongarch_reloc_is_fatal
-			       (info, input_bfd, input_section, rel, howto,
-				bfd_reloc_dangerous, is_undefweak, name,
-				"Internal: here shouldn't dynamic."));
-		    }
+		      /* This is actually a static link, or it is a
+			 -Bsymbolic link and the symbol is defined
+			 locally, or the symbol was forced to be local
+			 because of a version file.  We must initialize
+			 this entry in the global offset table.  Since the
+			 offset must always be a multiple of the word size,
+			 we use the least significant bit to record whether
+			 we have initialized it already.
 
-		  if (!(defined_local || resolved_to_const))
-		    {
-		      fatal = (loongarch_reloc_is_fatal
-			       (info, input_bfd, input_section, rel, howto,
-				bfd_reloc_undefined, is_undefweak, name,
-				"Internal: "));
-		      break;
-		    }
+			 When doing a dynamic link, we create a .rela.got
+			 relocation entry to initialize the value.	This
+			 is done in the finish_dynamic_symbol routine.  */
 
-		  if ((off & 1) != 0)
-		    off &= ~1;
-		  else
-		    {
-		      /* The pr21964-4. Create relocate entry.	*/
-		      if (is_pic && h->start_stop)
+		      if (resolved_dynly)
+			{
+			  fatal = (loongarch_reloc_is_fatal
+				   (info, input_bfd, input_section, rel, howto,
+				    bfd_reloc_dangerous, is_undefweak, name,
+				    "Internal: here shouldn't dynamic."));
+			}
+
+		      if (!(defined_local || resolved_to_const))
+			{
+			  fatal = (loongarch_reloc_is_fatal
+				   (info, input_bfd, input_section, rel, howto,
+				    bfd_reloc_undefined, is_undefweak, name,
+				    "Internal: "));
+			  break;
+			}
+
+			  /* The pr21964-4. Create relocate entry.	*/
+		      //      if (is_pic)
 			{
 			  asection *s;
 			  Elf_Internal_Rela outrel;
@@ -2876,10 +2872,11 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			  s = htab->elf.srelgot;
 			  if (!s)
 			    {
-			      fatal = loongarch_reloc_is_fatal (info, input_bfd,
-				    input_section, rel, howto,
-				    bfd_reloc_notsupported, is_undefweak, name,
-				    "Internal: '.rel.got' not represent");
+			      fatal = loongarch_reloc_is_fatal
+				(info, input_bfd,
+				 input_section, rel, howto,
+				 bfd_reloc_notsupported, is_undefweak, name,
+				 "Internal: '.rel.got' not represent");
 			      break;
 			    }
 
@@ -2888,9 +2885,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			  outrel.r_addend = relocation; /* Link-time addr.  */
 			  loongarch_elf_append_rela (output_bfd, s, &outrel);
 			}
-		      bfd_put_NN (output_bfd, relocation, got->contents + off);
-		      h->got.offset |= 1;
 		    }
+		  bfd_put_NN (output_bfd, relocation, got->contents + off);
+		  h->got.offset |= 1;
 		}
 	    }
 	  else
@@ -2904,7 +2901,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  break;
 		}
 
-	      off = local_got_offsets[r_symndx];
+	      off = local_got_offsets[r_symndx] & (~1);
 
 	      if (off == MINUS_ONE)
 		{
@@ -2918,9 +2915,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      /* The offset must always be a multiple of the word size.
 		 So, we can use the least significant bit to record
 		 whether we have already processed this entry.	*/
-	      if ((off & 1) != 0)
-		off &= ~1;
-	      else
+	      if (local_got_offsets[r_symndx] == 0)
 		{
 		  if (is_pic)
 		    {
@@ -3219,7 +3214,8 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      if (h != NULL)
 		{
 		  /* GOT ref or ifunc.	*/
-		  BFD_ASSERT (h->got.offset != MINUS_ONE || h->type == STT_GNU_IFUNC);
+		  BFD_ASSERT (h->got.offset != MINUS_ONE
+			      || h->type == STT_GNU_IFUNC);
 
 		  got_off = h->got.offset  & (~(bfd_vma)1);
 		  /* Hidden symbol not has .got entry,
@@ -3245,42 +3241,23 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 		    }
 
-		  if (!WILL_CALL_FINISH_DYNAMIC_SYMBOL (is_dyn, is_pic, h))
+		  if ((h->got.offset & 1) == 0)
 		    {
-		      /* This is actually a static link, or it is a
-			 -Bsymbolic link and the symbol is defined
-			 locally, or the symbol was forced to be local
-			 because of a version file.  We must initialize
-			 this entry in the global offset table.  Since the
-			 offset must always be a multiple of the word size,
-			 we use the least significant bit to record whether
-			 we have initialized it already.
-
-			 When doing a dynamic link, we create a .rela.got
-			 relocation entry to initialize the value.	This
-			 is done in the finish_dynamic_symbol routine.	*/
-
-		      BFD_ASSERT (!resolved_dynly
-				  || (defined_local || resolved_to_const));
-
-		      if ((h->got.offset & 1) == 0)
+		      /* We need to generate a R_LARCH_RELATIVE reloc once
+		       * in loongarch_elf_finish_dynamic_symbol or now, 
+		       * call finish_dyn && nopic
+		       * or !call finish_dyn && pic.  */
+		      if (!WILL_CALL_FINISH_DYNAMIC_SYMBOL (is_dyn, bfd_link_pic (info), h)
+			  && bfd_link_pic (info)
+			  && SYMBOL_REFERENCES_LOCAL (info, h))
 			{
-			  /* The pr21964-4. Create relocate entry.	*/
-			  if (is_pic && h->start_stop)
-			    {
-			      //BFD_ASSERT (false);
-			      Elf_Internal_Rela outrel;
-			      BFD_ASSERT (htab->elf.srelgot);
-			      /* We need to generate a R_LARCH_RELATIVE reloc
-				 for the dynamic linker.  */
-			      outrel.r_offset = sec_addr (got) + got_off;
-			      outrel.r_info = ELFNN_R_INFO (0, R_LARCH_RELATIVE);
-			      outrel.r_addend = relocation;
-			      loongarch_elf_append_rela (output_bfd, htab->elf.srelgot, &outrel);
-			    }
-			  bfd_put_NN (output_bfd, relocation, got->contents + got_off);
-			  h->got.offset |= 1;
+			  Elf_Internal_Rela rela;
+			  rela.r_offset = sec_addr (got) + got_off;
+			  rela.r_info = ELFNN_R_INFO (0, R_LARCH_RELATIVE);
+			  rela.r_addend = relocation;
+			  loongarch_elf_append_rela (output_bfd, htab->elf.srelgot, &rela);
 			}
+		      h->got.offset |= 1;
 		    }
 		}
 	      else
@@ -3291,23 +3268,19 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  got_off = local_got_offsets[r_symndx] & (~(bfd_vma)1);
 		  if ((local_got_offsets[r_symndx] & 1) == 0)
 		    {
-		      if (is_pic)
+		      if(bfd_link_pic (info))
 			{
-			  //	BFD_ASSERT (false);
-			  Elf_Internal_Rela outrel;
-			  BFD_ASSERT (htab->elf.srelgot);
-			  /* We need to generate a R_LARCH_RELATIVE reloc
-			     for the dynamic linker.  */
-
-			  outrel.r_offset = sec_addr (got) + got_off;
-			  outrel.r_info = ELFNN_R_INFO (0, R_LARCH_RELATIVE);
-			  outrel.r_addend = relocation;
-			  loongarch_elf_append_rela (output_bfd, htab->elf.srelgot, &outrel);
+			  Elf_Internal_Rela rela;
+			  rela.r_offset = sec_addr (got) + got_off;
+			  rela.r_info = ELFNN_R_INFO (0, R_LARCH_RELATIVE);
+			  rela.r_addend = relocation;
+			  loongarch_elf_append_rela (output_bfd, htab->elf.srelgot, &rela);
 			}
-		      bfd_put_NN (output_bfd, relocation, got->contents + got_off);
-		      local_got_offsets[r_symndx] |= 1;
 		    }
+		  local_got_offsets[r_symndx] |= 1;
 		}
+
+	      bfd_put_NN (output_bfd, relocation, got->contents + got_off);
 
 	      relocation = got_off + sec_addr(got);
 	    }
@@ -3485,10 +3458,11 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		      int indx = h && h->dynindx != -1 ? h->dynindx : 0;
 
 		      bool need_relocs =
-			(!bfd_link_executable (info) || indx != 0) &&
-			(h == NULL
-			 || ELF_ST_VISIBILITY (h->other) == STV_DEFAULT
-			 || h->root.type != bfd_link_hash_undefweak);
+			(!bfd_link_executable (info)
+			 || !SYMBOL_REFERENCES_LOCAL (info, h))
+			&& (h == NULL
+			    || ELF_ST_VISIBILITY (h->other) == STV_DEFAULT
+			    || h->root.type != bfd_link_hash_undefweak);
 
 		      if (need_relocs)
 			{
@@ -3502,8 +3476,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 			}
 		      bfd_put_NN (output_bfd, rela.r_addend, got->contents
 				  + got_off + ie_off);
-
-
 		    }
 		}
 
