@@ -828,9 +828,6 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	     Thus, only under pde, it needs pcrel only.  We discard it.  */
 	  only_need_pcrel = bfd_link_pde (info);
 
-	  if (h != NULL)
-	    h->non_got_ref = 1;
-
 	  if (h != NULL
 	      && (!bfd_link_pic (info)
 		  || h->type == STT_GNU_IFUNC))
@@ -1255,6 +1252,14 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
   if (h->dyn_relocs == NULL)
     return true;
 
+
+  /* Extra dynamic relocate,
+   * R_LARCH_64
+   * R_LARCH_PCALA_HI20 (only resolved to R_LARCH_COPY)
+   * R_LARCH_TLS_DTPRELNN
+   * R_LARCH_JUMP_SLOT
+   * R_LARCH_NN.  */
+
   if (SYMBOL_REFERENCES_LOCAL (info, h))
     {
       struct elf_dyn_relocs **pp;
@@ -1273,7 +1278,8 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
   if (h->root.type == bfd_link_hash_undefweak)
     {
       if (UNDEFWEAK_NO_DYNAMIC_RELOC (info, h)
-	  || ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
+	  || ELF_ST_VISIBILITY (h->other) != STV_DEFAULT
+	  || (!bfd_link_pic (info) && h->non_got_ref))
 	h->dyn_relocs = NULL;
       else if (h->dynindx == -1 && !h->forced_local
 	       /* Make sure this symbol is output as a dynamic symbol.
@@ -1282,12 +1288,8 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	return false;
     }
 
-  /* For reloc copy
-   * PC_HI20
-   * or LARCH_64.  */
   if (h->needs_copy)
     h->dyn_relocs = NULL;
-
 
   for (p = h->dyn_relocs; p != NULL; p = p->next)
     {
@@ -2551,11 +2553,8 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      /* Copy reloc done in finish_dyn.  */
 	      if (unresolved_reloc
-		  && (!h || (!h->needs_copy && !h->is_weakalias)))
+		  && ((!h || (!h->needs_copy && !h->is_weakalias))))
 		{
-		//  if (0 == strcmp (input_section->name, ".eh_frame"))
-		//    info->callbacks->info ("warning: %s R_LARCH_NONE\n",
-		//			   howto->name);
 		  loongarch_elf_append_rela (output_bfd, sreloc, &outrel);
 		}
 	    }
