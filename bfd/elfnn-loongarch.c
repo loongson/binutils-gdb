@@ -1214,7 +1214,19 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	  if (tls_type & GOT_TLS_GD)
 	    {
 	      s->size += 2 * GOT_ENTRY_SIZE;
-	      htab->elf.srelgot->size += 2 * sizeof (ElfNN_External_Rela);
+	      if (bfd_link_executable (info))
+		{
+		  /* Link exe and not defined local.  */
+		  if (!SYMBOL_REFERENCES_LOCAL (info, h))
+		    htab->elf.srelgot->size += 2 * sizeof (ElfNN_External_Rela);
+		}
+	      else
+		{
+		  if (SYMBOL_REFERENCES_LOCAL(info, h))
+		    htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
+		  else
+		    htab->elf.srelgot->size += 2 * sizeof (ElfNN_External_Rela);
+		}
 	    }
 
 	  /* TLS_IE needs one dynamic reloc and one GOT slot.  */
@@ -1222,15 +1234,16 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	    {
 	      s->size += GOT_ENTRY_SIZE;
 
-	      bool need_relocs =
-		(!bfd_link_executable (info)
-		 || !SYMBOL_REFERENCES_LOCAL (info, h)
-		 || WILL_CALL_FINISH_DYNAMIC_SYMBOL (dyn, bfd_link_pic(info), h))
-		&& (ELF_ST_VISIBILITY (h->other) == STV_DEFAULT
-		    || h->root.type != bfd_link_hash_undefweak);
-
-	      if (need_relocs)
-		htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
+	      if (bfd_link_executable (info))
+		{
+		  /* Link exe and not defined local.  */
+		  if (!SYMBOL_REFERENCES_LOCAL (info, h))
+		    htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
+		}
+	      else
+		{
+		  htab->elf.srelgot->size += sizeof (ElfNN_External_Rela);
+		}
 	    }
 	}
       else
@@ -1738,13 +1751,13 @@ loongarch_elf_size_dynamic_sections (bfd *output_bfd,
 		/* Normal got, tls ie/ld use one got.  */
 		s->size += GOT_ENTRY_SIZE;
 
-	      if (bfd_link_pic (info))
+	      if (bfd_link_executable (info)
+		  && (*local_tls_type & (GOT_TLS_GD| GOT_TLS_IE)))
+		;/* Do nothing.  */
+	      else
 		{
-		  if (*local_tls_type & (GOT_NORMAL | GOT_TLS_IE))
-		    srel->size += sizeof (ElfNN_External_Rela);
-
-		  if (*local_tls_type &GOT_TLS_GD)
-		    srel->size += sizeof (ElfNN_External_Rela) * 2;
+		  srel->size += sizeof (ElfNN_External_Rela);
+		  BFD_ASSERT(bfd_link_pic (info));
 		}
 	    }
 	  else
@@ -3131,7 +3144,6 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      relocation -= pc;
 	      relocation += rel->r_addend;
 	    }
-
 	  else if (resolved_dynly)
 	    {
 	      BFD_ASSERT (h
@@ -3374,55 +3386,43 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      if ((got_off & 1) == 0)
 		{
-		  bfd_vma tls_block_off = 0;
 		  Elf_Internal_Rela rela;
 		  asection *relgot = htab->elf.srelgot;
 
-		  if (resolved_local)
+		  rela.r_addend = 0;
+		  if (SYMBOL_REFERENCES_LOCAL (info, h))
 		    {
 		      BFD_ASSERT (elf_hash_table (info)->tls_sec);
-		      tls_block_off =
-			relocation - elf_hash_table (info)->tls_sec->vma;
-		    }
+		      bfd_vma tls_block_off = relocation
+			- elf_hash_table (info)->tls_sec->vma;
 
-		  if (tls_type & GOT_TLS_GD)
-		    {
-		      rela.r_offset = sec_addr (got) + got_off;
-		      rela.r_addend = 0;
-
-		      if (resolved_local && bfd_link_executable (info))
+		      /* Local sym, used in exec, set module id 1.  */
+		      if (bfd_link_executable (info))
+			bfd_put_NN (output_bfd, 1, got->contents + got_off);
+		      else
 			{
-			  bfd_put_NN (output_bfd, 1, got->contents + got_off);
-			}
-		      else if (resolved_local /* && !bfd_link_executable (info) */)
-			{
-			  /* Process moudleID only.  */
+			  rela.r_offset = sec_addr (got) + got_off;
 			  rela.r_info = ELFNN_R_INFO (0, R_LARCH_TLS_DTPMODNN);
 			  loongarch_elf_append_rela (output_bfd, relgot, &rela);
-
-			  bfd_put_NN (output_bfd, tls_block_off,
-				      got->contents + got_off + GOT_ENTRY_SIZE);
-			}
-		      else /* if (resolved_dynly) */
-			{
-			  /* Process moudleID.	*/
-			  rela.r_info =
-			    ELFNN_R_INFO (h->dynindx, R_LARCH_TLS_DTPMODNN);
-			  loongarch_elf_append_rela (output_bfd, relgot, &rela);
-
 			}
 
-		      /* Process offset.  */
-		      rela.r_offset += GOT_ENTRY_SIZE;
 		      bfd_put_NN (output_bfd, tls_block_off,
 				  got->contents + got_off + GOT_ENTRY_SIZE);
+		    }
+		  /* Dynamic resolved.  */
+		  else
+		    {
+		      /* Dynamic relocate module id.  */
+		      rela.r_offset = sec_addr (got) + got_off;
+		      rela.r_info =
+			ELFNN_R_INFO (h->dynindx, R_LARCH_TLS_DTPMODNN);
+		      loongarch_elf_append_rela (output_bfd, relgot, &rela);
 
-		      if (!resolved_local)
-			{
-			  rela.r_info =
-			    ELFNN_R_INFO (h->dynindx, R_LARCH_TLS_DTPRELNN);
-			  loongarch_elf_append_rela (output_bfd, relgot, &rela);
-			}
+		      /* Dynamic relocate offset of block.  */
+		      rela.r_offset += GOT_ENTRY_SIZE;
+		      rela.r_info =
+			ELFNN_R_INFO (h->dynindx, R_LARCH_TLS_DTPRELNN);
+		      loongarch_elf_append_rela (output_bfd, relgot, &rela);
 		    }
 		}
 	      relocation = (got_off & (~(bfd_vma)1)) + sec_addr (got);
@@ -3470,40 +3470,39 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      if ((got_off & 1) == 0)
 		{
-		  bfd_vma tls_block_off = 0;
 		  Elf_Internal_Rela rela;
 		  asection *relgot = htab->elf.srelgot;
 
-		  if (resolved_local)
+		  rela.r_addend = 0;
+
+		  if (SYMBOL_REFERENCES_LOCAL (info, h))
 		    {
 		      BFD_ASSERT (elf_hash_table (info)->tls_sec);
-		      tls_block_off =
-			relocation - elf_hash_table (info)->tls_sec->vma;
+		      bfd_vma tls_block_off = relocation
+			- elf_hash_table (info)->tls_sec->vma;
+
+		      /* Local sym, used in exec, set module id 1.  */
+		      if (!bfd_link_executable (info))
+			{
+			  rela.r_addend = tls_block_off;
+			  rela.r_offset = sec_addr (got) + got_off;
+			  rela.r_info = ELFNN_R_INFO (0, R_LARCH_TLS_DTPRELNN);
+			  loongarch_elf_append_rela (output_bfd, relgot, &rela);
+			}
+
+		      bfd_put_NN (output_bfd, tls_block_off,
+				  got->contents + got_off);
 		    }
-
-		  rela.r_offset = sec_addr (got) + got_off;
-		  rela.r_addend = tls_block_off;
-
-		  int indx = h && h->dynindx != -1 ? h->dynindx : 0;
-
-		  bool need_relocs =
-		    (!bfd_link_executable (info)
-		     || !SYMBOL_REFERENCES_LOCAL (info, h))
-		    && (h == NULL
-			|| ELF_ST_VISIBILITY (h->other) == STV_DEFAULT
-			|| h->root.type != bfd_link_hash_undefweak);
-
-		  if (need_relocs)
+		  /* Dynamic resolved.  */
+		  else
 		    {
-		      if (indx == 0)
-			rela.r_addend = tls_block_off;
-		      else
-			rela.r_addend = 0;
-
-		      rela.r_info = ELFNN_R_INFO (indx, R_LARCH_TLS_TPRELNN);
+		      /* Dynamic relocate offset of block.  */
+		      rela.r_offset = sec_addr (got) + got_off;
+		      rela.r_info =
+			ELFNN_R_INFO (h->dynindx, R_LARCH_TLS_DTPRELNN);
 		      loongarch_elf_append_rela (output_bfd, relgot, &rela);
 		    }
-		  bfd_put_NN (output_bfd, rela.r_addend, got->contents + got_off);
+
 		}
 	      relocation = (got_off & (~(bfd_vma)1)) + sec_addr (got);
 	    }
