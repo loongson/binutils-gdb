@@ -3453,12 +3453,12 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      if (h != NULL)
 		{
 		  got_off = h->got.offset;
-		  h->got.offset |= 1;
+		  h->got.offset |= 2;
 		}
 	      else
 		{
 		  got_off = local_got_offsets[r_symndx];
-		  local_got_offsets[r_symndx] |= 1;
+		  local_got_offsets[r_symndx] |= 2;
 		}
 
 	      BFD_ASSERT (got_off != MINUS_ONE);
@@ -3468,12 +3468,11 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      if ((tls_type & GOT_TLS_GD) && (tls_type & GOT_TLS_IE))
 		got_off += 2 * GOT_ENTRY_SIZE;
 
-	      if ((got_off & 1) == 0)
+	      if ((got_off & 2) == 0)
 		{
-		  Elf_Internal_Rela rela;
 		  asection *relgot = htab->elf.srelgot;
-
-		  rela.r_addend = 0;
+		  Elf_Internal_Rela rela;
+		  rela.r_offset = sec_addr (got) + got_off;
 
 		  if (SYMBOL_REFERENCES_LOCAL (info, h))
 		    {
@@ -3485,8 +3484,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		      if (!bfd_link_executable (info))
 			{
 			  rela.r_addend = tls_block_off;
-			  rela.r_offset = sec_addr (got) + got_off;
-			  rela.r_info = ELFNN_R_INFO (0, R_LARCH_TLS_DTPRELNN);
+			  rela.r_info = ELFNN_R_INFO (0, R_LARCH_TLS_TPRELNN);
 			  loongarch_elf_append_rela (output_bfd, relgot, &rela);
 			}
 
@@ -3497,14 +3495,13 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  else
 		    {
 		      /* Dynamic relocate offset of block.  */
-		      rela.r_offset = sec_addr (got) + got_off;
+		      rela.r_addend = 0;
 		      rela.r_info =
-			ELFNN_R_INFO (h->dynindx, R_LARCH_TLS_DTPRELNN);
+			ELFNN_R_INFO (h->dynindx, R_LARCH_TLS_TPRELNN);
 		      loongarch_elf_append_rela (output_bfd, relgot, &rela);
 		    }
-
 		}
-	      relocation = (got_off & (~(bfd_vma)1)) + sec_addr (got);
+	      relocation = (got_off & (~(bfd_vma)3)) + sec_addr (got);
 	    }
 
 	  if (r_type == R_LARCH_TLS_IE_PC_HI20)
@@ -3521,10 +3518,10 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  unresolved_reloc = false;
 
 	  if (h)
-	    relocation = sec_addr(got) + (h->got.offset & (~(bfd_vma)1));
+	    relocation = sec_addr(got) + (h->got.offset & (~(bfd_vma)3));
 	  else
 	    relocation = sec_addr(got)
-	      + (local_got_offsets[r_symndx] & (~(bfd_vma)1));
+	      + (local_got_offsets[r_symndx] & (~(bfd_vma)3));
 
 	  tls_type = _bfd_loongarch_elf_tls_type (input_bfd, h, r_symndx);
 	  /* Use both TLS_GD and TLS_IE.  */
