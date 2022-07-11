@@ -2565,8 +2565,13 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		}
 
 	      /* Copy reloc done in finish_dyn.  */
-	      if (unresolved_reloc
-		  && ((!h || (!h->needs_copy && !h->is_weakalias))))
+	      /* No alloc space of func allocate_dynrelocs.  */
+	      bool need_dyn_reloc = true;
+
+	      if (h && (h->needs_copy || h->is_weakalias || !h->dyn_relocs))
+		need_dyn_reloc = false;
+
+	      if (unresolved_reloc && need_dyn_reloc)
 		{
 		  loongarch_elf_append_rela (output_bfd, sreloc, &outrel);
 		}
