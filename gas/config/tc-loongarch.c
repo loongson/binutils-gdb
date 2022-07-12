@@ -17,7 +17,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; see the file COPYING3.  If not,
-   see <http://www.gnu.org/licenses/>.	*/
+   see <http://www.gnu.org/licenses/>.  */
 
 #include "as.h"
 #include "dw2gencfi.h"
@@ -82,7 +82,7 @@ const char comment_chars[] = "#";
 
 /* This array holds the chars that only start a comment at the beginning of
    a line.  If the line seems to have the form '# 123 filename'
-   .line and .file directives will appear in the pre-processed output.	*/
+   .line and .file directives will appear in the pre-processed output.  */
 /* Note that input_file.c hand checks for '#' at the beginning of the
    first line of the input file.  This is because the compiler outputs
    #NO_APP at the beginning of its output.  */
@@ -97,7 +97,7 @@ const char EXP_CHARS[] = "eE";
 
 /* Chars that mean this number is a floating point constant.  */
 /* As in 0f12.456.  */
-/* or	 0d1.2345e12.  */
+/* or    0d1.2345e12.  */
 const char FLT_CHARS[] = "rRsSfFdDxXpP";
 
 const char *md_shortopts = "O::g::G:";
@@ -260,7 +260,7 @@ loongarch_after_parse_args ()
   for (i = 0; i < ARRAY_SIZE (loongarch_cr_normal_name); i++)
     str_hash_insert (cr_htab, loongarch_cr_normal_name[i], (void *) (i + 1), 0);
 
-  /* Init single/double float registers names.	*/
+  /* Init single/double float registers names.  */
   if (LARCH_opts.ase_sf || LARCH_opts.ase_df)
     {
       if (!f_htab)
@@ -279,7 +279,7 @@ loongarch_after_parse_args ()
 
     }
 
-  /* Init lsx registers names.	*/
+  /* Init lsx registers names.  */
   if (LARCH_opts.ase_lsx)
     {
       if (!v_htab)
@@ -374,7 +374,7 @@ s_loongarch_align (int arg)
     s_align_ptwo (0);
 }
 
-/* Handle the .dtprelword and .dtpreldword pseudo-ops.	They generate
+/* Handle the .dtprelword and .dtpreldword pseudo-ops.  They generate
    a 32-bit or 64-bit DTP-relative relocation (BYTES says which) for
    use in DWARF debug information.  */
 
@@ -636,13 +636,13 @@ loongarch_args_parser_can_match_arg_helper (char esc_ch1, char esc_ch2,
 		      _("not support reloc bit-field\nfmt: %c%c %s\nargs: %s"),
 		      esc_ch1, esc_ch2, bit_field, arg);
 	  if (ip->reloc_info[0].type >= BFD_RELOC_LARCH_B16 &&
-	       // ip->reloc_info[0].type <= BFD_RELOC_LARCH_TLSGD64_HI20){
-	      ip->reloc_info[0].type <= BFD_RELOC_LARCH_RELAX){
-	    /* As we compact stack-relocs, it is no need for pop operation.
-	       But break out until here in order to check the imm field. */
-	    ip->reloc_num = 1;
-	    break;
-	  }
+	      ip->reloc_info[0].type < BFD_RELOC_LARCH_RELAX)
+	    {
+	      /* As we compact stack-relocs, it is no need for pop operation.
+		 But break out until here in order to check the imm field.  */
+	      ip->reloc_num = 1;
+	      break;
+	    }
 	  reloc_num++;
 	  ip->reloc_num += reloc_num;
 	  ip->reloc_info[ip->reloc_num - 1].type = reloc_type;
@@ -727,7 +727,7 @@ loongarch_args_parser_can_match_arg_helper (char esc_ch1, char esc_ch2,
 
       if ((esc_ch1 == 's' && bit_width < bits_needed_s)
 	  || (esc_ch1 != 's' && bit_width < bits_needed_u))
-	/* How to do after we detect overflow.	*/
+	/* How to do after we detect overflow.  */
 	as_fatal (_("Immediate overflow.\n"
 		    "format: %c%c%s\n"
 		    "arg: %s"),
@@ -803,7 +803,7 @@ check_this_insn_before_appending (struct loongarch_cl_insn *ip)
       ip->reloc_num++;
     }
   else if (ip->insn->mask == 0xffff8000
-	   /* amswap.w	rd, rk, rj  */
+	   /* amswap.w  rd, rk, rj  */
 	   && ((ip->insn_bin & 0xfff00000) == 0x38600000
 	       /* ammax_db.wu  rd, rk, rj  */
 	       || (ip->insn_bin & 0xffff0000) == 0x38700000
@@ -828,7 +828,7 @@ check_this_insn_before_appending (struct loongarch_cl_insn *ip)
 	as_fatal (_("bstr(ins|pick).[wd] require msbd >= lsbd"));
     }
   else if (ip->insn->mask != 0 && (ip->insn_bin & 0xfe0003c0) == 0x04000000
-	   /* csrxchg  rd, rj, csr_num	*/
+	   /* csrxchg  rd, rj, csr_num  */
 	   && (strcmp ("csrxchg", ip->name) == 0))
     as_fatal (_("csrxchg require rj != $r0 && rj != $r1"));
 
@@ -1118,7 +1118,7 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
     case BFD_RELOC_LARCH_TLS_LD64_HI20:
     case BFD_RELOC_LARCH_TLS_GD_PC_HI20:
     case BFD_RELOC_LARCH_TLS_GD64_HI20:
-      /* add tls lo(got_lo reloc type. ) */
+      /* Add tls lo(got_lo reloc type).  */
       if (fixP->fx_addsy == NULL)
 	as_bad_where (fixP->fx_file, fixP->fx_line,
 		      _("Relocation against a constant"));
@@ -1221,7 +1221,7 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
       if (fixP->fx_addsy == NULL)
 	{
 	  as_bad_where (fixP->fx_file, fixP->fx_line,
-			_ ("Relocation against a constant"));
+			_ ("Relocation against a constant."));
 	}
       if (S_GET_SEGMENT (fixP->fx_addsy) == seg
 	  && !S_FORCE_RELOC(fixP->fx_addsy, 1))
@@ -1257,7 +1257,7 @@ md_estimate_size_before_relax (fragS *fragp ATTRIBUTE_UNUSED,
 int
 loongarch_fix_adjustable (fixS *fix)
 {
-  /* Prevent all adjustments to global symbols */
+  /* Prevent all adjustments to global symbols.  */
   if (S_IS_EXTERNAL (fix->fx_addsy)
       || S_IS_WEAK (fix->fx_addsy)
       || S_FORCE_RELOC (fix->fx_addsy, true))
@@ -1304,14 +1304,6 @@ loongarch_cfi_frame_initial_instructions (void)
 {
   cfi_add_CFA_def_cfa_register (3 /* $sp */);
 }
-
-/*
-int
-loongarch_dwarf2_addr_size (void)
-{
-  return LARCH_opts.ase_lp64 ? 8 : 4;
-}
-*/
 
 void
 tc_loongarch_parse_to_dw2regnum (expressionS *exp)
@@ -1366,4 +1358,3 @@ loongarch_elf_final_processing (void)
 {
   elf_elfheader (stdoutput)->e_flags = LARCH_opts.ase_abi;
 }
-

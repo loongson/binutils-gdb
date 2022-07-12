@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; see the file COPYING3.  If not,
-   see <http://www.gnu.org/licenses/>.	*/
+   see <http://www.gnu.org/licenses/>.  */
 %{
 #include "as.h"
 #include "loongarch-lex.h"
@@ -99,14 +99,6 @@ my_getExpression (expressionS *ep, const char *str)
   input_line_pointer = save_in;
   return ret;
 }
-
-#define SET_RELOC_TYPE_ON_TOP(key, name)	\
-else if (strcmp (op_c_str, key) == 0)		\
-  do {						\
-    top->value = id_sym_expr;			\
-    top->type = BFD_RELOC_LARCH_##name;		\
-    top++;					\
-  } while (0)
 
 static void
 reloc (const char *op_c_str, const char *id_c_str, offsetT addend)

@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; see the file COPYING3.  If not,
-   see <http://www.gnu.org/licenses/>.	*/
+   see <http://www.gnu.org/licenses/>.  */
 
 #ifndef _ELF_LOONGARCH_H
 #define _ELF_LOONGARCH_H
@@ -24,7 +24,7 @@
 #include "libiberty.h"
 
 START_RELOC_NUMBERS (elf_loongarch_reloc_type)
-/* Used by the dynamic linker.	*/
+/* Used by the dynamic linker.  */
 RELOC_NUMBER (R_LARCH_NONE, 0)
 RELOC_NUMBER (R_LARCH_32, 1)
 RELOC_NUMBER (R_LARCH_64, 2)
@@ -39,7 +39,7 @@ RELOC_NUMBER (R_LARCH_TLS_TPREL32, 10)
 RELOC_NUMBER (R_LARCH_TLS_TPREL64, 11)
 RELOC_NUMBER (R_LARCH_IRELATIVE, 12)
 
-/* Reserved for future relocs that the dynamic linker must understand.	*/
+/* Reserved for future relocs that the dynamic linker must understand.  */
 
 /* Used by the static linker for relocating .text.  */
 RELOC_NUMBER (R_LARCH_MARK_LA, 20)
@@ -74,7 +74,7 @@ RELOC_NUMBER (R_LARCH_SOP_POP_32_S_0_5_10_16_S2, 44)
 RELOC_NUMBER (R_LARCH_SOP_POP_32_S_0_10_10_16_S2, 45)
 RELOC_NUMBER (R_LARCH_SOP_POP_32_U, 46)
 
-/* Used by the static linker for relocating non .text.	*/
+/* Used by the static linker for relocating non .text.  */
 RELOC_NUMBER (R_LARCH_ADD8, 47)
 RELOC_NUMBER (R_LARCH_ADD16, 48)
 RELOC_NUMBER (R_LARCH_ADD24, 49)
@@ -106,7 +106,7 @@ RELOC_NUMBER (R_LARCH_B26, 66)
 
 /* ABS: 32/64
  * lu12i.w
- * %abs_hi20(sym).	*/
+ * %abs_hi20(sym).  */
 RELOC_NUMBER (R_LARCH_ABS_HI20, 67)
 /* ABS: 32/64
  * ori
@@ -118,7 +118,7 @@ RELOC_NUMBER (R_LARCH_ABS_LO12, 68)
  * %abs64_lo20(sym).  */
 RELOC_NUMBER (R_LARCH_ABS64_LO20, 69)
 /* ABS: 64
- * lu52i.d 
+ * lu52i.d
  * %abs64_hi12(sym).  */
 RELOC_NUMBER (R_LARCH_ABS64_HI12, 70)
 
