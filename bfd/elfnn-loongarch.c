@@ -3170,23 +3170,9 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_PCALA64_LO20:
 	case R_LARCH_PCALA64_HI12:
 	  if (h && h->plt.offset != MINUS_ONE)
-	    {
-	      BFD_ASSERT (rel->r_addend == 0);
-	      relocation = sec_addr (plt) + h->plt.offset;
-	    }
+	    relocation = sec_addr (plt) + h->plt.offset;
 	  else
-	    {
-	      /* Not support if sym_addr in 2k page edge.
-	       * pcalau12i pc_hi20(sym_addr)
-	       * ld.w/d pc_lo12(sym_addr)
-	       * ld.w/d pc_lo12(sym_addr + x)
-	       * ...
-	       * can not calc correct address
-	       * if sym_addr < 0x800 && sym_addr + x >= 0x800.  */
-	      BFD_ASSERT (!((relocation & 0xfff) < 0x800
-			    && ((relocation + rel->r_addend) & 0xfff) >= 0x800));
-	      relocation += rel->r_addend;
-	    }
+	    relocation += rel->r_addend;
 
 	  RELOCATE_CALC_PC64_HI32 (relocation, pc);
 
