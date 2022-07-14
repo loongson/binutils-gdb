@@ -142,7 +142,3 @@ lu12i.w $r4,%le_hi20(TLSL1 + 0x8)
 ori $r5,$r4,%le_lo12(TLSL1 + 0x8)
 lu32i.d $r4,%le64_lo20(TLSL1 + 0x8)
 lu52i.d $r5,$r4,%le64_hi12(TLSL1 + 0x8)
-
-
-
-

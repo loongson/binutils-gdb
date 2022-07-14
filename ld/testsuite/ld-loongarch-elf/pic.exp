@@ -25,7 +25,12 @@ if ![istarget loongarch*-*-*] {
 
 global verbose
 set old_verbose verbose
-#set verbose 3
+# set verbose 3
+
+# Check to see if the C compiler works
+if { ![check_compiler_available] } {
+    return
+}
 
 
 set testname "nopic link test pre build"
@@ -131,9 +136,6 @@ set link_tests [list \
 #  6:name of output file
 #  7:compiler flags (optional)
 run_ld_link_tests $link_tests
-
-
-
 
 set testname "nopic link exec test"
 
