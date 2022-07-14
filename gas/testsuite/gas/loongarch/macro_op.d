@@ -1,5 +1,6 @@
 #as:
 #objdump: -dr
+#skip: loongarch32-*-*
 
 .*:[    ]+file format .*
 

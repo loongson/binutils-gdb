@@ -23,8 +23,8 @@ main:
 	addi.d	$r22,$r3,16
 	.cfi_def_cfa 22, 0
 	.loc 1 8 15
-	pcalau12i	$r12,%pc_hi20(g_nopic)
-	addi.d	$r12,$r12,%pc_lo12(g_nopic)
+	pcalau12i	$r12,%got_pc_hi20(g_nopic)
+	ld.d	$r12,$r12,%got_pc_lo12(g_nopic)
 	ldptr.w	$r12,$r12,0
 	.loc 1 8 6
 	or	$r13,$r12,$r0
@@ -32,8 +32,8 @@ main:
 	ori	$r12,$r12,1656
 	bne	$r13,$r12,.L2
 	.loc 1 9 5
-	pcalau12i	$r12,%pc_hi20(g_nopic)
-	addi.d	$r12,$r12,%pc_lo12(g_nopic)
+	pcalau12i	$r12,%got_pc_hi20(g_nopic)
+	ld.d	$r12,$r12,%got_pc_lo12(g_nopic)
 	ldptr.w	$r12,$r12,0
 	or	$r5,$r12,$r0
 	pcalau12i	$r12,%pc_hi20(.LC0)
