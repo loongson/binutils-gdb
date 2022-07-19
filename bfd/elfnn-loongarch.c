@@ -1491,19 +1491,18 @@ elfNN_allocate_ifunc_dynrelocs (struct elf_link_hash_entry *h, void *inf)
     {
       if (SYMBOL_REFERENCES_LOCAL (info, h))
 	return local_allocate_ifunc_dyn_relocs (info, h,
-					       &h->dyn_relocs,
-					       PLT_ENTRY_SIZE,
-					       PLT_HEADER_SIZE,
-					       GOT_ENTRY_SIZE,
-					       false);
+						&h->dyn_relocs,
+						PLT_ENTRY_SIZE,
+						PLT_HEADER_SIZE,
+						GOT_ENTRY_SIZE,
+						false);
       else
 	return _bfd_elf_allocate_ifunc_dyn_relocs (info, h,
-					       &h->dyn_relocs,
-					       PLT_ENTRY_SIZE,
-					       PLT_HEADER_SIZE,
-					       GOT_ENTRY_SIZE,
-					       false);
-
+						   &h->dyn_relocs,
+						   PLT_ENTRY_SIZE,
+						   PLT_HEADER_SIZE,
+						   GOT_ENTRY_SIZE,
+						   false);
     }
 
   return true;
@@ -2438,22 +2437,40 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      outrel.r_offset += sec_addr (input_section);
 
-	      /* A pointer point to a local ifunc symbol.  */
-	      if(h
-		 && h->type == STT_GNU_IFUNC
-		 && (h->dynindx == -1
-		     || h->forced_local
-		     || bfd_link_executable(info)))
+	      /* A pointer point to a ifunc symbol.  */
+	      if(h && h->type == STT_GNU_IFUNC)
 		{
-		  outrel.r_info = ELFNN_R_INFO (0, R_LARCH_IRELATIVE);
-		  outrel.r_addend = (h->root.u.def.value
-				     + h->root.u.def.section->output_section->vma
-				     + h->root.u.def.section->output_offset);
-
-		  if (htab->elf.splt != NULL)
-		    sreloc = htab->elf.srelgot;
+		  if (h->dynindx == -1)
+		    {
+		      outrel.r_info = ELFNN_R_INFO (0, R_LARCH_IRELATIVE);
+		      outrel.r_addend = (h->root.u.def.value
+					 + h->root.u.def.section->output_section->vma
+					 + h->root.u.def.section->output_offset);
+		    }
 		  else
-		    sreloc = htab->elf.irelplt;
+		    {
+		      outrel.r_info = ELFNN_R_INFO (h->dynindx, R_LARCH_NN);
+		      outrel.r_addend = 0;
+		    }
+
+		  if (SYMBOL_REFERENCES_LOCAL (info, h))
+		    {
+
+		      if (htab->elf.splt != NULL)
+			sreloc = htab->elf.srelgot;
+		      else
+			sreloc = htab->elf.irelplt;
+		    }
+		  else
+		    {
+
+		      if (bfd_link_pic (info))
+			sreloc = htab->elf.irelifunc;
+		      else if (htab->elf.splt != NULL)
+			sreloc = htab->elf.srelgot;
+		      else
+			sreloc = htab->elf.irelplt;
+		    }
 		}
 	      else if (resolved_dynly)
 		{
