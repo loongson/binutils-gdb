@@ -683,7 +683,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
       switch (r_type)
 	{
 	case R_LARCH_GOT_PC_HI20:
-	case R_LARCH_GOT64_HI20:
+	case R_LARCH_GOT_HI20:
 	case R_LARCH_SOP_PUSH_GPREL:
 	  /* For la.global.  */
 	  if (h)
@@ -695,9 +695,9 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	  break;
 
 	case R_LARCH_TLS_LD_PC_HI20:
-	case R_LARCH_TLS_LD64_HI20:
+	case R_LARCH_TLS_LD_HI20:
 	case R_LARCH_TLS_GD_PC_HI20:
-	case R_LARCH_TLS_GD64_HI20:
+	case R_LARCH_TLS_GD_HI20:
 	case R_LARCH_SOP_PUSH_TLS_GD:
 	  if (!loongarch_elf_record_tls_and_got_reference (abfd, info, h,
 							   r_symndx,
@@ -706,7 +706,7 @@ loongarch_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	  break;
 
 	case R_LARCH_TLS_IE_PC_HI20:
-	case R_LARCH_TLS_IE64_HI20:
+	case R_LARCH_TLS_IE_HI20:
 	case R_LARCH_SOP_PUSH_TLS_GOT:
 	  if (bfd_link_pic (info))
 	    /* May fail for lazy-bind.  */
@@ -2023,7 +2023,7 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
       break;
 
     /* New reloc type.
-       R_LARCH_B16 ~ R_LARCH_TLS_GD64_HI20.  */
+       R_LARCH_B16 ~ R_LARCH_TLS_GD_HI20.  */
     case R_LARCH_B16:
     case R_LARCH_B21:
     case R_LARCH_B26:
@@ -2039,8 +2039,8 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
     case R_LARCH_GOT_PC_LO12:
     case R_LARCH_GOT64_PC_LO20:
     case R_LARCH_GOT64_PC_HI12:
-    case R_LARCH_GOT64_HI20:
-    case R_LARCH_GOT64_LO12:
+    case R_LARCH_GOT_HI20:
+    case R_LARCH_GOT_LO12:
     case R_LARCH_GOT64_LO20:
     case R_LARCH_GOT64_HI12:
     case R_LARCH_TLS_LE_HI20:
@@ -2051,14 +2051,14 @@ perform_relocation (const Elf_Internal_Rela *rel, asection *input_section,
     case R_LARCH_TLS_IE_PC_LO12:
     case R_LARCH_TLS_IE64_PC_LO20:
     case R_LARCH_TLS_IE64_PC_HI12:
-    case R_LARCH_TLS_IE64_HI20:
-    case R_LARCH_TLS_IE64_LO12:
+    case R_LARCH_TLS_IE_HI20:
+    case R_LARCH_TLS_IE_LO12:
     case R_LARCH_TLS_IE64_LO20:
     case R_LARCH_TLS_IE64_HI12:
     case R_LARCH_TLS_LD_PC_HI20:
-    case R_LARCH_TLS_LD64_HI20:
+    case R_LARCH_TLS_LD_HI20:
     case R_LARCH_TLS_GD_PC_HI20:
-    case R_LARCH_TLS_GD64_HI20:
+    case R_LARCH_TLS_GD_HI20:
       r = loongarch_check_offset (rel, input_section);
       if (r != bfd_reloc_ok)
 	break;
@@ -3118,7 +3118,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  break;
 
 	case R_LARCH_GOT_PC_HI20:
-	case R_LARCH_GOT64_HI20:
+	case R_LARCH_GOT_HI20:
 	  /* Calc got offset.  */
 	    {
 	      unresolved_reloc = false;
@@ -3211,7 +3211,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_GOT_PC_LO12:
 	case R_LARCH_GOT64_PC_LO20:
 	case R_LARCH_GOT64_PC_HI12:
-	case R_LARCH_GOT64_LO12:
+	case R_LARCH_GOT_LO12:
 	case R_LARCH_GOT64_LO20:
 	case R_LARCH_GOT64_HI12:
 	    {
@@ -3266,16 +3266,16 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	   Now, LD and GD is both GOT_TLS_GD type, LD seems to
 	   can be omitted.  */
 	case R_LARCH_TLS_IE_PC_HI20:
-	case R_LARCH_TLS_IE64_HI20:
+	case R_LARCH_TLS_IE_HI20:
 	case R_LARCH_TLS_LD_PC_HI20:
-	case R_LARCH_TLS_LD64_HI20:
+	case R_LARCH_TLS_LD_HI20:
 	case R_LARCH_TLS_GD_PC_HI20:
-	case R_LARCH_TLS_GD64_HI20:
+	case R_LARCH_TLS_GD_HI20:
 	  BFD_ASSERT (rel->r_addend == 0);
 	  unresolved_reloc = false;
 
 	  if (r_type == R_LARCH_TLS_IE_PC_HI20
-	      || r_type == R_LARCH_TLS_IE64_HI20)
+	      || r_type == R_LARCH_TLS_IE_HI20)
 	    is_ie = true;
 
 	  bfd_vma got_off = 0;
@@ -3383,7 +3383,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	case R_LARCH_TLS_IE_PC_LO12:
 	case R_LARCH_TLS_IE64_PC_LO20:
 	case R_LARCH_TLS_IE64_PC_HI12:
-	case R_LARCH_TLS_IE64_LO12:
+	case R_LARCH_TLS_IE_LO12:
 	case R_LARCH_TLS_IE64_LO20:
 	case R_LARCH_TLS_IE64_HI12:
 	  unresolved_reloc = false;
