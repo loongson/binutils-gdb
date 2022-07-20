@@ -1208,14 +1208,14 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
   return true;
 }
 
-/* Based function _bfd_elf_allocate_ifunc_dyn_relocs.
+/* A modified version of _bfd_elf_allocate_ifunc_dyn_relocs.
    For local def and ref ifunc,
    dynamic relocations are stored in
-   1.  rel[a].irelifunc section in PIC object.
-   2.  rel[a].srelgot section in dynamic executable.
-   3.  rel[a].irelplt section in static executable.
-   Change ifunc dynamic info from srelplt to srelgot.
-   In loader, remove R_LARCH_IRELACTIVE from rela lazy in ld.so.  */
+   1.  rela.srelgot section in dynamic object (dll or exec).
+   2.  rela.irelplt section in static executable.
+   Unlike _bfd_elf_allocate_ifunc_dyn_relocs, .rela.srelgot is used
+   instead of .rela.srelplt.  Glibc ELF loader will not support
+   R_LARCH_IRELATIVE relocation in .rela.plt.  */
 
 static bool
 local_allocate_ifunc_dyn_relocs (struct bfd_link_info *info,
