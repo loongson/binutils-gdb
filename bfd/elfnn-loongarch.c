@@ -2748,8 +2748,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	    {
 	      off = h->got.offset & (~1);
 
-	      if (off == MINUS_ONE
-		  && h->type != STT_GNU_IFUNC)
+	      if (h->got.offset == MINUS_ONE && h->type != STT_GNU_IFUNC)
 		{
 		  fatal = (loongarch_reloc_is_fatal
 			   (info, input_bfd, input_section, rel, howto,
@@ -2760,8 +2759,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      /* Hidden symbol not has .got entry, only .got.plt entry
 		 so gprel is (plt - got).  */
-	      if (off == MINUS_ONE
-		  && h->type == STT_GNU_IFUNC)
+	      if (h->got.offset == MINUS_ONE && h->type == STT_GNU_IFUNC)
 		{
 		  if (h->plt.offset == (bfd_vma) -1)
 		    {
@@ -2859,7 +2857,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      off = local_got_offsets[r_symndx] & (~1);
 
-	      if (off == MINUS_ONE)
+	      if (local_got_offsets[r_symndx] == MINUS_ONE)
 		{
 		  fatal = (loongarch_reloc_is_fatal
 			   (info, input_bfd, input_section, rel, howto,
