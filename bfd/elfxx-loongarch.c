@@ -987,7 +987,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 reloc_bits,				/* adjust_reloc_bits */
 	 "got64_pc_hi12"),			/* larch_reloc_type_name */
 
-  LOONGARCH_HOWTO (R_LARCH_GOT64_HI20,		/* type (79).  */
+  LOONGARCH_HOWTO (R_LARCH_GOT_HI20,		/* type (79).  */
 	 12,					/* rightshift.  */
 	 4,					/* size.  */
 	 20,					/* bitsize.  */
@@ -995,16 +995,16 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 5,					/* bitpos.  */
 	 complain_overflow_signed,		/* complain_on_overflow.  */
 	 bfd_elf_generic_reloc,			/* special_function.  */
-	 "R_LARCH_GOT64_HI20",			/* name.  */
+	 "R_LARCH_GOT_HI20",			/* name.  */
 	 false,					/* partial_inplace.  */
 	 0,					/* src_mask */
 	 0x1ffffe0,				/* dst_mask */
 	 false,					/* pcrel_offset */
-	 BFD_RELOC_LARCH_GOT64_HI20,		/* bfd_reloc_code_real_type */
+	 BFD_RELOC_LARCH_GOT_HI20,		/* bfd_reloc_code_real_type */
 	 reloc_bits,				/* adjust_reloc_bits */
-	 "got64_hi20"),				/* larch_reloc_type_name */
+	 "got_hi20"),				/* larch_reloc_type_name */
 
-  LOONGARCH_HOWTO (R_LARCH_GOT64_LO12,		/* type (80).  */
+  LOONGARCH_HOWTO (R_LARCH_GOT_LO12,		/* type (80).  */
 	 0,					/* rightshift.  */
 	 4,					/* size.  */
 	 12,					/* bitsize.  */
@@ -1012,14 +1012,14 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 10,					/* bitpos.  */
 	 complain_overflow_signed,		/* complain_on_overflow.  */
 	 bfd_elf_generic_reloc,			/* special_function.  */
-	 "R_LARCH_GOT64_LO12",			/* name.  */
+	 "R_LARCH_GOT_LO12",			/* name.  */
 	 false,					/* partial_inplace.  */
 	 0,					/* src_mask */
 	 0x3ffc00,				/* dst_mask */
 	 false,					/* pcrel_offset */
-	 BFD_RELOC_LARCH_GOT64_LO12,		/* bfd_reloc_code_real_type */
+	 BFD_RELOC_LARCH_GOT_LO12,		/* bfd_reloc_code_real_type */
 	 reloc_bits,				/* adjust_reloc_bits */
-	 "got64_lo12"),				/* larch_reloc_type_name */
+	 "got_lo12"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_GOT64_LO20,		/* type (81).  */
 	 32,					/* rightshift.  */
@@ -1191,7 +1191,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 reloc_bits,				/* adjust_reloc_bits */
 	 "ie64_pc_hi12"),			/* larch_reloc_type_name */
 
-  LOONGARCH_HOWTO (R_LARCH_TLS_IE64_HI20,	/* type (91).  */
+  LOONGARCH_HOWTO (R_LARCH_TLS_IE_HI20,	/* type (91).  */
 	 12,					/* rightshift.  */
 	 4,					/* size.  */
 	 20,					/* bitsize.  */
@@ -1199,16 +1199,16 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 5,					/* bitpos.  */
 	 complain_overflow_signed,		/* complain_on_overflow.  */
 	 bfd_elf_generic_reloc,			/* special_function.  */
-	 "R_LARCH_TLS_IE64_HI20",		/* name.  */
+	 "R_LARCH_TLS_IE_HI20",			/* name.  */
 	 false,					/* partial_inplace.  */
 	 0,					/* src_mask */
 	 0x1ffffe0,				/* dst_mask */
 	 false,					/* pcrel_offset */
-	 BFD_RELOC_LARCH_TLS_IE64_HI20,		/* bfd_reloc_code_real_type */
+	 BFD_RELOC_LARCH_TLS_IE_HI20,		/* bfd_reloc_code_real_type */
 	 reloc_bits,				/* adjust_reloc_bits */
-	 "ie64_hi20"),				/* larch_reloc_type_name */
+	 "ie_hi20"),				/* larch_reloc_type_name */
 
-  LOONGARCH_HOWTO (R_LARCH_TLS_IE64_LO12,	/* type (92).  */
+  LOONGARCH_HOWTO (R_LARCH_TLS_IE_LO12,		/* type (92).  */
 	 0,					/* rightshift.  */
 	 4,					/* size.  */
 	 12,					/* bitsize.  */
@@ -1216,14 +1216,14 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 10,					/* bitpos.  */
 	 complain_overflow_signed,		/* complain_on_overflow.  */
 	 bfd_elf_generic_reloc,			/* special_function.  */
-	 "R_LARCH_TLS_IE64_LO12",		/* name.  */
+	 "R_LARCH_TLS_IE_LO12",			/* name.  */
 	 false,					/* partial_inplace.  */
 	 0,					/* src_mask */
 	 0x3ffc00,				/* dst_mask */
 	 false,					/* pcrel_offset */
-	 BFD_RELOC_LARCH_TLS_IE64_LO12,		/* bfd_reloc_code_real_type */
+	 BFD_RELOC_LARCH_TLS_IE_LO12,		/* bfd_reloc_code_real_type */
 	 reloc_bits,				/* adjust_reloc_bits */
-	 "ie64_lo12"),				/* larch_reloc_type_name */
+	 "ie_lo12"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_TLS_IE64_LO20,	/* type (93).  */
 	 32,					/* rightshift.  */
@@ -1276,7 +1276,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 reloc_bits,				/* adjust_reloc_bits */
 	 "ld_pc_hi20"),				/* larch_reloc_type_name */
 
-  LOONGARCH_HOWTO (R_LARCH_TLS_LD64_HI20,	/* type (96).  */
+  LOONGARCH_HOWTO (R_LARCH_TLS_LD_HI20,		/* type (96).  */
 	 12,					/* rightshift.  */
 	 4,					/* size.  */
 	 20,					/* bitsize.  */
@@ -1284,14 +1284,14 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 5,					/* bitpos.  */
 	 complain_overflow_signed,		/* complain_on_overflow.  */
 	 bfd_elf_generic_reloc,			/* special_function.  */
-	 "R_LARCH_TLS_LD64_HI20",		/* name.  */
+	 "R_LARCH_TLS_LD_HI20",			/* name.  */
 	 false,					/* partial_inplace.  */
 	 0,					/* src_mask */
 	 0x1ffffe0,				/* dst_mask */
 	 false,					/* pcrel_offset */
-	 BFD_RELOC_LARCH_TLS_LD64_HI20,		/* bfd_reloc_code_real_type */
+	 BFD_RELOC_LARCH_TLS_LD_HI20,		/* bfd_reloc_code_real_type */
 	 reloc_bits,				/* adjust_reloc_bits */
-	 "ld64_hi20"),				/* larch_reloc_type_name */
+	 "ld_hi20"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_TLS_GD_PC_HI20,	/* type (97).  */
 	 12,					/* rightshift.  */
@@ -1310,7 +1310,7 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 reloc_bits,				/* adjust_reloc_bits */
 	 "gd_pc_hi20"),				/* larch_reloc_type_name */
 
-  LOONGARCH_HOWTO (R_LARCH_TLS_GD64_HI20,	/* type (98).  */
+  LOONGARCH_HOWTO (R_LARCH_TLS_GD_HI20,		/* type (98).  */
 	 12,					/* rightshift.  */
 	 4,					/* size.  */
 	 20,					/* bitsize.  */
@@ -1318,14 +1318,14 @@ static loongarch_reloc_howto_type loongarch_howto_table[] =
 	 5,					/* bitpos.  */
 	 complain_overflow_signed,		/* complain_on_overflow.  */
 	 bfd_elf_generic_reloc,			/* special_function.  */
-	 "R_LARCH_TLS_GD64_HI20",		/* name.  */
+	 "R_LARCH_TLS_GD_HI20",			/* name.  */
 	 false,					/* partial_inplace.  */
 	 0,					/* src_mask */
 	 0x1ffffe0,				/* dst_mask */
 	 false,					/* pcrel_offset */
-	 BFD_RELOC_LARCH_TLS_GD64_HI20,		/* bfd_reloc_code_real_type */
+	 BFD_RELOC_LARCH_TLS_GD_HI20,		/* bfd_reloc_code_real_type */
 	 reloc_bits,				/* adjust_reloc_bits */
-	 "gd64_hi20"),				/* larch_reloc_type_name */
+	 "gd_hi20"),				/* larch_reloc_type_name */
 
   LOONGARCH_HOWTO (R_LARCH_32_PCREL,		/* type (99).  */
 	 0,					/* rightshift.  */

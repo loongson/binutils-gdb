@@ -59,8 +59,8 @@ lu52i.d $r5,$r4,%got64_pc_hi12(.L1)
 
 /* GOT64 Insns.  */
 /* lu12i.w.  */
-lu12i.w $r4,%got64_hi20(.L1)
-ori $r4,$r4,%got64_lo12(.L1)
+lu12i.w $r4,%got_hi20(.L1)
+ori $r4,$r4,%got_lo12(.L1)
 lu32i.d $r4,%got64_lo20(.L1)
 lu52i.d $r5,$r4,%got64_hi12(.L1)
 
@@ -131,8 +131,8 @@ lu52i.d $r5,$r4,%got64_pc_hi12(.L1 + 0x8)
 
 /* GOT64 Insns.  */
 /* lu12i.w.  */
-lu12i.w $r4,%got64_hi20(.L1 + 0x8)
-ori $r4,$r4,%got64_lo12(.L1 + 0x8)
+lu12i.w $r4,%got_hi20(.L1 + 0x8)
+ori $r4,$r4,%got_lo12(.L1 + 0x8)
 lu32i.d $r4,%got64_lo20(.L1 + 0x8)
 lu52i.d $r5,$r4,%got64_hi12(.L1 + 0x8)
 
