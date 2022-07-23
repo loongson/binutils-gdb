@@ -887,6 +887,9 @@ append_fixp_and_insn (struct loongarch_cl_insn *ip)
       ip->fixp[i] =
 	fix_new_exp (ip->frag, ip->where, bfd_get_reloc_size (howto),
 		     &reloc_info[i].value, FALSE, reloc_type);
+
+      if (reloc_type == BFD_RELOC_LARCH_RELAX)
+	ip->fixp[i]->fx_no_overflow = 1;
     }
 
   if (ip->insn_length < ip->relax_max_length)

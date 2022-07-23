@@ -102,7 +102,7 @@ my_getExpression (expressionS *ep, const char *str)
 
 static void
 reloc (const char *op_c_str, const char *id_c_str,
-       offsetT addend, offsetT id ATTRIBUTE_UNUSED)
+       offsetT addend, offsetT relax)
 {
   expressionS id_sym_expr;
   bfd_reloc_code_real_type btype;
@@ -130,6 +130,14 @@ reloc (const char *op_c_str, const char *id_c_str,
   top->value = id_sym_expr;
   top->type = btype;
   top++;
+
+  if (relax)
+  {
+    top->type = BFD_RELOC_LARCH_RELAX;
+    top->value.X_op = O_constant;
+    top->value.X_add_number = relax;
+    top++;
+  }
 }
 
 static void
