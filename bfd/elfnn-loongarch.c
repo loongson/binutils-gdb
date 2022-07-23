@@ -2223,6 +2223,13 @@ loongarch_reloc_is_fatal (struct bfd_link_info *info,
   return fatal;
 }
 
+static bool enable_relax = true;
+
+void
+bfd_elfNN_loongarch_set_option_relax (bool relax)
+{
+  enable_relax = relax;
+}
 
 #define RELOCATE_CALC_PC32_HI20(relocation, pc) 	\
   ({							\
@@ -2266,6 +2273,9 @@ relax_record (bfd *input_bfd, bfd_vma sym, bfd_vma pc,
 	      Elf_Internal_Rela *rel, bfd_byte *contents,
 	      bool is_hi)
 {
+  if (!enable_relax)
+    return;
+
   relax_reloc **p;
   if (!relax_relocs)
     p = &relax_relocs;
