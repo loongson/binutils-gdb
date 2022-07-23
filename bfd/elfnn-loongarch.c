@@ -2223,6 +2223,7 @@ loongarch_reloc_is_fatal (struct bfd_link_info *info,
   return fatal;
 }
 
+
 #define RELOCATE_CALC_PC32_HI20(relocation, pc) 	\
   ({							\
     bfd_vma lo = (relocation) & ((bfd_vma)0xfff);	\
@@ -2244,6 +2245,212 @@ loongarch_reloc_is_fatal (struct bfd_link_info *info,
       }  						\
     relocation -= (pc & ~(bfd_vma)0xffffffff);  	\
   })
+
+typedef struct relax_reloc
+{
+  struct relax_reloc *next;
+  bfd *bfd;
+  bfd_vma sym;
+  bfd_vma pc;
+  Elf_Internal_Rela *rel;
+  bfd_byte *contents;
+  int id;
+  bool done;
+  bool is_hi;
+} relax_reloc;
+
+static relax_reloc *relax_relocs = NULL;
+
+static void
+relax_record (bfd *input_bfd, bfd_vma sym, bfd_vma pc,
+	      Elf_Internal_Rela *rel, bfd_byte *contents,
+	      bool is_hi)
+{
+  relax_reloc **p;
+  if (!relax_relocs)
+    p = &relax_relocs;
+  else
+    {
+      p = &relax_relocs->next;
+      while(*p)
+	p = &(*p)->next;
+    }
+
+  *p = bfd_zalloc (input_bfd, sizeof (struct relax_reloc));
+  (*p)->bfd = input_bfd;
+  (*p)->sym = sym;
+  (*p)->pc = pc;
+  (*p)->rel = rel;
+  (*p)->contents = contents;
+  (*p)->next = NULL;
+  (*p)->id = 0;
+  (*p)->done = false;
+  (*p)->is_hi = is_hi;
+}
+
+static void
+relax_record_append (Elf_Internal_Rela *rel)
+{
+  relax_reloc *p = relax_relocs;
+
+  while(p->next)
+    p = p->next;
+
+  if (p->rel->r_offset == rel->r_offset
+      && rel->r_addend != 0)
+    p->id = rel->r_addend;
+}
+
+static relax_reloc *
+relax_get_lo (relax_reloc *hi)
+{
+  relax_reloc *ret = NULL;
+  /* Currently, find the first lo after hi with the same sym.  */
+  for (relax_reloc *lo = hi->next; lo; lo = lo->next)
+    {
+      if (lo->sym == hi->sym)
+	{
+	  if (!lo->is_hi && hi->id == lo->id && !lo->done && hi->id)
+	    ret = lo;
+	  break;
+	}
+    }
+
+  return ret;
+}
+
+static void
+relax_insn_lo12 (relax_reloc *hi, relax_reloc *lo)
+{
+  uint32_t pca = bfd_get (32, hi->bfd, hi->contents + hi->rel->r_offset);
+  uint32_t add = bfd_get (32, lo->bfd, lo->contents + lo->rel->r_offset);
+
+  /* Is insn addi.d?  */
+  uint32_t rd = pca & 0x1f;
+  if ((rd != (add & 0x1f))
+      || (rd !=  ((add >> 5) & 0x1f))
+      || ((add & 0x1f) != ((add >> 5) & 0x1f)))
+    return;
+
+  uint32_t tadd = 0x02c00000u | (rd << 5) | rd;
+  if ((add & tadd) != tadd)
+    return;
+
+  /* Can be replaced by pcaddi?  */
+  /* pcaddi:
+     1.  4 bytes align.
+     2.  0xffe00000 ~ 0x1ffffc (-2097152 ~ 2097148).  */
+  int32_t offset = hi->sym - hi->pc;
+  if (offset & 0x3)
+    return;
+
+  offset = offset >> 2;
+  if (offset < (int32_t)0xfff80000
+      || offset > (int32_t)0x7ffff)
+    return;
+
+  uint32_t pcaddi = 0x18000000 | ((offset << 5) & 0x1ffffe0) | rd;
+  uint32_t nop = 0x03400000;
+
+  bfd_put (32, hi->bfd, pcaddi, hi->contents + hi->rel->r_offset);
+  bfd_put (32, lo->bfd, nop, lo->contents + lo->rel->r_offset);
+}
+
+static void
+relax_insn_jirl (relax_reloc *hi, relax_reloc *lo)
+{
+  uint32_t pca = bfd_get (32, hi->bfd, hi->contents + hi->rel->r_offset);
+  uint32_t jir = bfd_get (32, lo->bfd, lo->contents + lo->rel->r_offset);
+
+  /* Is insn jirl?  */
+  int rj = pca & 0x1f;
+  int rd = (jir >> 5) & 0x1f;
+  uint32_t tji = 0x4c000000;
+  if ((rj != rd) || ((jir & tji) != tji))
+    return;
+
+  /* Can be replaced by bl?  */
+  /* bl:
+     1.  4 bytes aligns is same to jirl.
+     2.  0xf8000000 ~ 0x7fffffc (-134217728 ~ 134217724).  */
+  bfd_vma offset = hi->sym - hi->pc;
+  if ((hi->sym & 0x3)
+      || (int32_t)offset < (int32_t)0xf8000000
+      || (int32_t)offset > (int32_t)0x7fffffc)
+    return;
+
+  reloc_howto_type *howto
+    = loongarch_elf_rtype_to_howto (lo->bfd, R_LARCH_B26);
+  loongarch_adjust_reloc_bitsfield (howto, &offset);
+
+
+  uint32_t bl = 0x54000000 | offset;
+  uint32_t nop = 0x03400000;
+
+  bfd_put (32, hi->bfd, bl, hi->contents + hi->rel->r_offset);
+  bfd_put (32, lo->bfd, nop, lo->contents + lo->rel->r_offset);
+}
+
+static void
+relax_reloc_pcala_hi (relax_reloc *hi)
+{
+  /* Insn add? => pcaddi and nop, jirl? => bl and nop.   */
+  relax_reloc *lo = relax_get_lo (hi);
+
+  if (!lo)
+    return;
+
+  switch (ELFNN_R_TYPE (lo->rel->r_info))
+    {
+    case R_LARCH_PCALA_LO12:
+      relax_insn_lo12 (hi, lo);
+      break;
+
+    case R_LARCH_B16:
+      relax_insn_jirl(hi, lo);
+      break;
+
+    default:
+      break;
+    }
+
+  hi->done = true;
+  lo->done = true;
+}
+
+static bool
+relax_check_hi_lo (relax_reloc *hi ATTRIBUTE_UNUSED)
+{
+  return true;
+}
+
+static void
+relax_finish (void)
+{
+  for (relax_reloc *hi = relax_relocs; hi; hi = hi->next)
+    {
+      if (hi->done)
+	continue;
+
+      /* Check the sym reference of hi is eq lo.
+	 if hi > lo, can not be relax.  */
+      if (!relax_check_hi_lo (hi))
+	{
+	  hi->done = true;
+	  continue;
+	}
+
+      switch (ELFNN_R_TYPE (hi->rel->r_info))
+	{
+	case R_LARCH_PCALA_HI20:
+	  relax_reloc_pcala_hi (hi);
+	  break;
+
+	default:
+	  break;
+	}
+    }
+}
 
 static int
 loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
@@ -3072,6 +3279,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  else
 	    relocation += rel->r_addend;
 
+	  relax_record (input_bfd, relocation, pc, rel, contents, true);
 	  RELOCATE_CALC_PC32_HI20 (relocation, pc);
 
 	  break;
@@ -3090,6 +3298,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  else
 	    relocation += rel->r_addend;
 
+	  relax_record (input_bfd, relocation, pc, rel, contents, false);
 	    {
 	      relocation &= 0xfff;
 	      /* Signed extend.  */
@@ -3408,6 +3617,7 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	  break;
 
 	case R_LARCH_RELAX:
+	  relax_record_append (rel);
 	  break;
 
 	default:
@@ -3494,6 +3704,8 @@ loongarch_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
       fatal = true;
     }
+
+  relax_finish();
 
   return !fatal;
 }
