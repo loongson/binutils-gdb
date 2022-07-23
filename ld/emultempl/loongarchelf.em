@@ -23,7 +23,6 @@ fragment <<EOF
 #include "ldmain.h"
 #include "ldctor.h"
 #include "elf/loongarch.h"
-#include "elfxx-loongarch.h"
 
 static void
 larch_elf_before_allocation (void)
@@ -69,7 +68,6 @@ gld${EMULATION_NAME}_after_allocation (void)
 /* This is a convenient point to tell BFD about target specific flags.
    After the output has been created, but before inputs are read.  */
 
-static bool enable_relax = true;
 static void
 larch_create_output_section_statements (void)
 {
@@ -80,25 +78,9 @@ larch_create_output_section_statements (void)
 	       " whilst linking %s binaries\n"), "LoongArch");
       return;
     }
-  bfd_elf${ELFSIZE}_loongarch_set_option_relax (enable_relax);
 }
 
 EOF
-
-
-PARSE_AND_LIST_PROLOGUE='
-#define OPTION_NO_RELAX	301
-'
-
-PARSE_AND_LIST_LONGOPTS='
-  { "no-relax", required_argument, NULL, OPTION_NO_RELAX},
-'
-
-PARSE_AND_LIST_ARGS_CASES='
-case OPTION_NO_RELAX:
-enable_relax = false;
-break;
-'
 
 LDEMUL_BEFORE_ALLOCATION=larch_elf_before_allocation
 LDEMUL_AFTER_ALLOCATION=gld${EMULATION_NAME}_after_allocation
