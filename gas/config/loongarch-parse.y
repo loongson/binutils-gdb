@@ -101,7 +101,8 @@ my_getExpression (expressionS *ep, const char *str)
 }
 
 static void
-reloc (const char *op_c_str, const char *id_c_str, offsetT addend)
+reloc (const char *op_c_str, const char *id_c_str,
+       offsetT addend, offsetT id ATTRIBUTE_UNUSED)
 {
   expressionS id_sym_expr;
   bfd_reloc_code_real_type btype;
@@ -319,8 +320,14 @@ offsetT imm;
 primary_expression
 	: INTEGER {emit_const ($1);}
 	| '(' expression ')'
-	| '%' IDENTIFIER '(' IDENTIFIER addend ')' {reloc ($2, $4, $5); free ($2); free ($4);}
-	| '%' IDENTIFIER '(' INTEGER addend ')' {reloc ($2, NULL, $4 + $5); free ($2);}
+	| '%' IDENTIFIER '(' IDENTIFIER addend ')'
+	    {reloc ($2, $4, $5, 0); free ($2); free ($4);}
+	| '%' IDENTIFIER '(' IDENTIFIER addend '(' INTEGER ')' ')'
+	    {reloc ($2, $4, $5, $7); free ($2); free ($4);}
+	| '%' IDENTIFIER '(' INTEGER addend ')'
+	    {reloc ($2, NULL, $4 + $5, 0); free ($2);}
+	| '%' IDENTIFIER '(' INTEGER addend '(' INTEGER ')' ')'
+	    {reloc ($2, NULL, $4 + $5, 0); free ($2);}
 	;
 
 addend
