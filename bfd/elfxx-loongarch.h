@@ -33,13 +33,8 @@ loongarch_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED, const char *r_name);
 extern bfd_reloc_code_real_type
 loongarch_larch_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
 				   const char *l_r_name);
-bool
-loongarch_adjust_reloc_bitsfield (reloc_howto_type *howto, bfd_vma *fix_val);
 
-void
-bfd_elf32_loongarch_set_option_relax (bool relax);
-void
-bfd_elf64_loongarch_set_option_relax (bool relax);
+bool loongarch_adjust_reloc_bitsfield (reloc_howto_type *howto, bfd_vma *fix_val);
 
 /* TRUE if this is a PLT reference to a local IFUNC.  */
 #define PLT_LOCAL_IFUNC_P(INFO, H) \
