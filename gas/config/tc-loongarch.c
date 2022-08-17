@@ -1157,16 +1157,12 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
 
     case BFD_RELOC_64:
     case BFD_RELOC_32:
-    case BFD_RELOC_24:
-    case BFD_RELOC_16:
-    case BFD_RELOC_8:
-
       if (fixP->fx_r_type == BFD_RELOC_32
 	  && fixP->fx_addsy && fixP->fx_subsy
 	  && (sub_segment = S_GET_SEGMENT (fixP->fx_subsy))
 	  && strcmp (sub_segment->name, ".eh_frame") == 0
 	  && S_GET_VALUE (fixP->fx_subsy)
-	  == fixP->fx_frag->fr_address + fixP->fx_where)
+	      == fixP->fx_frag->fr_address + fixP->fx_where)
 	{
 	  fixP->fx_r_type = BFD_RELOC_LARCH_32_PCREL;
 	  fixP->fx_subsy = NULL;
@@ -1191,25 +1187,52 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
 	      fixP->fx_r_type = BFD_RELOC_LARCH_ADD32;
 	      fixP->fx_next->fx_r_type = BFD_RELOC_LARCH_SUB32;
 	      break;
-	    case BFD_RELOC_24:
-	      fixP->fx_r_type = BFD_RELOC_LARCH_ADD24;
-	      fixP->fx_next->fx_r_type = BFD_RELOC_LARCH_SUB24;
-	      break;
-	    case BFD_RELOC_16:
-	      fixP->fx_r_type = BFD_RELOC_LARCH_ADD16;
-	      fixP->fx_next->fx_r_type = BFD_RELOC_LARCH_SUB16;
-	      break;
-	    case BFD_RELOC_8:
-	      fixP->fx_r_type = BFD_RELOC_LARCH_ADD8;
-	      fixP->fx_next->fx_r_type = BFD_RELOC_LARCH_SUB8;
-	      break;
 	    default:
 	      break;
 	    }
+
 	  md_number_to_chars (buf, 0, fixP->fx_size);
-	  if (fixP->fx_next->fx_addsy == NULL)
-	    fixP->fx_next->fx_done = 1;
 	}
+
+      if (fixP->fx_addsy == NULL)
+	{
+	  fixP->fx_done = 1;
+	  md_number_to_chars (buf, *valP, fixP->fx_size);
+	}
+      break;
+
+    case BFD_RELOC_24:
+    case BFD_RELOC_16:
+    case BFD_RELOC_8:
+      fixP->fx_next = xmemdup (fixP, sizeof (*fixP), sizeof (*fixP));
+      fixP->fx_next->fx_addsy = fixP->fx_subsy;
+      fixP->fx_next->fx_subsy = NULL;
+      fixP->fx_next->fx_offset = 0;
+      fixP->fx_subsy = NULL;
+
+      switch (fixP->fx_r_type)
+	{
+	case BFD_RELOC_24:
+	  fixP->fx_r_type = BFD_RELOC_LARCH_ADD24;
+	  fixP->fx_next->fx_r_type = BFD_RELOC_LARCH_SUB24;
+	  break;
+	case BFD_RELOC_16:
+	  fixP->fx_r_type = BFD_RELOC_LARCH_ADD16;
+	  fixP->fx_next->fx_r_type = BFD_RELOC_LARCH_SUB16;
+	  break;
+	case BFD_RELOC_8:
+	  fixP->fx_r_type = BFD_RELOC_LARCH_ADD8;
+	  fixP->fx_next->fx_r_type = BFD_RELOC_LARCH_SUB8;
+	  break;
+	default:
+	  break;
+	}
+
+      md_number_to_chars (buf, 0, fixP->fx_size);
+
+      if (fixP->fx_next->fx_addsy == NULL)
+	fixP->fx_next->fx_done = 1;
+
       if (fixP->fx_addsy == NULL)
 	{
 	  fixP->fx_done = 1;
