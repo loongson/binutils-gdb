@@ -1144,7 +1144,7 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
 	  && (sub_segment = S_GET_SEGMENT (fixP->fx_subsy))
 	  && strcmp (sub_segment->name, ".eh_frame") == 0
 	  && S_GET_VALUE (fixP->fx_subsy)
-	  == fixP->fx_frag->fr_address + fixP->fx_where)
+	      == fixP->fx_frag->fr_address + fixP->fx_where)
 	{
 	  fixP->fx_r_type = BFD_RELOC_LARCH_32_PCREL;
 	  fixP->fx_subsy = NULL;
